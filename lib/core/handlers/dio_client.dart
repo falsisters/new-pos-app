@@ -4,6 +4,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DioClient {
   static final DioClient _singleton = DioClient._internal();
@@ -16,6 +17,9 @@ class DioClient {
 
   DioClient._internal() {
     _dio = Dio();
+
+    _dio.options.baseUrl = dotenv.env['API_URL']!;
+
     // Add Bearer token to the header
     _dio.interceptors.add(InterceptorsWrapper(
         onError: (DioException e, ErrorInterceptorHandler handler) {

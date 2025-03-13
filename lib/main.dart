@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() {
   runApp(const MyApp());
@@ -7,6 +8,11 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  // Initiate the dotenv package
+  Future<void> init() async {
+    await dotenv.load(fileName: '.env');
+  }
 
   // This widget is the root of your application.
   @override
