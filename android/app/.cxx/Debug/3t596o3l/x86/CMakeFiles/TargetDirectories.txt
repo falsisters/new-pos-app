@@ -1,0 +1,2 @@
+D:/Projects/falsisters_pos_android/android/app/.cxx/Debug/3t596o3l/x86/CMakeFiles/edit_cache.dir
+D:/Projects/falsisters_pos_android/android/app/.cxx/Debug/3t596o3l/x86/CMakeFiles/rebuild_cache.dir

@@ -1,7 +1,3 @@
-// Create the dioClient class for me so I can use this globally when I am using dio, with the following features:
-// Have an interceptor to insert my Bearer Authentication token in the header
-// Have an interceptor to log all requests and responses
-
 import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -18,16 +14,42 @@ class DioClient {
   DioClient._internal() {
     _dio = Dio();
 
-    _dio.options.baseUrl = dotenv.env['API_URL']!;
+    // Ensure API_URL exists before setting it
+    final apiUrl = dotenv.env['API_URL'];
+    if (apiUrl != null && apiUrl.isNotEmpty) {
+      _dio.options.baseUrl = apiUrl;
+    } else {
+      print('Warning: API_URL not found in .env file');
+    }
+
+    // Add logging interceptor
+    _dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
+    ));
 
     // Add Bearer token to the header
     _dio.interceptors.add(InterceptorsWrapper(
-        onError: (DioException e, ErrorInterceptorHandler handler) {
-      handler.next(e);
-    }, onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
-      final token = _secureStorage.getToken();
-      options.headers['Authorization'] = 'Bearer $token';
-    }));
+      onRequest: (options, handler) async {
+        // The key issue: getToken() is async but you're not awaiting it
+        final token = await _secureStorage.getToken();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+      onError: (DioException e, handler) {
+        // Handle 401 unauthorized errors by clearing the token
+        if (e.response?.statusCode == 401) {
+          _secureStorage.deleteToken();
+        }
+        handler.next(e);
+      },
+    ));
   }
 
   Dio get instance => _dio;
