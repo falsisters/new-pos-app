@@ -2,7 +2,7 @@ import 'package:falsisters_pos_android/core/handlers/secure_storage.dart';
 import 'package:falsisters_pos_android/features/auth/data/model/auth_state.dart';
 import 'package:falsisters_pos_android/features/auth/data/model/cashier_jwt_model.dart';
 import 'package:falsisters_pos_android/features/auth/data/repository/auth_repository.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
   final AuthRepository _authRepository = AuthRepository();
@@ -10,11 +10,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
-    // Initial state
     return AuthState();
   }
 
-  // Login method
   Future<void> login(String name, String accessKey) async {
     state = const AsyncLoading();
 

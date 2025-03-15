@@ -16,7 +16,7 @@ void main() async {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -31,43 +31,41 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
-      home: ProviderScope(
-        child: Consumer(
-          builder: (context, ref, _) {
-            // Use .notifier.stream to ensure we're always listening to changes
-            final authState = ref.watch(authProvider);
+      home: Consumer(
+        builder: (context, ref, _) {
+          // Use .notifier.stream to ensure we're always listening to changes
+          final authState = ref.watch(authProvider);
 
-            return authState.when(
-              loading: () => const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
+          return authState.when(
+            loading: () => const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, stackTrace) => Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Error: ${error.toString()}'),
+                    ElevatedButton(
+                      onPressed: () => ref.refresh(authProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
-              error: (error, stackTrace) => Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${error.toString()}'),
-                      ElevatedButton(
-                        onPressed: () => ref.refresh(authProvider),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              data: (AuthState state) {
-                // This will be updated whenever the AuthState changes
-                if (state.isAuthenticated == true) {
-                  return const MyHomePage(title: 'Dashboard');
-                } else {
-                  return LoginScreen();
-                }
-              },
-            );
-          },
-        ),
+            ),
+            data: (AuthState state) {
+              // This will be updated whenever the AuthState changes
+              if (state.isAuthenticated == true) {
+                return const MyHomePage(title: 'Dashboard');
+              } else {
+                return LoginScreen();
+              }
+            },
+          );
+        },
       ),
     );
   }
@@ -83,8 +81,6 @@ class MyHomePage extends ConsumerStatefulWidget {
 }
 
 class _MyHomePageState extends ConsumerState<MyHomePage> {
-  int _counter = 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,7 +96,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Text(
-              '$_counter',
+              'Niggertastic',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
