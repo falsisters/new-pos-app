@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/app/presentation/screens/home_screen.dart';
 import 'package:falsisters_pos_android/features/auth/data/model/auth_state.dart';
 import 'package:falsisters_pos_android/features/auth/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +60,7 @@ class MyApp extends StatelessWidget {
             data: (AuthState state) {
               // This will be updated whenever the AuthState changes
               if (state.isAuthenticated == true) {
-                return const MyHomePage(title: 'Dashboard');
+                return const HomeScreen();
               } else {
                 return LoginScreen();
               }
