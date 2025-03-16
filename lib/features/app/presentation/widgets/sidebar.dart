@@ -170,6 +170,21 @@ class Sidebar extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: SidebarItem(
+                  title: 'Profile',
+                  icon: Icons.person,
+                  isSelected: drawerIndex == 7,
+                  onTap: () =>
+                      ref.read(drawerIndexProvider.notifier).setIndex(7),
+                ),
+              ),
+
+              const SizedBox(
+                height: 16,
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SidebarItem(
                     title: 'Logout',
                     icon: Icons.logout,
                     isSelected: false,
