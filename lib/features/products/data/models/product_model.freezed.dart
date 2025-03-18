@@ -21,6 +21,7 @@ mixin _$Product {
   DateTime get createdAt;
   DateTime get updatedAt;
   String get userId;
+  @JsonKey(name: "SackPrice")
   List<SackPrice> get sackPrice;
   PerKiloPrice? get perKiloPrice;
 
@@ -83,7 +84,7 @@ abstract mixin class $ProductCopyWith<$Res> {
       DateTime createdAt,
       DateTime updatedAt,
       String userId,
-      List<SackPrice> sackPrice,
+      @JsonKey(name: "SackPrice") List<SackPrice> sackPrice,
       PerKiloPrice? perKiloPrice});
 
   $PerKiloPriceCopyWith<$Res>? get perKiloPrice;
@@ -171,7 +172,7 @@ class _Product implements Product {
       required this.createdAt,
       required this.updatedAt,
       required this.userId,
-      required final List<SackPrice> sackPrice,
+      @JsonKey(name: "SackPrice") required final List<SackPrice> sackPrice,
       this.perKiloPrice})
       : _sackPrice = sackPrice;
   factory _Product.fromJson(Map<String, dynamic> json) =>
@@ -191,6 +192,7 @@ class _Product implements Product {
   final String userId;
   final List<SackPrice> _sackPrice;
   @override
+  @JsonKey(name: "SackPrice")
   List<SackPrice> get sackPrice {
     if (_sackPrice is EqualUnmodifiableListView) return _sackPrice;
     // ignore: implicit_dynamic_type
@@ -266,7 +268,7 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
       DateTime createdAt,
       DateTime updatedAt,
       String userId,
-      List<SackPrice> sackPrice,
+      @JsonKey(name: "SackPrice") List<SackPrice> sackPrice,
       PerKiloPrice? perKiloPrice});
 
   @override

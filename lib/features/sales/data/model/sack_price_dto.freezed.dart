@@ -17,6 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$SackPriceDto {
   String get id;
   double get quantity;
+  double get price;
   SackType get type;
 
   /// Create a copy of SackPriceDto
@@ -38,16 +39,17 @@ mixin _$SackPriceDto {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.type, type) || other.type == type));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity, type);
+  int get hashCode => Object.hash(runtimeType, id, quantity, price, type);
 
   @override
   String toString() {
-    return 'SackPriceDto(id: $id, quantity: $quantity, type: $type)';
+    return 'SackPriceDto(id: $id, quantity: $quantity, price: $price, type: $type)';
   }
 }
 
@@ -57,7 +59,7 @@ abstract mixin class $SackPriceDtoCopyWith<$Res> {
           SackPriceDto value, $Res Function(SackPriceDto) _then) =
       _$SackPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double quantity, SackType type});
+  $Res call({String id, double quantity, double price, SackType type});
 }
 
 /// @nodoc
@@ -74,6 +76,7 @@ class _$SackPriceDtoCopyWithImpl<$Res> implements $SackPriceDtoCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? quantity = null,
+    Object? price = null,
     Object? type = null,
   }) {
     return _then(_self.copyWith(
@@ -84,6 +87,10 @@ class _$SackPriceDtoCopyWithImpl<$Res> implements $SackPriceDtoCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
+              as double,
+      price: null == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
               as double,
       type: null == type
           ? _self.type
@@ -97,7 +104,10 @@ class _$SackPriceDtoCopyWithImpl<$Res> implements $SackPriceDtoCopyWith<$Res> {
 @JsonSerializable()
 class _SackPriceDto implements SackPriceDto {
   const _SackPriceDto(
-      {required this.id, required this.quantity, required this.type});
+      {required this.id,
+      required this.quantity,
+      required this.price,
+      required this.type});
   factory _SackPriceDto.fromJson(Map<String, dynamic> json) =>
       _$SackPriceDtoFromJson(json);
 
@@ -105,6 +115,8 @@ class _SackPriceDto implements SackPriceDto {
   final String id;
   @override
   final double quantity;
+  @override
+  final double price;
   @override
   final SackType type;
 
@@ -131,16 +143,17 @@ class _SackPriceDto implements SackPriceDto {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.type, type) || other.type == type));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity, type);
+  int get hashCode => Object.hash(runtimeType, id, quantity, price, type);
 
   @override
   String toString() {
-    return 'SackPriceDto(id: $id, quantity: $quantity, type: $type)';
+    return 'SackPriceDto(id: $id, quantity: $quantity, price: $price, type: $type)';
   }
 }
 
@@ -152,7 +165,7 @@ abstract mixin class _$SackPriceDtoCopyWith<$Res>
       __$SackPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double quantity, SackType type});
+  $Res call({String id, double quantity, double price, SackType type});
 }
 
 /// @nodoc
@@ -170,6 +183,7 @@ class __$SackPriceDtoCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? quantity = null,
+    Object? price = null,
     Object? type = null,
   }) {
     return _then(_SackPriceDto(
@@ -180,6 +194,10 @@ class __$SackPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
+              as double,
+      price: null == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
               as double,
       type: null == type
           ? _self.type

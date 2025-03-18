@@ -8,6 +8,7 @@ sealed class PerKiloPriceDto with _$PerKiloPriceDto {
   const factory PerKiloPriceDto({
     required String id,
     required double quantity,
+    required double price,
   }) = _PerKiloPriceDto;
 
   factory PerKiloPriceDto.fromJson(Map<String, dynamic> json) =>

@@ -17,6 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$PerKiloPriceDto {
   String get id;
   double get quantity;
+  double get price;
 
   /// Create a copy of PerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -36,16 +37,17 @@ mixin _$PerKiloPriceDto {
             other is PerKiloPriceDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity);
+  int get hashCode => Object.hash(runtimeType, id, quantity, price);
 
   @override
   String toString() {
-    return 'PerKiloPriceDto(id: $id, quantity: $quantity)';
+    return 'PerKiloPriceDto(id: $id, quantity: $quantity, price: $price)';
   }
 }
 
@@ -55,7 +57,7 @@ abstract mixin class $PerKiloPriceDtoCopyWith<$Res> {
           PerKiloPriceDto value, $Res Function(PerKiloPriceDto) _then) =
       _$PerKiloPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double quantity});
+  $Res call({String id, double quantity, double price});
 }
 
 /// @nodoc
@@ -73,6 +75,7 @@ class _$PerKiloPriceDtoCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? quantity = null,
+    Object? price = null,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -83,6 +86,10 @@ class _$PerKiloPriceDtoCopyWithImpl<$Res>
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as double,
+      price: null == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -90,7 +97,8 @@ class _$PerKiloPriceDtoCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _PerKiloPriceDto implements PerKiloPriceDto {
-  const _PerKiloPriceDto({required this.id, required this.quantity});
+  const _PerKiloPriceDto(
+      {required this.id, required this.quantity, required this.price});
   factory _PerKiloPriceDto.fromJson(Map<String, dynamic> json) =>
       _$PerKiloPriceDtoFromJson(json);
 
@@ -98,6 +106,8 @@ class _PerKiloPriceDto implements PerKiloPriceDto {
   final String id;
   @override
   final double quantity;
+  @override
+  final double price;
 
   /// Create a copy of PerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -121,16 +131,17 @@ class _PerKiloPriceDto implements PerKiloPriceDto {
             other is _PerKiloPriceDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity);
+  int get hashCode => Object.hash(runtimeType, id, quantity, price);
 
   @override
   String toString() {
-    return 'PerKiloPriceDto(id: $id, quantity: $quantity)';
+    return 'PerKiloPriceDto(id: $id, quantity: $quantity, price: $price)';
   }
 }
 
@@ -142,7 +153,7 @@ abstract mixin class _$PerKiloPriceDtoCopyWith<$Res>
       __$PerKiloPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double quantity});
+  $Res call({String id, double quantity, double price});
 }
 
 /// @nodoc
@@ -160,6 +171,7 @@ class __$PerKiloPriceDtoCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? quantity = null,
+    Object? price = null,
   }) {
     return _then(_PerKiloPriceDto(
       id: null == id
@@ -169,6 +181,10 @@ class __$PerKiloPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
+              as double,
+      price: null == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
               as double,
     ));
   }

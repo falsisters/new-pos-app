@@ -13,7 +13,7 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       userId: json['userId'] as String,
-      sackPrice: (json['sackPrice'] as List<dynamic>)
+      sackPrice: (json['SackPrice'] as List<dynamic>)
           .map((e) => SackPrice.fromJson(e as Map<String, dynamic>))
           .toList(),
       perKiloPrice: json['perKiloPrice'] == null
@@ -28,6 +28,6 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'userId': instance.userId,
-      'sackPrice': instance.sackPrice,
+      'SackPrice': instance.sackPrice,
       'perKiloPrice': instance.perKiloPrice,
     };

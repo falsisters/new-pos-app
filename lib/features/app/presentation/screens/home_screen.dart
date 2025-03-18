@@ -1,6 +1,6 @@
 import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
 import 'package:falsisters_pos_android/features/app/presentation/widgets/sidebar.dart';
-import 'package:falsisters_pos_android/features/sales/presentation/sales_screen.dart';
+import 'package:falsisters_pos_android/features/sales/presentation/screens/sales_screen.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/current_shift_state.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';

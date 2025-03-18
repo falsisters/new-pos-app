@@ -27,6 +27,22 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     });
   }
 
+  Future<void> removeProductFromCart(ProductDto product) async {
+    state = await AsyncValue.guard(() async {
+      final currentState = state.value!;
+      final currentCart = currentState.cart;
+
+      // Remove the product from the cart
+      final updatedCart = CartModel(
+        products: currentCart.products
+            .where((element) => element.id != product.id)
+            .toList(),
+      );
+
+      return SalesState(cart: updatedCart);
+    });
+  }
+
   // This will be used when submitting the sale to the server
   Future<void> createSale(
       double totalAmount, PaymentMethod paymentMethod) async {

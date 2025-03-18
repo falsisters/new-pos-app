@@ -9,6 +9,7 @@ part 'product_dto.g.dart';
 sealed class ProductDto with _$ProductDto {
   const factory ProductDto({
     required String id,
+    required String name,
     bool? isGantang,
     bool? isSpecialPrice,
     PerKiloPriceDto? perKiloPrice,

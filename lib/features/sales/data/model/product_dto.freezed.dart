@@ -16,6 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProductDto {
   String get id;
+  String get name;
   bool? get isGantang;
   bool? get isSpecialPrice;
   PerKiloPriceDto? get perKiloPrice;
@@ -37,6 +38,7 @@ mixin _$ProductDto {
         (other.runtimeType == runtimeType &&
             other is ProductDto &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
@@ -49,12 +51,12 @@ mixin _$ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
+  int get hashCode => Object.hash(runtimeType, id, name, isGantang,
+      isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -66,6 +68,7 @@ abstract mixin class $ProductDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      String name,
       bool? isGantang,
       bool? isSpecialPrice,
       PerKiloPriceDto? perKiloPrice,
@@ -88,6 +91,7 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
   @override
   $Res call({
     Object? id = null,
+    Object? name = null,
     Object? isGantang = freezed,
     Object? isSpecialPrice = freezed,
     Object? perKiloPrice = freezed,
@@ -97,6 +101,10 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       isGantang: freezed == isGantang
           ? _self.isGantang
@@ -151,6 +159,7 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
 class _ProductDto implements ProductDto {
   const _ProductDto(
       {required this.id,
+      required this.name,
       this.isGantang,
       this.isSpecialPrice,
       this.perKiloPrice,
@@ -160,6 +169,8 @@ class _ProductDto implements ProductDto {
 
   @override
   final String id;
+  @override
+  final String name;
   @override
   final bool? isGantang;
   @override
@@ -190,6 +201,7 @@ class _ProductDto implements ProductDto {
         (other.runtimeType == runtimeType &&
             other is _ProductDto &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
@@ -202,12 +214,12 @@ class _ProductDto implements ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
+  int get hashCode => Object.hash(runtimeType, id, name, isGantang,
+      isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -221,6 +233,7 @@ abstract mixin class _$ProductDtoCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
+      String name,
       bool? isGantang,
       bool? isSpecialPrice,
       PerKiloPriceDto? perKiloPrice,
@@ -245,6 +258,7 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
+    Object? name = null,
     Object? isGantang = freezed,
     Object? isSpecialPrice = freezed,
     Object? perKiloPrice = freezed,
@@ -254,6 +268,10 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       isGantang: freezed == isGantang
           ? _self.isGantang

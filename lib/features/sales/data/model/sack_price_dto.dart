@@ -9,6 +9,7 @@ sealed class SackPriceDto with _$SackPriceDto {
   const factory SackPriceDto({
     required String id,
     required double quantity,
+    required double price,
     required SackType type,
   }) = _SackPriceDto;
 

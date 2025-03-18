@@ -10,10 +10,12 @@ _PerKiloPriceDto _$PerKiloPriceDtoFromJson(Map<String, dynamic> json) =>
     _PerKiloPriceDto(
       id: json['id'] as String,
       quantity: (json['quantity'] as num).toDouble(),
+      price: (json['price'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$PerKiloPriceDtoToJson(_PerKiloPriceDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'quantity': instance.quantity,
+      'price': instance.price,
     };

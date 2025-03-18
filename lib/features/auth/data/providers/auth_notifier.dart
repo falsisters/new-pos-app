@@ -10,6 +10,25 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
+    final token = await _secureStorage.getToken();
+
+    if (token != null) {
+      try {
+        final cashierData = await _authRepository.getCashierInfo();
+        final cashier = CashierJwtModel.fromJson(cashierData);
+
+        return AuthState(
+          cashier: cashier,
+          isAuthenticated: true,
+        );
+      } catch (e) {
+        return AuthState(
+          error: e.toString(),
+          isAuthenticated: false,
+        );
+      }
+    }
+
     return AuthState();
   }
 

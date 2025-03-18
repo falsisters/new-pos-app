@@ -10,6 +10,7 @@ _SackPriceDto _$SackPriceDtoFromJson(Map<String, dynamic> json) =>
     _SackPriceDto(
       id: json['id'] as String,
       quantity: (json['quantity'] as num).toDouble(),
+      price: (json['price'] as num).toDouble(),
       type: $enumDecode(_$SackTypeEnumMap, json['type']),
     );
 
@@ -17,6 +18,7 @@ Map<String, dynamic> _$SackPriceDtoToJson(_SackPriceDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'quantity': instance.quantity,
+      'price': instance.price,
       'type': _$SackTypeEnumMap[instance.type]!,
     };
 

@@ -12,6 +12,8 @@
 //   SaleItem     SaleItem[]
 // }
 
+// ignore_for_file: invalid_annotation_target
+
 import 'package:falsisters_pos_android/features/products/data/models/per_kilo_price_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/sack_price_model.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -28,7 +30,7 @@ sealed class Product with _$Product {
     required DateTime createdAt,
     required DateTime updatedAt,
     required String userId,
-    required List<SackPrice> sackPrice,
+    @JsonKey(name: "SackPrice") required List<SackPrice> sackPrice,
     PerKiloPrice? perKiloPrice,
   }) = _Product;
 
