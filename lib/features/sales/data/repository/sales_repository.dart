@@ -8,7 +8,7 @@ class SalesRepository {
   Future<Map<String, dynamic>> createSale(CreateSaleRequestModel sale) async {
     try {
       final saleData = sale.toJson();
-      final response = await _dio.instance.post('/sale', data: saleData);
+      final response = await _dio.instance.post('/sale/create', data: saleData);
 
       if (response.data == null) {
         return {};

@@ -15,27 +15,47 @@ class ProductList extends ConsumerWidget {
     final products = ref.watch(productsProvider);
 
     return Container(
-      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-          border: Border.all(color: AppColors.primary),
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.white),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8.0),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(12.0),
+            decoration: const BoxDecoration(
+              color: AppColors.primaryLight,
               border: Border(
-                bottom: BorderSide(color: Colors.black),
+                bottom: BorderSide(color: AppColors.primary, width: 1.5),
               ),
             ),
-            child: const Text(
-              'Products',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            child: const Row(
+              children: [
+                Icon(Icons.browse_gallery, color: AppColors.primary),
+                SizedBox(width: 8),
+                Text(
+                  'Products',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
             child: GridView.builder(
+              padding: const EdgeInsets.all(12),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 childAspectRatio: 1.0,

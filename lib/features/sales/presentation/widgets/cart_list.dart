@@ -3,6 +3,7 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
+import 'package:falsisters_pos_android/features/sales/presentation/screens/checkout_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -133,7 +134,15 @@ class CartList extends ConsumerWidget {
                         salesState.valueOrNull?.cart.products.isEmpty ?? true
                             ? null
                             : () {
-                                // TODO: Implement checkout functionality
+                                final products =
+                                    salesState.valueOrNull!.cart.products;
+                                Navigator.push(context,
+                                    MaterialPageRoute(builder: (context) {
+                                  return CheckoutScreen(
+                                      products: products,
+                                      total: double.parse(
+                                          _calculateTotal(salesState)));
+                                }));
                               },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
