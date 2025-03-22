@@ -10,6 +10,7 @@ sealed class AuthState with _$AuthState {
     CashierJwtModel? cashier,
     @Default(false) bool isAuthenticated,
     String? error,
+    @Default(false) bool isLoading,
   }) = _AuthState;
 
   factory AuthState.fromJson(Map<String, dynamic> json) =>

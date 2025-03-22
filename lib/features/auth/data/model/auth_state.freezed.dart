@@ -18,6 +18,7 @@ mixin _$AuthState {
   CashierJwtModel? get cashier;
   bool get isAuthenticated;
   String? get error;
+  bool get isLoading;
 
   /// Create a copy of AuthState
   /// with the given fields replaced by the non-null parameter values.
@@ -37,16 +38,19 @@ mixin _$AuthState {
             (identical(other.cashier, cashier) || other.cashier == cashier) &&
             (identical(other.isAuthenticated, isAuthenticated) ||
                 other.isAuthenticated == isAuthenticated) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cashier, isAuthenticated, error);
+  int get hashCode =>
+      Object.hash(runtimeType, cashier, isAuthenticated, error, isLoading);
 
   @override
   String toString() {
-    return 'AuthState(cashier: $cashier, isAuthenticated: $isAuthenticated, error: $error)';
+    return 'AuthState(cashier: $cashier, isAuthenticated: $isAuthenticated, error: $error, isLoading: $isLoading)';
   }
 }
 
@@ -55,7 +59,11 @@ abstract mixin class $AuthStateCopyWith<$Res> {
   factory $AuthStateCopyWith(AuthState value, $Res Function(AuthState) _then) =
       _$AuthStateCopyWithImpl;
   @useResult
-  $Res call({CashierJwtModel? cashier, bool isAuthenticated, String? error});
+  $Res call(
+      {CashierJwtModel? cashier,
+      bool isAuthenticated,
+      String? error,
+      bool isLoading});
 
   $CashierJwtModelCopyWith<$Res>? get cashier;
 }
@@ -75,6 +83,7 @@ class _$AuthStateCopyWithImpl<$Res> implements $AuthStateCopyWith<$Res> {
     Object? cashier = freezed,
     Object? isAuthenticated = null,
     Object? error = freezed,
+    Object? isLoading = null,
   }) {
     return _then(_self.copyWith(
       cashier: freezed == cashier
@@ -89,6 +98,10 @@ class _$AuthStateCopyWithImpl<$Res> implements $AuthStateCopyWith<$Res> {
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      isLoading: null == isLoading
+          ? _self.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 
@@ -110,7 +123,11 @@ class _$AuthStateCopyWithImpl<$Res> implements $AuthStateCopyWith<$Res> {
 /// @nodoc
 @JsonSerializable()
 class _AuthState implements AuthState {
-  const _AuthState({this.cashier, this.isAuthenticated = false, this.error});
+  const _AuthState(
+      {this.cashier,
+      this.isAuthenticated = false,
+      this.error,
+      this.isLoading = false});
   factory _AuthState.fromJson(Map<String, dynamic> json) =>
       _$AuthStateFromJson(json);
 
@@ -121,6 +138,9 @@ class _AuthState implements AuthState {
   final bool isAuthenticated;
   @override
   final String? error;
+  @override
+  @JsonKey()
+  final bool isLoading;
 
   /// Create a copy of AuthState
   /// with the given fields replaced by the non-null parameter values.
@@ -145,16 +165,19 @@ class _AuthState implements AuthState {
             (identical(other.cashier, cashier) || other.cashier == cashier) &&
             (identical(other.isAuthenticated, isAuthenticated) ||
                 other.isAuthenticated == isAuthenticated) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cashier, isAuthenticated, error);
+  int get hashCode =>
+      Object.hash(runtimeType, cashier, isAuthenticated, error, isLoading);
 
   @override
   String toString() {
-    return 'AuthState(cashier: $cashier, isAuthenticated: $isAuthenticated, error: $error)';
+    return 'AuthState(cashier: $cashier, isAuthenticated: $isAuthenticated, error: $error, isLoading: $isLoading)';
   }
 }
 
@@ -166,7 +189,11 @@ abstract mixin class _$AuthStateCopyWith<$Res>
       __$AuthStateCopyWithImpl;
   @override
   @useResult
-  $Res call({CashierJwtModel? cashier, bool isAuthenticated, String? error});
+  $Res call(
+      {CashierJwtModel? cashier,
+      bool isAuthenticated,
+      String? error,
+      bool isLoading});
 
   @override
   $CashierJwtModelCopyWith<$Res>? get cashier;
@@ -187,6 +214,7 @@ class __$AuthStateCopyWithImpl<$Res> implements _$AuthStateCopyWith<$Res> {
     Object? cashier = freezed,
     Object? isAuthenticated = null,
     Object? error = freezed,
+    Object? isLoading = null,
   }) {
     return _then(_AuthState(
       cashier: freezed == cashier
@@ -201,6 +229,10 @@ class __$AuthStateCopyWithImpl<$Res> implements _$AuthStateCopyWith<$Res> {
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      isLoading: null == isLoading
+          ? _self.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 

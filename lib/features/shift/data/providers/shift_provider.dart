@@ -4,10 +4,9 @@ import 'package:falsisters_pos_android/features/shift/data/providers/shift_notif
 import 'package:falsisters_pos_android/features/shift/data/repository/shift_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final shiftProvider =
-    AsyncNotifierProvider<ShiftNotifier, CurrentShiftState>(() {
-  return ShiftNotifier();
-});
+final shiftProvider = AsyncNotifierProvider<ShiftNotifier, CurrentShiftState>(
+  () => ShiftNotifier(),
+);
 
 final currentShiftProvider = Provider<CurrentShiftState?>((ref) {
   return ref.watch(shiftProvider).whenData((state) => state).value;

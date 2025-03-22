@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Sidebar extends ConsumerWidget {
-  const Sidebar({Key? key});
+  const Sidebar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

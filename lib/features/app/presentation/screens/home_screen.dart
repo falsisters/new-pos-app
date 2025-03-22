@@ -9,69 +9,126 @@ import 'package:falsisters_pos_android/features/shift/presentation/widgets/creat
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _dialogCheckPending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial setup for dialog check
+    _setupDialogCheck();
+  }
+
+  void _setupDialogCheck() {
+    // This sets up a listener for shift state changes
+    ref.listenManual(isShiftActiveProvider, (previous, next) {
+      if (next == false) {
+        // If shift becomes inactive, mark dialog check as pending
+        setState(() {
+          _dialogCheckPending = true;
+        });
+        _scheduleDialogCheck();
+      }
+    });
+  }
+
+  void _scheduleDialogCheck() {
+    if (!_dialogCheckPending) return;
+
+    // Schedule dialog check after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final isShiftActive = ref.read(isShiftActiveProvider);
+      final isDialogVisible = ref.read(dialogStateProvider);
+
+      // Only show dialog if shift is inactive and dialog should be visible
+      if (isShiftActive == false && !isDialogVisible) {
+        // Use the notifier to update the dialog state
+        ref.read(dialogStateProvider.notifier).showDialog();
+
+        // Show the actual dialog
+        showCreateShiftDialog(context, ref);
+      }
+
+      setState(() {
+        _dialogCheckPending = false;
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Check if we need to show dialog after widget updates
+    if (_dialogCheckPending) {
+      _scheduleDialogCheck();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final drawerIndex = ref.watch(drawerIndexProvider);
-    final isDialogVisible = ref.watch(dialogStateProvider);
 
-    return Scaffold(body: Consumer(builder: (context, ref, _) {
-      final shiftState = ref.watch(shiftProvider);
-      final isActiveShift = ref.watch(isShiftActiveProvider);
+    // If dialog check is pending, schedule it
+    if (_dialogCheckPending) {
+      _scheduleDialogCheck();
+    }
 
-      return shiftState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stackTrace) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Error: ${error.toString()}'),
-              ElevatedButton(
-                onPressed: () => ref.refresh(shiftProvider),
-                child: const Text('Retry'),
-              ),
-            ],
+    return Scaffold(
+      body: Consumer(builder: (context, ref, _) {
+        final shiftState = ref.watch(shiftProvider);
+
+        return shiftState.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
           ),
-        ),
-        data: (CurrentShiftState state) {
-          if (isActiveShift == false) {
-            ref.watch(dialogStateProvider.notifier).showDialog();
-          }
-
-          if (isDialogVisible) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showCreateShiftDialog(context, ref);
-            });
-          }
-
-          return Row(
-            children: [
-              Sidebar(),
-              if (drawerIndex == 0)
-                Expanded(
-                  child: SalesScreen(),
+          error: (error, stackTrace) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: ${error.toString()}'),
+                ElevatedButton(
+                  onPressed: () => ref.refresh(shiftProvider),
+                  child: const Text('Retry'),
                 ),
-              if (drawerIndex == 1)
-                Expanded(
-                  child: Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Text(
-                        'Deliveries Screen',
-                        style: TextStyle(color: Colors.blue),
+              ],
+            ),
+          ),
+          data: (CurrentShiftState state) {
+            // We'll handle dialog visibility through the lifecycle methods,
+            // not directly in the build method
+
+            return Row(
+              children: [
+                Sidebar(),
+                if (drawerIndex == 0)
+                  Expanded(
+                    child: SalesScreen(),
+                  ),
+                if (drawerIndex == 1)
+                  Expanded(
+                    child: Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: Text(
+                          'Deliveries Screen',
+                          style: TextStyle(color: Colors.blue),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              if (drawerIndex == 7) Expanded(child: ShiftScreen()),
-            ],
-          );
-        },
-      );
-    }));
+                if (drawerIndex == 7) Expanded(child: ShiftScreen()),
+              ],
+            );
+          },
+        );
+      }),
+    );
   }
 }

@@ -51,10 +51,15 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     state = await AsyncValue.guard(() async {
       try {
         final currentCart = state.value!.cart;
-        await _salesRepository.createSale(CreateSaleRequestModel(
-            saleItems: currentCart.products,
-            paymentMethod: paymentMethod,
-            totalAmount: totalAmount));
+        // Create a properly formatted request
+        final createSaleRequest = CreateSaleRequestModel(
+          saleItems: currentCart.products,
+          paymentMethod: paymentMethod,
+          totalAmount: totalAmount,
+        );
+
+        // Convert to JSON and send the request
+        await _salesRepository.createSale(createSaleRequest);
 
         // After successful creation, clear the cart
         return SalesState(cart: CartModel());

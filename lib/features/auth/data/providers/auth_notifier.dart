@@ -33,7 +33,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> login(String name, String accessKey) async {
-    state = const AsyncLoading();
+    state = const AsyncValue.data(AuthState(isLoading: true));
 
     state = await AsyncValue.guard(() async {
       try {

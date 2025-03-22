@@ -354,6 +354,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
+                                        'Stock: ${widget.product.perKiloPrice!.stock}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: _isPerKiloSelected
+                                              ? AppColors.primary
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
                                         '₱${widget.product.perKiloPrice!.price.toStringAsFixed(2)}',
                                         style: TextStyle(
                                           fontSize: 16,
@@ -434,6 +444,18 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                         children: [
                                           Text(
                                             parseSackType(sackPrice.type),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: _selectedSackPriceId ==
+                                                          sackPrice.id &&
+                                                      !_isSpecialPrice
+                                                  ? AppColors.primary
+                                                  : Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Stock: ${sackPrice.stock}',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: _selectedSackPriceId ==

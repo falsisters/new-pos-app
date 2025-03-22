@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_payment_method.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
@@ -19,6 +20,7 @@ class CheckoutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final salesNotifier = ref.watch(salesProvider.notifier);
+    final productNotifier = ref.watch(productProvider.notifier);
     final formKey = GlobalKey<FormState>();
     final paymentMethodController = TextEditingController();
 
@@ -324,8 +326,12 @@ class CheckoutScreen extends ConsumerWidget {
                                 onPressed: () {
                                   Navigator.pop(context);
                                   // Process the sale
-                                  salesNotifier.createSale(
-                                      total, paymentMethod);
+                                  salesNotifier
+                                      .createSale(total, paymentMethod)
+                                      .then((_) {
+                                    // Update product quantities after sale is completed
+                                    productNotifier.getProducts();
+                                  });
 
                                   // Show success and return
                                   ScaffoldMessenger.of(context).showSnackBar(

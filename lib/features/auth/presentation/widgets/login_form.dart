@@ -67,6 +67,7 @@ class LoginForm extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              overlayColor: AppColors.accent,
             ),
             child: isLoading
                 ? const SizedBox(

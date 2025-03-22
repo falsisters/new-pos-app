@@ -1,4 +1,3 @@
-import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_state.dart';
 import 'package:falsisters_pos_android/features/products/data/repository/product_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +14,24 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
     );
   }
 
-  Future<List<Product>> getProducts() async {
-    return await _productRepository.getProducts();
+  Future<ProductState> getProducts() async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        final products = await _productRepository.getProducts();
+
+        return ProductState(
+          products: products,
+        );
+      } catch (e) {
+        return ProductState(
+          products: [],
+          error: e.toString(),
+        );
+      }
+    });
+
+    return state.value!;
   }
 }

@@ -60,11 +60,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: LoginForm(
                     nameController: nameController,
                     accessKeyController: accessKeyController,
-                    isLoading: authState.isLoading,
+                    isLoading: authState.value!.isLoading,
                     errorText: authState.value?.error,
-                    onSubmit: (name, accessKey) {
+                    onSubmit: (name, accessKey) async {
                       if (name.isNotEmpty && accessKey.isNotEmpty) {
-                        ref.read(authProvider.notifier).login(
+                        // The await here ensures we see the loading state
+                        await ref.read(authProvider.notifier).login(
                               name,
                               accessKey,
                             );
