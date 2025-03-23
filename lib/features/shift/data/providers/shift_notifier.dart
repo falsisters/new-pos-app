@@ -1,6 +1,5 @@
 import 'package:falsisters_pos_android/features/shift/data/model/create_shift_request_model.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/current_shift_state.dart';
-import 'package:falsisters_pos_android/features/shift/data/model/employee_model.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/shift_model.dart';
 import 'package:falsisters_pos_android/features/shift/data/repository/shift_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,21 +40,51 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
     return await _shiftRepository.getShifts();
   }
 
-  Future<void> startShift(List<EmployeeModel> employee) async {
+  Future<void> startShift(CreateShiftRequestModel shift) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
-        final employees = CreateShiftRequestModel(
-          employees: employee.map((e) => e.id).toList(),
-        );
-
-        final shift = await _shiftRepository.createShift(employees);
-
+        final newShift = await _shiftRepository.createShift(shift);
         return CurrentShiftState(
-          shift: shift,
+          shift: newShift,
           isShiftActive: true,
         );
+      } catch (e) {
+        return CurrentShiftState(
+          error: e.toString(),
+        );
+      }
+    });
+  }
+
+  Future<void> refreshCurrentShift() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      try {
+        final shifts = await _shiftRepository.getShifts();
+        if (shifts.isEmpty) {
+          return CurrentShiftState(
+            shift: null,
+            isShiftActive: false,
+          );
+        }
+
+        try {
+          final activeShift = shifts.firstWhere(
+            (shift) => shift.endTime == null,
+          );
+
+          return CurrentShiftState(
+            shift: activeShift,
+            isShiftActive: true,
+          );
+        } catch (e) {
+          return CurrentShiftState(
+            shift: null,
+            isShiftActive: false,
+          );
+        }
       } catch (e) {
         return CurrentShiftState(
           error: e.toString(),

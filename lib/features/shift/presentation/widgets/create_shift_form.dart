@@ -23,16 +23,43 @@ class CreateShiftForm extends ConsumerWidget {
             ref.watch(shiftProvider.select((state) => state.isLoading));
         final error = ref.watch(shiftProvider.select((state) => state.error));
 
-        return _ShiftFormContent(
-          employees: employees.when(
-            data: (data) => data,
-            loading: () => [],
-            error: (_, __) => [],
+        return employees.when(
+          data: (employeeData) => _ShiftFormContent(
+            employees: employeeData,
+            isLoading: isLoading,
+            error: error?.toString(),
+            employeeController: employeeController,
+            ref: ref,
           ),
-          isLoading: isLoading,
-          error: error?.toString(),
-          employeeController: employeeController,
-          ref: ref,
+          loading: () => const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text("Loading employees..."),
+              ],
+            ),
+          ),
+          error: (err, stack) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  "Error loading employees: ${err.toString()}",
+                  style: TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => ref.refresh(employeeProvider),
+                  child: Text("Retry"),
+                ),
+              ],
+            ),
+          ),
         );
       }),
     );
@@ -90,12 +117,21 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
 
         // Search input
         TextField(
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Search Employees',
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.search,
               color: AppColors.primary,
             ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primaryLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            labelStyle: const TextStyle(color: AppColors.primary),
           ),
           onChanged: (value) => setState(() => searchQuery = value),
         ),
@@ -105,15 +141,30 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
         // Multi-select dropdown
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: AppColors.primaryLight),
             borderRadius: BorderRadius.circular(8),
+            color: AppColors.white,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryLight.withOpacity(0.3),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text('Selected Employees (${selectedEmployees.length})'),
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  'Selected Employees (${selectedEmployees.length})',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 16,
+                  ),
+                ),
               ),
 
               // Selected employees chips
@@ -125,7 +176,12 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                     runSpacing: 8,
                     children: selectedEmployees
                         .map((employee) => Chip(
-                              label: Text(employee.name),
+                              label: Text(
+                                employee.name,
+                                style: const TextStyle(color: AppColors.white),
+                              ),
+                              backgroundColor: AppColors.secondary,
+                              deleteIconColor: AppColors.white,
                               deleteIcon: const Icon(Icons.close, size: 18),
                               onDeleted: () {
                                 setState(() {
@@ -144,63 +200,115 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
               // Employee list for selection
               Container(
                 constraints: const BoxConstraints(maxHeight: 200),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: filteredEmployees.length,
-                  itemBuilder: (context, index) {
-                    final employee = filteredEmployees[index];
-                    final isSelected = selectedEmployees.contains(employee);
-
-                    return CheckboxListTile(
-                      title: Text(employee.name),
-                      value: isSelected,
-                      onChanged: (selected) {
-                        setState(() {
-                          if (selected == true) {
-                            selectedEmployees.add(employee);
-                          } else {
-                            selectedEmployees.remove(employee);
-                          }
-                          widget.employeeController.text =
-                              selectedEmployees.map((e) => e.id).join(',');
-                        });
-                      },
-                    );
-                  },
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: filteredEmployees.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            'No employees found',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filteredEmployees.length,
+                        separatorBuilder: (context, index) => const Divider(
+                          height: 1,
+                          color: AppColors.primaryLight,
+                        ),
+                        itemBuilder: (context, index) {
+                          final employee = filteredEmployees[index];
+                          final isSelected =
+                              selectedEmployees.contains(employee);
+
+                          return CheckboxListTile(
+                            title: Text(
+                              employee.name,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.black87,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            value: isSelected,
+                            activeColor: AppColors.accent,
+                            checkColor: AppColors.white,
+                            onChanged: (selected) {
+                              setState(() {
+                                if (selected == true) {
+                                  selectedEmployees.add(employee);
+                                } else {
+                                  selectedEmployees.remove(employee);
+                                }
+                                widget.employeeController.text =
+                                    selectedEmployees
+                                        .map((e) => e.id)
+                                        .join(',');
+                              });
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor: AppColors.accent,
+            foregroundColor: AppColors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            elevation: 2,
           ),
           onPressed: widget.isLoading
               ? null
-              : () => {
-                    widget.ref
-                        .read(shiftProvider.notifier)
-                        .createShift(
-                          CreateShiftRequestModel(
-                            employees:
-                                selectedEmployees.map((e) => e.id).toList(),
-                          ),
-                        )
-                        .then((shift) {
-                      // ignore: use_build_context_synchronously
-                      Navigator.of(context).pop(shift);
-                    }),
-                  },
+              : () {
+                  widget.ref
+                      .read(shiftProvider.notifier)
+                      .startShift(
+                        CreateShiftRequestModel(
+                          employees:
+                              selectedEmployees.map((e) => e.id).toList(),
+                        ),
+                      )
+                      .then((_) {
+                    // Force a refresh of the provider to ensure UI is updated
+                    widget.ref.invalidate(shiftProvider);
+                    Navigator.pop(context);
+                  });
+                },
           child: widget.isLoading
               ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Create Shift'),
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                  ),
+                )
+              : const Text(
+                  'Create Shift',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ],
     );
