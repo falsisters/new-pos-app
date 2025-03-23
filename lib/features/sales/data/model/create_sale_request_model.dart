@@ -1,4 +1,4 @@
-// ignore_for_file: invalid_annotation_target
+// ignore_for_file: invalid_annotation_target, constant_identifier_names
 
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
