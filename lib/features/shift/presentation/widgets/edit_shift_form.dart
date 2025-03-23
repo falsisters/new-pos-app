@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CreateShiftForm extends ConsumerWidget {
+class EditShiftForm extends ConsumerWidget {
   final TextEditingController employeeController;
+  final Map<String, dynamic> shiftData;
 
-  const CreateShiftForm({
+  const EditShiftForm({
     super.key,
     required this.employeeController,
+    required this.shiftData,
   });
 
   @override
@@ -24,12 +26,13 @@ class CreateShiftForm extends ConsumerWidget {
         final error = ref.watch(shiftProvider.select((state) => state.error));
 
         return employees.when(
-          data: (employeeData) => _ShiftFormContent(
+          data: (employeeData) => _EditShiftFormContent(
             employees: employeeData,
             isLoading: isLoading,
             error: error?.toString(),
             employeeController: employeeController,
             ref: ref,
+            shiftData: shiftData,
           ),
           loading: () => const Center(
             child: Column(
@@ -66,28 +69,54 @@ class CreateShiftForm extends ConsumerWidget {
   }
 }
 
-class _ShiftFormContent extends StatefulWidget {
+class _EditShiftFormContent extends StatefulWidget {
   final List<EmployeeModel> employees;
   final bool isLoading;
   final String? error;
   final TextEditingController employeeController;
   final WidgetRef ref;
+  final Map<String, dynamic> shiftData;
 
-  const _ShiftFormContent({
+  const _EditShiftFormContent({
     required this.employees,
     required this.isLoading,
     required this.error,
     required this.employeeController,
     required this.ref,
+    required this.shiftData,
   });
 
   @override
-  State<_ShiftFormContent> createState() => _ShiftFormContentState();
+  State<_EditShiftFormContent> createState() => _EditShiftFormContentState();
 }
 
-class _ShiftFormContentState extends State<_ShiftFormContent> {
+class _EditShiftFormContentState extends State<_EditShiftFormContent> {
   List<EmployeeModel> selectedEmployees = [];
   String searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize selected employees based on the shift data
+    _initSelectedEmployees();
+  }
+
+  void _initSelectedEmployees() {
+    if (widget.shiftData['employees'] != null) {
+      final employeeIds = (widget.shiftData['employees'] as List)
+          .map((e) => e.toString())
+          .toList();
+
+      // Find matching employees from the employee list
+      selectedEmployees = widget.employees
+          .where((employee) => employeeIds.contains(employee.id))
+          .toList();
+
+      // Update the employee controller
+      widget.employeeController.text =
+          selectedEmployees.map((e) => e.id).join(',');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -300,49 +329,81 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
         ),
 
         const SizedBox(height: 24),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: AppColors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            elevation: 2,
-          ),
-          onPressed: widget.isLoading
-              ? null
-              : () {
-                  widget.ref
-                      .read(shiftProvider.notifier)
-                      .startShift(
-                        CreateShiftRequestModel(
-                          employees:
-                              selectedEmployees.map((e) => e.id).toList(),
-                        ),
-                      )
-                      .then((_) {
-                    // Force a refresh of the provider to ensure UI is updated
-                    widget.ref.invalidate(shiftProvider);
-                    Navigator.pop(context);
-                  });
-                },
-          child: widget.isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.grey.shade700,
+                  side: BorderSide(color: Colors.grey.shade400),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                )
-              : const Text(
-                  'Create Shift',
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Cancel',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 2,
+                ),
+                onPressed: widget.isLoading
+                    ? null
+                    : () {
+                        final shiftId = widget.shiftData['id'] as String;
+                        widget.ref
+                            .read(shiftProvider.notifier)
+                            .editShift(
+                              shiftId,
+                              CreateShiftRequestModel(
+                                employees:
+                                    selectedEmployees.map((e) => e.id).toList(),
+                              ),
+                            )
+                            .then((_) {
+                          // Force a refresh of the provider to ensure UI is updated
+                          widget.ref.invalidate(shiftProvider);
+                          Navigator.pop(context);
+                        });
+                      },
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(AppColors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Update Shift',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
         ),
       ],
     );

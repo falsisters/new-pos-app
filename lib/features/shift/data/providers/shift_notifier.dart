@@ -125,6 +125,24 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
     });
   }
 
+  Future<void> editShift(String shiftId, CreateShiftRequestModel shift) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        final updatedShift = await _shiftRepository.editShift(shiftId, shift);
+        return CurrentShiftState(
+          shift: updatedShift,
+          isShiftActive: true,
+        );
+      } catch (e) {
+        return CurrentShiftState(
+          error: e.toString(),
+        );
+      }
+    });
+  }
+
   Future<ShiftModel> createShift(CreateShiftRequestModel shift) async {
     return await _shiftRepository.createShift(shift);
   }

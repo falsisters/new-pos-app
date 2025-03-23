@@ -76,4 +76,23 @@ class ShiftRepository {
       }
     }
   }
+
+  Future<ShiftModel> editShift(
+      String shiftId, CreateShiftRequestModel shift) async {
+    try {
+      final requestData = shift.toJson();
+      final response = await _dio.instance.patch('/shift/$shiftId', data: {
+        'employees':
+            requestData['employees'].map((employee) => employee).toList()
+      });
+
+      return ShiftModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }

@@ -2,6 +2,7 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/shift_model.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/create_shift_dialog.dart';
+import 'package:falsisters_pos_android/features/shift/presentation/widgets/edit_shift_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -95,76 +96,154 @@ class _ShiftDetails extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _InfoCard(
-            title: 'Shift Information',
-            content: [
-              _InfoRow(label: 'Shift ID:', value: shift.id),
-              _InfoRow(
-                label: 'Start Time:',
-                value:
-                    '${dateFormat.format(shift.startTime)} at ${timeFormat.format(shift.startTime)}',
+          Stack(
+            children: [
+              _InfoCard(
+                title: 'Shift Information',
+                content: [
+                  _InfoRow(label: 'Shift ID:', value: shift.id),
+                  _InfoRow(
+                    label: 'Start Time:',
+                    value:
+                        '${dateFormat.format(shift.startTime)} at ${timeFormat.format(shift.startTime)}',
+                  ),
+                  if (shift.endTime != null)
+                    _InfoRow(
+                      label: 'End Time:',
+                      value:
+                          '${dateFormat.format(shift.endTime!)} at ${timeFormat.format(shift.endTime!)}',
+                    ),
+                  _InfoRow(
+                    label: 'Duration:',
+                    value: shift.endTime != null
+                        ? _formatDuration(
+                            shift.endTime!.difference(shift.startTime))
+                        : 'Ongoing',
+                  ),
+                ],
               ),
-              if (shift.endTime != null)
-                _InfoRow(
-                  label: 'End Time:',
-                  value:
-                      '${dateFormat.format(shift.endTime!)} at ${timeFormat.format(shift.endTime!)}',
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Consumer(
+                  builder: (context, ref, _) => IconButton(
+                    onPressed: () {
+                      showEditShiftDialog(
+                        context,
+                        ref,
+                        shiftData: {
+                          'id': shift.id,
+                          'employees': shift.employees.map((e) => e.id).toList()
+                        },
+                      );
+                    },
+                    icon:
+                        const Icon(Icons.edit_rounded, color: AppColors.accent),
+                    tooltip: 'Edit shift',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.primaryLight.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
                 ),
-              _InfoRow(
-                label: 'Duration:',
-                value: shift.endTime != null
-                    ? _formatDuration(
-                        shift.endTime!.difference(shift.startTime))
-                    : 'Ongoing',
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Text(
-            'Employees on Shift (${shift.employees.length})',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (shift.employees.isEmpty)
-            const Card(
-              elevation: 2,
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text('No employees assigned to this shift'),
-              ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: shift.employees.length,
-              itemBuilder: (context, index) {
-                final employee = shift.employees[index];
-                return Card(
+          // Cashier section (first employee)
+          if (shift.employees.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cashier',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
                   elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: AppColors.primaryLight,
                       child: Text(
-                        employee.name.isNotEmpty ? employee.name[0] : '?',
+                        shift.employees[0].name.isNotEmpty
+                            ? shift.employees[0].name[0]
+                            : '?',
                         style: const TextStyle(color: AppColors.primary),
                       ),
                     ),
                     title: Text(
-                      employee.name,
+                      shift.employees[0].name,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text('ID: ${employee.id}'),
+                    subtitle: Text('ID: ${shift.employees[0].id}'),
                   ),
-                );
-              },
+                ),
+              ],
+            ),
+
+          // Other employees section
+          const SizedBox(height: 20),
+          if (shift.employees.length > 1)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Employees on Shift (${shift.employees.length - 1})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: shift.employees.length - 1,
+                  itemBuilder: (context, index) {
+                    // Skip the first employee (index + 1 because we're starting from the second employee)
+                    final employee = shift.employees[index + 1];
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.primaryLight,
+                          child: Text(
+                            employee.name.isNotEmpty ? employee.name[0] : '?',
+                            style: const TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                        title: Text(
+                          employee.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text('ID: ${employee.id}'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            )
+          else if (shift.employees.isEmpty)
+            const Card(
+              elevation: 2,
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('No employees assigned to this shift'),
+              ),
             ),
         ],
       ),
