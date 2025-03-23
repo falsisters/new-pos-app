@@ -1,3 +1,4 @@
+import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
@@ -60,6 +61,9 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
 
         // Convert to JSON and send the request
         await _salesRepository.createSale(createSaleRequest);
+
+        // Get products
+        await ref.read(productProvider.notifier).getProducts();
 
         // After successful creation, clear the cart
         return SalesState(cart: CartModel());
