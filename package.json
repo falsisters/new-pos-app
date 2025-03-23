@@ -1,0 +1,8 @@
+{
+  "name": "flutter-web-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bash -c 'git clone https://github.com/flutter/flutter.git --depth 1 -b stable flutter-sdk && export PATH=\"$PATH:$(pwd)/flutter-sdk/bin\" && flutter config --no-analytics && flutter --version && flutter pub get && flutter build web --release'"
+  }
+}

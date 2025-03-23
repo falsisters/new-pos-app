@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "buildCommand": "flutter build web --release",
+  "outputDirectory": "build/web",
+  "framework": null
+}
