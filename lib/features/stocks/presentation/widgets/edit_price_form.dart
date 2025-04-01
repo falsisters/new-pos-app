@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
+import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
@@ -86,9 +87,11 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Prices updated successfully'),
-              backgroundColor: AppColors.secondary,
+              backgroundColor: Colors.green,
             ),
           );
+
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
@@ -192,8 +195,9 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sack ID: ${sack.id}',
+                            parseSackType(widget.product.sackPrice[index].type),
                             style: TextStyle(
+                              fontSize: 20,
                               fontWeight: FontWeight.w500,
                               color: AppColors.primary,
                             ),
@@ -248,9 +252,9 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
                 onPressed: _isLoading
                     ? null
                     : () {
-                        _submitForm();
-                        ref.read(productProvider.notifier).getProducts();
-                        Navigator.pop(context);
+                        _submitForm().then((_) {
+                          ref.read(productProvider.notifier).getProducts();
+                        });
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary,

@@ -1,6 +1,7 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/stocks/presentation/widgets/edit_price_form.dart';
+import 'package:falsisters_pos_android/features/stocks/presentation/widgets/transfer_stock_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -172,23 +173,9 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                             ),
 
                             // Transfer Stock Content
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.swap_vert,
-                                        size: 60,
-                                        color: AppColors.secondary
-                                            .withOpacity(0.7)),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      "TODO: Transfer Stock Form will go here",
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                                  ],
-                                ),
+                            SingleChildScrollView(
+                              child: TransferStockForm(
+                                product: widget.product,
                               ),
                             ),
                           ],
