@@ -2,6 +2,7 @@
 
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
+import 'package:falsisters_pos_android/features/stocks/presentation/screens/product_editing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'product_tile.dart';
@@ -164,7 +165,13 @@ class _StockProductListState extends ConsumerState<StockProductList> {
                       return StockProductTile(
                         title: product.name,
                         onTap: () {
-                          // TODO: Implement stock-specific product action
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductEditingScreen(
+                                  product: product,
+                                ),
+                              ));
                         },
                       );
                     },
