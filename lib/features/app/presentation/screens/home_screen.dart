@@ -7,6 +7,7 @@ import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialo
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/screens/shift_screen.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/create_shift_dialog.dart';
+import 'package:falsisters_pos_android/features/stocks/presentation/screens/stocks_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -113,6 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: SalesScreen(),
                   ),
                 if (drawerIndex == 1) Expanded(child: DeliveryScreen()),
+                if (drawerIndex == 2) Expanded(child: StocksScreen()),
                 if (drawerIndex == 7) Expanded(child: ShiftScreen()),
               ],
             );

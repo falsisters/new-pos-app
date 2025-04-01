@@ -94,9 +94,9 @@ class Sidebar extends ConsumerWidget {
                   child: SidebarItem(
                       title: 'Stocks',
                       icon: Icons.backpack,
-                      isSelected: drawerIndex == 3,
+                      isSelected: drawerIndex == 2,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(3)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(2)}),
                 ),
               const SizedBox(
                 height: 4,
@@ -107,9 +107,9 @@ class Sidebar extends ConsumerWidget {
                   child: SidebarItem(
                       title: 'Kahon',
                       icon: Icons.inventory,
-                      isSelected: drawerIndex == 2,
+                      isSelected: drawerIndex == 3,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(2)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(3)}),
                 ),
               const SizedBox(
                 height: 4,

@@ -9,12 +9,12 @@ class StockRepository {
   final DioClient _dio = DioClient();
 
   Future<Map<String, dynamic>> editSackPrice(
-      EditSackPriceRequestModel product) async {
+      String id, EditSackPriceRequestModel product) async {
     try {
       final productData = jsonEncode(product.toJson());
 
-      final response = await _dio.instance
-          .post('/product/edit-sack-price', data: productData);
+      final response =
+          await _dio.instance.patch('/product/$id', data: productData);
 
       if (response.data == null) {
         return {};
@@ -31,12 +31,12 @@ class StockRepository {
   }
 
   Future<Map<String, dynamic>> editPerKiloPrice(
-      EditPerKiloPriceRequest product) async {
+      String id, EditPerKiloPriceRequest product) async {
     try {
       final productData = jsonEncode(product.toJson());
 
-      final response = await _dio.instance
-          .post('/product/edit-per-kilo-price', data: productData);
+      final response =
+          await _dio.instance.patch('/product/$id', data: productData);
 
       if (response.data == null) {
         return {};
