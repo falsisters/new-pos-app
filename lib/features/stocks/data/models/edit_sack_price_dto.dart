@@ -9,7 +9,7 @@ sealed class EditSackPriceDto with _$EditSackPriceDto {
   const factory EditSackPriceDto({
     required String id,
     required double price,
-    required EditSpecialPriceDto specialPrice,
+    required EditSpecialPriceDto? specialPrice,
   }) = _EditSackPriceDto;
 
   factory EditSackPriceDto.fromJson(Map<String, dynamic> json) =>

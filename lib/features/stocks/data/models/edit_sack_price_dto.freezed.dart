@@ -17,7 +17,7 @@ T _$identity<T>(T value) => value;
 mixin _$EditSackPriceDto {
   String get id;
   double get price;
-  EditSpecialPriceDto get specialPrice;
+  EditSpecialPriceDto? get specialPrice;
 
   /// Create a copy of EditSackPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -57,9 +57,9 @@ abstract mixin class $EditSackPriceDtoCopyWith<$Res> {
           EditSackPriceDto value, $Res Function(EditSackPriceDto) _then) =
       _$EditSackPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double price, EditSpecialPriceDto specialPrice});
+  $Res call({String id, double price, EditSpecialPriceDto? specialPrice});
 
-  $EditSpecialPriceDtoCopyWith<$Res> get specialPrice;
+  $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice;
 }
 
 /// @nodoc
@@ -77,7 +77,7 @@ class _$EditSackPriceDtoCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? price = null,
-    Object? specialPrice = null,
+    Object? specialPrice = freezed,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -88,10 +88,10 @@ class _$EditSackPriceDtoCopyWithImpl<$Res>
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
               as double,
-      specialPrice: null == specialPrice
+      specialPrice: freezed == specialPrice
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable
-              as EditSpecialPriceDto,
+              as EditSpecialPriceDto?,
     ));
   }
 
@@ -99,8 +99,12 @@ class _$EditSackPriceDtoCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $EditSpecialPriceDtoCopyWith<$Res> get specialPrice {
-    return $EditSpecialPriceDtoCopyWith<$Res>(_self.specialPrice, (value) {
+  $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice {
+    if (_self.specialPrice == null) {
+      return null;
+    }
+
+    return $EditSpecialPriceDtoCopyWith<$Res>(_self.specialPrice!, (value) {
       return _then(_self.copyWith(specialPrice: value));
     });
   }
@@ -119,7 +123,7 @@ class _EditSackPriceDto implements EditSackPriceDto {
   @override
   final double price;
   @override
-  final EditSpecialPriceDto specialPrice;
+  final EditSpecialPriceDto? specialPrice;
 
   /// Create a copy of EditSackPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -165,10 +169,10 @@ abstract mixin class _$EditSackPriceDtoCopyWith<$Res>
       __$EditSackPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double price, EditSpecialPriceDto specialPrice});
+  $Res call({String id, double price, EditSpecialPriceDto? specialPrice});
 
   @override
-  $EditSpecialPriceDtoCopyWith<$Res> get specialPrice;
+  $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice;
 }
 
 /// @nodoc
@@ -186,7 +190,7 @@ class __$EditSackPriceDtoCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? price = null,
-    Object? specialPrice = null,
+    Object? specialPrice = freezed,
   }) {
     return _then(_EditSackPriceDto(
       id: null == id
@@ -197,10 +201,10 @@ class __$EditSackPriceDtoCopyWithImpl<$Res>
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
               as double,
-      specialPrice: null == specialPrice
+      specialPrice: freezed == specialPrice
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable
-              as EditSpecialPriceDto,
+              as EditSpecialPriceDto?,
     ));
   }
 
@@ -208,8 +212,12 @@ class __$EditSackPriceDtoCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $EditSpecialPriceDtoCopyWith<$Res> get specialPrice {
-    return $EditSpecialPriceDtoCopyWith<$Res>(_self.specialPrice, (value) {
+  $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice {
+    if (_self.specialPrice == null) {
+      return null;
+    }
+
+    return $EditSpecialPriceDtoCopyWith<$Res>(_self.specialPrice!, (value) {
       return _then(_self.copyWith(specialPrice: value));
     });
   }

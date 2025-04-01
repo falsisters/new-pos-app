@@ -10,8 +10,10 @@ _EditSackPriceDto _$EditSackPriceDtoFromJson(Map<String, dynamic> json) =>
     _EditSackPriceDto(
       id: json['id'] as String,
       price: (json['price'] as num).toDouble(),
-      specialPrice: EditSpecialPriceDto.fromJson(
-          json['specialPrice'] as Map<String, dynamic>),
+      specialPrice: json['specialPrice'] == null
+          ? null
+          : EditSpecialPriceDto.fromJson(
+              json['specialPrice'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$EditSackPriceDtoToJson(_EditSackPriceDto instance) =>

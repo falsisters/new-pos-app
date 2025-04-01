@@ -11,10 +11,15 @@ class StockRepository {
   Future<Map<String, dynamic>> editSackPrice(
       String id, EditSackPriceRequestModel product) async {
     try {
-      final productData = jsonEncode(product.toJson());
+      // Create FormData
+      FormData formData = FormData.fromMap({
+        'sackPrice': jsonEncode(product.sackPrice).toString(),
+      });
+
+      print(formData.fields);
 
       final response =
-          await _dio.instance.patch('/product/$id', data: productData);
+          await _dio.instance.patch('/product/$id', data: formData);
 
       if (response.data == null) {
         return {};
@@ -33,10 +38,15 @@ class StockRepository {
   Future<Map<String, dynamic>> editPerKiloPrice(
       String id, EditPerKiloPriceRequest product) async {
     try {
-      final productData = jsonEncode(product.toJson());
+      // Create FormData
+      FormData formData = FormData.fromMap({
+        'perKiloPrice': jsonEncode(product.perKiloPrice).toString(),
+      });
+
+      print(formData.fields);
 
       final response =
-          await _dio.instance.patch('/product/$id', data: productData);
+          await _dio.instance.patch('/product/$id', data: formData);
 
       if (response.data == null) {
         return {};

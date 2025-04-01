@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
+import 'package:falsisters_pos_android/features/stocks/presentation/widgets/edit_price_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -134,80 +135,67 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
               const SizedBox(height: 24),
 
               // Tab controller section
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: AppColors.primary,
-                      unselectedLabelColor: Colors.grey.shade600,
-                      indicatorColor: AppColors.accent,
-                      indicatorWeight: 3,
-                      tabs: const [
-                        Tab(
-                          icon: Icon(Icons.attach_money),
-                          text: "Edit Price",
-                        ),
-                        Tab(
-                          icon: Icon(Icons.swap_horiz),
-                          text: "Transfer Stock",
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 300, // Adjust height as needed
-                      child: TabBarView(
+              Expanded(
+                child: Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      TabBar(
                         controller: _tabController,
-                        children: [
-                          // Edit Price Content
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.edit_note,
-                                      size: 60,
-                                      color:
-                                          AppColors.primary.withOpacity(0.7)),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "TODO: Edit Price Form will go here",
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        labelColor: AppColors.primary,
+                        unselectedLabelColor: Colors.grey.shade600,
+                        indicatorColor: AppColors.accent,
+                        indicatorWeight: 3,
+                        tabs: const [
+                          Tab(
+                            icon: Icon(Icons.attach_money),
+                            text: "Edit Price",
                           ),
-
-                          // Transfer Stock Content
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.swap_vert,
-                                      size: 60,
-                                      color:
-                                          AppColors.secondary.withOpacity(0.7)),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "TODO: Transfer Stock Form will go here",
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          Tab(
+                            icon: Icon(Icons.swap_horiz),
+                            text: "Transfer Stock",
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            // Edit Price Content
+                            SingleChildScrollView(
+                              child: EditPriceForm(
+                                product: widget.product,
+                              ),
+                            ),
+
+                            // Transfer Stock Content
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.swap_vert,
+                                        size: 60,
+                                        color: AppColors.secondary
+                                            .withOpacity(0.7)),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      "TODO: Transfer Stock Form will go here",
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
