@@ -371,7 +371,8 @@ class CartList extends ConsumerWidget {
     } else if (product.sackPrice != null) {
       total = product.sackPrice!.price * product.sackPrice!.quantity;
     }
-    return total.toStringAsFixed(2);
+    // Truncate the decimal part
+    return total.toInt().toString();
   }
 
   String _calculateTotal(AsyncValue<SalesState> salesState) {
@@ -387,6 +388,6 @@ class CartList extends ConsumerWidget {
         total += product.sackPrice!.price * product.sackPrice!.quantity;
       }
     }
-    return total.toStringAsFixed(2);
+    return total.toInt().toString();
   }
 }
