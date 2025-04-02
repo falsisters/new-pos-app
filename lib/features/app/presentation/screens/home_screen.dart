@@ -1,6 +1,7 @@
 import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
 import 'package:falsisters_pos_android/features/app/presentation/widgets/sidebar.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/delivery_screen.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/screens/kahon_screen.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/screens/sales_screen.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/current_shift_state.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
@@ -115,6 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 if (drawerIndex == 1) Expanded(child: DeliveryScreen()),
                 if (drawerIndex == 2) Expanded(child: StocksScreen()),
+                if (drawerIndex == 3) Expanded(child: KahonScreen()),
                 if (drawerIndex == 7) Expanded(child: ShiftScreen()),
               ],
             );

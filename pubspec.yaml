@@ -44,6 +44,8 @@ dependencies:
   top_snackbar_flutter: ^3.2.0
   intl: ^0.20.2
   board_datetime_picker: ^2.5.0
+  math_expressions: ^2.7.0
+  syncfusion_flutter_datagrid: ^29.1.35
 
 dev_dependencies:
   flutter_test:

@@ -6,7 +6,7 @@ import 'package:board_datetime_picker/board_datetime_picker.dart';
 import 'package:intl/intl.dart';
 
 class ConfirmDeliveryScreen extends ConsumerStatefulWidget {
-  const ConfirmDeliveryScreen({Key? key}) : super(key: key);
+  const ConfirmDeliveryScreen({super.key});
 
   @override
   ConsumerState<ConfirmDeliveryScreen> createState() =>
