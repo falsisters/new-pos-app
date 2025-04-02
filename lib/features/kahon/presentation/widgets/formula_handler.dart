@@ -62,12 +62,8 @@ class FormulaHandler {
       ContextModel cm = ContextModel();
       double result = exp.evaluate(EvaluationType.REAL, cm);
 
-      // Format the result (remove decimal if it's a whole number)
-      if (result == result.roundToDouble()) {
-        return result.toInt().toString();
-      } else {
-        return result.toStringAsFixed(2);
-      }
+      // Round down the result to a whole number
+      return result.floor().toString();
     } catch (e) {
       print('Formula evaluation error: $e');
       return '#ERROR';
@@ -99,22 +95,23 @@ class FormulaHandler {
         List<double> values = _getValuesInRange(
             startCell.columnIndex, startCell.rowIndex, endCell.rowIndex);
 
-        // Apply the function to the values
+        // Apply the function to the values and round down
         switch (function) {
           case 'SUM':
-            return values.fold(0.0, (a, b) => a + b).toString();
+            return values.fold(0.0, (a, b) => a + b).floor().toString();
           case 'AVG':
             if (values.isEmpty) return '0';
             return (values.fold(0.0, (a, b) => a + b) / values.length)
+                .floor()
                 .toString();
           case 'COUNT':
             return values.length.toString();
           case 'MAX':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a > b ? a : b).toString();
+            return values.reduce((a, b) => a > b ? a : b).floor().toString();
           case 'MIN':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a < b ? a : b).toString();
+            return values.reduce((a, b) => a < b ? a : b).floor().toString();
           default:
             return '0';
         }
@@ -197,7 +194,7 @@ class FormulaHandler {
           return '0';
         }
 
-        return value.toString();
+        return value.floor().toString();
       } catch (e) {
         print('Error processing cell reference: $e');
         return '0';
