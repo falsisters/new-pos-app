@@ -113,4 +113,18 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
       }
     });
   }
+
+  Future<void> createCells(List<Map<String, dynamic>> cells) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _kahonRepository.createCells(cells);
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        return SheetState(sheet: updatedSheet);
+      } catch (e) {
+        return SheetState(error: e.toString());
+      }
+    });
+  }
 }

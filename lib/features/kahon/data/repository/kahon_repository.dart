@@ -130,4 +130,28 @@ class KahonRepository {
       }
     }
   }
+
+  Future<List<CellModel>> createCells(List<Map<String, dynamic>> cells) async {
+    try {
+      final response = await _dio.instance.post('/sheet/cells', data: {
+        'cells': cells
+            .map((cell) => {
+                  'rowId': cell['rowId'],
+                  'columnIndex': cell['columnIndex'],
+                  'value': cell['value'],
+                  'formula': cell['formula'],
+                })
+            .toList(),
+      });
+      return (response.data as List)
+          .map((cell) => CellModel.fromJson(cell))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }
