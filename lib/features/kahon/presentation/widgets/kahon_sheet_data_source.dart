@@ -183,6 +183,9 @@ class KahonSheetDataSource extends DataGridSource {
     final rowCellData = row.getCells().first.value as RowCellData;
     final rowIndex = rowCellData.rowIndex;
 
+    // Extract column index from column name
+    final columnIndex = int.parse(column.columnName.replaceAll('column', ''));
+
     // Find the cell model
     final cell = row
         .getCells()
@@ -211,47 +214,257 @@ class KahonSheetDataSource extends DataGridSource {
     // Create edit widget with keyboard listener
     return Container(
       padding: const EdgeInsets.all(4),
-      child: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (event) {
-          if (event is RawKeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.enter) {
-            // Extract column index from column name
-            int columnIndex =
-                int.parse(column.columnName.replaceAll('column', ''));
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              RawKeyboardListener(
+                focusNode: FocusNode(),
+                onKey: (event) {
+                  if (event is RawKeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.enter) {
+                    cellSubmitCallback(rowIndex, columnIndex, controller.text);
+                    submitCell();
+                  }
+                },
+                child: TextField(
+                  autofocus: true,
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide:
+                          BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 24, // Extra padding to avoid text under icon
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    cellSubmitCallback(rowIndex, columnIndex, value);
+                    submitCell();
+                  },
+                ),
+              ),
+              // Popup menu button as overlay
+              Positioned(
+                right: 2,
+                child: PopupMenuButton<String>(
+                  icon:
+                      Icon(Icons.more_vert, color: AppColors.primary, size: 18),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Formula options',
+                  splashRadius: 20,
+                  onSelected: (value) {
+                    String formula = '';
 
-            // Call the callback to update the cell
-            cellSubmitCallback(rowIndex, columnIndex, controller.text);
+                    switch (value) {
+                      case 'mult_left':
+                        if (columnIndex >= 2) {
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex * ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
+                        }
+                        break;
+                      case 'add_left':
+                        if (columnIndex >= 2) {
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex + ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
+                        }
+                        break;
+                      case 'add_vert':
+                        if (rowIndex >= 2) {
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} + ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
+                        }
+                        break;
+                      case 'sub_vert':
+                        if (rowIndex >= 2) {
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} - ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
+                        }
+                        break;
+                      case 'mult_vert':
+                        if (rowIndex >= 2) {
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} * ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
+                        }
+                        break;
+                      case 'mult_all':
+                        if (columnIndex >= 2) {
+                          // Apply multiply formula to this cell
+                          formula =
+                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex * ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
+                          controller.text = formula;
 
-            // Submit the cell value to close the edit widget
-            submitCell();
-          }
-        },
-        child: TextField(
-          autofocus: true,
-          controller: controller,
-          textAlign: TextAlign.center,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5)),
-            ),
-            contentPadding: const EdgeInsets.all(8),
+                          // Apply to current cell first
+                          cellSubmitCallback(rowIndex, columnIndex, formula);
+
+                          // Schedule the updates to other cells to happen after this edit is completed
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            // Find all rows with valid numerical values to apply formula
+                            for (var row in sortedRows) {
+                              if (row.rowIndex == rowIndex) {
+                                continue; // Skip current row
+                              }
+
+                              // Check if cell already exists in this column for this row
+                              final existingCell = row.cells
+                                  .where((c) => c.columnIndex == columnIndex)
+                                  .firstOrNull;
+
+                              // Skip if the cell already has a value or is a calculated cell
+                              if (existingCell != null &&
+                                  (existingCell.value != null &&
+                                          existingCell.value!.isNotEmpty ||
+                                      existingCell.isCalculated)) {
+                                continue; // Skip this row as it already has a value or formula
+                              }
+
+                              // Check if source cells have valid numerical values
+                              final leftCell1 = row.cells
+                                  .where(
+                                      (c) => c.columnIndex == columnIndex - 2)
+                                  .firstOrNull;
+                              final leftCell2 = row.cells
+                                  .where(
+                                      (c) => c.columnIndex == columnIndex - 1)
+                                  .firstOrNull;
+
+                              if (leftCell1 != null && leftCell2 != null) {
+                                try {
+                                  // Verify both source cells have numerical values
+                                  double.parse(leftCell1.value ?? '');
+                                  double.parse(leftCell2.value ?? '');
+
+                                  // Create formula for this row
+                                  String targetFormula =
+                                      '=${_getColumnNameForIndex(columnIndex - 2)}${row.rowIndex} * ${_getColumnNameForIndex(columnIndex - 1)}${row.rowIndex}';
+
+                                  // Apply the formula to this cell
+                                  cellSubmitCallback(
+                                      row.rowIndex, columnIndex, targetFormula);
+                                } catch (_) {
+                                  // Skip if source cells don't have valid numerical values
+                                }
+                              }
+                            }
+
+                            // Refresh data source to show updated values
+                            notifyListeners();
+                          });
+
+                          // Submit current cell edit
+                          submitCell();
+                        }
+                        break;
+                      case 'add_all_vert':
+                        String formula = '=';
+                        bool hasValues = false;
+
+                        // Go through all rows in the sheet
+                        for (var row in sortedRows) {
+                          // Skip current row
+                          if (row.rowIndex == rowIndex) {
+                            continue;
+                          }
+
+                          // Find cell in the same column
+                          final cellInColumn = row.cells
+                              .where((c) => c.columnIndex == columnIndex)
+                              .firstOrNull;
+
+                          if (cellInColumn != null &&
+                              cellInColumn.value != null &&
+                              cellInColumn.value!.isNotEmpty) {
+                            try {
+                              // Try parsing to verify it's a valid number
+                              double.parse(cellInColumn.value!);
+
+                              // Add to formula
+                              if (hasValues) {
+                                formula += ' + ';
+                              }
+                              formula +=
+                                  '${_getColumnNameForIndex(columnIndex)}${row.rowIndex}';
+                              hasValues = true;
+                            } catch (_) {
+                              // Skip non-numeric values
+                            }
+                          }
+                        }
+
+                        if (hasValues) {
+                          controller.text = formula;
+                          cellSubmitCallback(rowIndex, columnIndex, formula);
+                          submitCell();
+                        }
+                        break;
+                    }
+
+                    if (formula.isNotEmpty) {
+                      controller.text = formula;
+                      cellSubmitCallback(rowIndex, columnIndex, formula);
+                      submitCell();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'mult_left',
+                      child: Text('Multiply Left Cells'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'add_left',
+                      child: Text('Add Left Cells'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'add_vert',
+                      child: Text('Add Vertical Cells'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'sub_vert',
+                      child: Text('Subtract Vertical Cells'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'mult_vert',
+                      child: Text('Multiply Vertical Cells'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'mult_all',
+                      child: Text('Apply Multiply to All Rows'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'add_all_vert',
+                      child: Text('Add All Vertical Cells'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          onSubmitted: (value) {
-            // Extract column index from column name
-            int columnIndex =
-                int.parse(column.columnName.replaceAll('column', ''));
-
-            // Call the callback to update the cell
-            cellSubmitCallback(rowIndex, columnIndex, value);
-
-            // Submit the cell value to close the edit widget
-            submitCell();
-          },
-        ),
+        ],
       ),
     );
+  }
+
+// Helper method to convert column index to column name (A, B, C, etc.)
+  String _getColumnNameForIndex(int index) {
+    // Custom labels for specific columns
+    if (index == 0) return "Quantity";
+    if (index == 1) return "Name";
+
+    // For other columns, use Excel-like column letters (C, D, E, etc.)
+    String columnLetter = '';
+    int adjustedIndex =
+        index - 2; // Adjust index to start from 0 after custom columns
+    while (adjustedIndex >= 0) {
+      columnLetter =
+          String.fromCharCode((adjustedIndex % 26) + 65) + columnLetter;
+      adjustedIndex = (adjustedIndex ~/ 26) - 1;
+    }
+    return columnLetter;
   }
 
   // Get sorted rows for use in buildEditWidget

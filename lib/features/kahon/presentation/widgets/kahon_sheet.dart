@@ -182,7 +182,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
       String changeKey = '${rowIndex}_${columnIndex}';
 
       // Store the change in pending changes
-      if (existingCell != null) {
+      // Make sure we're only using isUpdate=true for cells that have a real DB ID
+      // (not temporary IDs that start with 'temp_')
+      if (existingCell != null && !existingCell.id.startsWith('temp_')) {
         _pendingChanges[changeKey] = CellChange(
           isUpdate: true,
           cellId: existingCell.id,
@@ -198,6 +200,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           formula: formula,
         );
       }
+
+      // Rest of the method remains the same...
 
       // Update UI immediately to show the change
       setState(() {

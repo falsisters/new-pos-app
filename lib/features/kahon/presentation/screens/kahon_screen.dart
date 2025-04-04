@@ -1,3 +1,4 @@
+import 'package:board_datetime_picker/board_datetime_picker.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,28 +25,6 @@ class _KahonScreenState extends ConsumerState<KahonScreen> {
     });
   }
 
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2025),
-      initialDateRange: _selectedStartDate != null && _selectedEndDate != null
-          ? DateTimeRange(start: _selectedStartDate!, end: _selectedEndDate!)
-          : null,
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedStartDate = picked.start;
-        _selectedEndDate = picked.end;
-      });
-      // Fetch sheet data for selected date range
-      ref
-          .read(sheetNotifierProvider.notifier)
-          .getSheetByDate(_selectedStartDate, _selectedEndDate);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final sheetState = ref.watch(sheetNotifierProvider);
@@ -58,7 +37,23 @@ class _KahonScreenState extends ConsumerState<KahonScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),
-            onPressed: () => _selectDateRange(context),
+            onPressed: () async {
+              final result = await showBoardDateTimeMultiPicker(
+                context: context,
+                pickerType: DateTimePickerType.datetime,
+              );
+
+              if (result != null) {
+                setState(() {
+                  _selectedStartDate = result.start;
+                  _selectedEndDate = result.end;
+                });
+                // Fetch sheet data for selected date range
+                ref
+                    .read(sheetNotifierProvider.notifier)
+                    .getSheetByDate(_selectedStartDate, _selectedEndDate);
+              }
+            },
             tooltip: 'Select Date Range',
           ),
         ],
