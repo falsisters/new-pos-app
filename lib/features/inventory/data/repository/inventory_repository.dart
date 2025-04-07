@@ -1,0 +1,163 @@
+import 'package:dio/dio.dart';
+import 'package:falsisters_pos_android/core/handlers/dio_client.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_cell_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_row_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
+
+class InventoryRepository {
+  final DioClient _dio = DioClient();
+
+  Future<InventorySheetModel> getInventoryByDate(
+      DateTime? startDate, DateTime? endDate) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) {
+        queryParams['startDate'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        queryParams['endDate'] = endDate.toIso8601String();
+      }
+
+      final response = await _dio.instance.get('/inventory/date',
+          queryParameters: queryParams.isNotEmpty ? queryParams : null);
+
+      return InventorySheetModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<InventoryRowModel> createInventoryRow(
+      String inventoryId, int rowIndex) async {
+    try {
+      final response =
+          await _dio.instance.post('/inventory/calculation-row', data: {
+        'inventoryId': inventoryId,
+        'rowIndex': rowIndex,
+      });
+
+      return InventoryRowModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> deleteRow(String rowId) async {
+    try {
+      await _dio.instance.delete('/inventory/row/$rowId');
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<InventoryCellModel> createCell(
+      String rowId, int columnIndex, String value, String? formula) async {
+    try {
+      final response = await _dio.instance.post('/inventory/cell', data: {
+        'rowId': rowId,
+        'columnIndex': columnIndex,
+        'value': value,
+        'formula': formula,
+      });
+      return InventoryCellModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<InventoryCellModel> updateCell(
+      String cellId, String value, String? formula) async {
+    try {
+      final response =
+          await _dio.instance.patch('/inventory/cell/$cellId', data: {
+        'value': value,
+        'formula': formula,
+      });
+
+      return InventoryCellModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> deleteCell(String cellId) async {
+    try {
+      await _dio.instance.delete('/inventory/cell/$cellId');
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<List<InventoryCellModel>> updateCells(
+      List<Map<String, dynamic>> cells) async {
+    try {
+      final response = await _dio.instance.patch('/inventory/cells', data: {
+        'cells': cells
+            .map((cell) => {
+                  'id': cell['id'],
+                  'value': cell['value'],
+                  'formula': cell['formula'],
+                })
+            .toList()
+      });
+      return (response.data as List)
+          .map((cell) => InventoryCellModel.fromJson(cell))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<List<InventoryCellModel>> createCells(
+      List<Map<String, dynamic>> cells) async {
+    try {
+      final response = await _dio.instance.post('/inventory/cells', data: {
+        'cells': cells
+            .map((cell) => {
+                  'rowId': cell['rowId'],
+                  'columnIndex': cell['columnIndex'],
+                  'value': cell['value'],
+                  'formula': cell['formula'],
+                })
+            .toList()
+      });
+      return (response.data as List)
+          .map((cell) => InventoryCellModel.fromJson(cell))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+}

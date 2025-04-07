@@ -1,4 +1,6 @@
 import 'package:board_datetime_picker/board_datetime_picker.dart';
+import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,26 +14,38 @@ class KahonScreen extends ConsumerStatefulWidget {
   ConsumerState<KahonScreen> createState() => _KahonScreenState();
 }
 
-class _KahonScreenState extends ConsumerState<KahonScreen> {
+class _KahonScreenState extends ConsumerState<KahonScreen>
+    with SingleTickerProviderStateMixin {
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    // Load initial sheet data
+    _tabController = TabController(length: 2, vsync: this);
+
+    // Load initial sheet data for both tabs
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(sheetNotifierProvider.notifier).getSheetByDate(null, null);
+      ref.read(inventoryProvider.notifier).getInventoryByDate(null, null);
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final sheetState = ref.watch(sheetNotifierProvider);
+    final inventoryState = ref.watch(inventoryProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kahon Sheet'),
+        title: const Text('Kahon Management'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -48,15 +62,30 @@ class _KahonScreenState extends ConsumerState<KahonScreen> {
                   _selectedStartDate = result.start;
                   _selectedEndDate = result.end;
                 });
-                // Fetch sheet data for selected date range
+                // Fetch sheet data for selected date range for both tabs
                 ref
                     .read(sheetNotifierProvider.notifier)
                     .getSheetByDate(_selectedStartDate, _selectedEndDate);
+
+                ref.read(inventoryProvider.notifier).getInventoryByDate(
+                      _selectedStartDate,
+                      _selectedEndDate,
+                    );
               }
             },
             tooltip: 'Select Date Range',
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          tabs: const [
+            Tab(text: 'KAHON SHEET', icon: Icon(Icons.table_chart)),
+            Tab(text: 'INVENTORY', icon: Icon(Icons.inventory)),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -82,42 +111,84 @@ class _KahonScreenState extends ConsumerState<KahonScreen> {
                     ref
                         .read(sheetNotifierProvider.notifier)
                         .getSheetByDate(null, null);
+                    ref
+                        .read(inventoryProvider.notifier)
+                        .getInventoryByDate(null, null);
                   },
                 ),
               ),
 
-            // Sheet data
+            // Sheet data with tabs
             Expanded(
-              child: sheetState.when(
-                data: (data) {
-                  if (data.error != null) {
-                    return Center(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Kahon Sheet Tab
+                  sheetState.when(
+                    data: (data) {
+                      if (data.error != null) {
+                        return Center(
+                          child: Text(
+                            'Error: ${data.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        );
+                      }
+
+                      if (data.sheet == null) {
+                        return const Center(
+                          child: Text('No sheet data available'),
+                        );
+                      }
+
+                      return KahonSheet(
+                        sheet: data.sheet!,
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (error, stackTrace) => Center(
                       child: Text(
-                        'Error: ${data.error}',
+                        'Error: $error',
                         style: const TextStyle(color: Colors.red),
                       ),
-                    );
-                  }
-
-                  if (data.sheet == null) {
-                    return const Center(
-                      child: Text('No sheet data available'),
-                    );
-                  }
-
-                  return KahonSheet(
-                    sheet: data.sheet!,
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stackTrace) => Center(
-                  child: Text(
-                    'Error: $error',
-                    style: const TextStyle(color: Colors.red),
+                    ),
                   ),
-                ),
+
+                  // Inventory Sheet Tab
+                  inventoryState.when(
+                    data: (data) {
+                      if (data.error != null) {
+                        return Center(
+                          child: Text(
+                            'Error: ${data.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        );
+                      }
+
+                      if (data.sheet == null) {
+                        return const Center(
+                          child: Text('No inventory data available'),
+                        );
+                      }
+
+                      return InventorySheet(
+                        sheet: data.sheet!,
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (error, stackTrace) => Center(
+                      child: Text(
+                        'Error: $error',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

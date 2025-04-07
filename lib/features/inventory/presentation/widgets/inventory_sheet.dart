@@ -1,32 +1,32 @@
-import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_cell_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_row_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_formula_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_data_source.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet_data_source.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
-import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
-import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
-import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 
-class KahonSheet extends ConsumerStatefulWidget {
-  final SheetModel sheet;
-  const KahonSheet({
+class InventorySheet extends ConsumerStatefulWidget {
+  final InventorySheetModel sheet;
+  const InventorySheet({
     super.key,
     required this.sheet,
   });
 
   @override
-  ConsumerState<KahonSheet> createState() => _KahonSheetState();
+  ConsumerState<InventorySheet> createState() => _InventorySheetState();
 }
 
-class _KahonSheetState extends ConsumerState<KahonSheet> {
-  late KahonSheetDataSource _dataSource;
+class _InventorySheetState extends ConsumerState<InventorySheet> {
+  late InventorySheetDataSource _dataSource;
   final DataGridController _dataGridController = DataGridController();
   bool _isEditable = false;
-  late FormulaHandler _formulaHandler;
+  late InventoryFormulaHandler _formulaHandler;
 
   // Store pending cell changes
   final Map<String, CellChange> _pendingChanges = {};
@@ -34,14 +34,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   @override
   void initState() {
     super.initState();
-    _formulaHandler = FormulaHandler(sheet: widget.sheet);
+    _formulaHandler = InventoryFormulaHandler(sheet: widget.sheet);
     _initializeDataSource();
   }
 
   void _initializeDataSource() {
-    _dataSource = KahonSheetDataSource(
+    _dataSource = InventorySheetDataSource(
       sheet: widget.sheet,
-      kahonItems: const [], // Add an empty list for kahonItems or provide actual items
       isEditable: _isEditable,
       cellSubmitCallback: _handleCellSubmit,
       addCalculationRowCallback: _addCalculationRow,
@@ -107,17 +106,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
       // Process updates in bulk if any
       if (cellsToUpdate.isNotEmpty) {
         print("Updating ${cellsToUpdate.length} cells");
-        await ref
-            .read(sheetNotifierProvider.notifier)
-            .updateCells(cellsToUpdate);
+        await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
       }
 
       // Process creates in bulk if any
       if (cellsToCreate.isNotEmpty) {
         print("Creating ${cellsToCreate.length} cells");
-        await ref
-            .read(sheetNotifierProvider.notifier)
-            .createCells(cellsToCreate);
+        await ref.read(inventoryProvider.notifier).createCells(cellsToCreate);
       }
 
       // Clear pending changes only after successful update
@@ -136,10 +131,10 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   }
 
   @override
-  void didUpdateWidget(KahonSheet oldWidget) {
+  void didUpdateWidget(InventorySheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sheet != widget.sheet) {
-      _formulaHandler = FormulaHandler(sheet: widget.sheet);
+      _formulaHandler = InventoryFormulaHandler(sheet: widget.sheet);
       _initializeDataSource();
     }
   }
@@ -151,11 +146,11 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
         "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value");
     try {
       // Use a local variable to store the current sheet state
-      SheetModel currentSheet = widget.sheet;
+      InventorySheetModel currentSheet = widget.sheet;
 
       // If we already have a modified sheet in progress, use that instead
-      if (_dataSource.sheet != widget.sheet) {
-        currentSheet = _dataSource.sheet;
+      if (_dataSource.currentSheet != widget.sheet) {
+        currentSheet = _dataSource.currentSheet;
       }
 
       // Find the corresponding row
@@ -213,27 +208,27 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
       // Update UI immediately to show the change
       setState(() {
         // Create a mutable copy of the sheet for UI updates, starting from our current sheet
-        SheetModel updatedSheet = SheetModel(
+        InventorySheetModel updatedSheet = InventorySheetModel(
           id: currentSheet.id,
           name: currentSheet.name,
           columns: currentSheet.columns,
-          kahonId: currentSheet.kahonId,
+          inventoryId: currentSheet.inventoryId,
           createdAt: currentSheet.createdAt,
           updatedAt: currentSheet.updatedAt,
           rows: currentSheet.rows.map((row) {
             // If this is the row we're modifying
             if (row.id == rowModel.id) {
               // Create a mutable copy of cells
-              List<CellModel> updatedCells = [...row.cells];
+              List<InventoryCellModel> updatedCells = [...row.cells];
 
               if (existingCell != null) {
                 // Update existing cell
                 int cellIndex =
                     updatedCells.indexWhere((c) => c.id == existingCell.id);
                 if (cellIndex != -1) {
-                  updatedCells[cellIndex] = CellModel(
+                  updatedCells[cellIndex] = InventoryCellModel(
                     id: existingCell.id,
-                    rowId: existingCell.rowId,
+                    inventoryRowId: existingCell.inventoryRowId,
                     columnIndex: existingCell.columnIndex,
                     value: displayValue,
                     formula: formula,
@@ -244,9 +239,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 }
               } else {
                 // Add new cell
-                updatedCells.add(CellModel(
+                updatedCells.add(InventoryCellModel(
                   id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-                  rowId: rowModel.id,
+                  inventoryRowId: rowModel.id,
                   columnIndex: columnIndex,
                   value: displayValue,
                   formula: formula,
@@ -257,9 +252,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
               }
 
               // Return updated row with new cells list
-              return RowModel(
+              return InventoryRowModel(
                 id: row.id,
-                sheetId: row.sheetId,
+                inventorySheetId: row.inventorySheetId,
                 rowIndex: row.rowIndex,
                 isItemRow: row.isItemRow,
                 itemId: row.itemId,
@@ -272,13 +267,12 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           }).toList(),
         );
 
-        // Create a new FormulaHandler with updated sheet
-        _formulaHandler = FormulaHandler(sheet: updatedSheet);
+        // Create a new InventoryFormulaHandler with updated sheet
+        _formulaHandler = InventoryFormulaHandler(sheet: updatedSheet);
 
         // Re-initialize data source with updated sheet
-        _dataSource = KahonSheetDataSource(
+        _dataSource = InventorySheetDataSource(
           sheet: updatedSheet,
-          kahonItems: const [],
           isEditable: _isEditable,
           cellSubmitCallback: _handleCellSubmit,
           addCalculationRowCallback: _addCalculationRow,
@@ -288,6 +282,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
       });
     } catch (e) {
       print('Error handling cell submission: $e');
+      // Show error to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update cell: ${e.toString()}')),
@@ -324,7 +319,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     }
 
     if (cellsToUpdate.isNotEmpty) {
-      await ref.read(sheetNotifierProvider.notifier).updateCells(cellsToUpdate);
+      await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
     }
   }
 
@@ -332,8 +327,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   Future<void> _addCalculationRow(int afterRowIndex) async {
     try {
       await ref
-          .read(sheetNotifierProvider.notifier)
-          .createCalculationRow(widget.sheet.id, afterRowIndex + 1);
+          .read(inventoryProvider.notifier)
+          .createInventoryRow(widget.sheet.id, afterRowIndex + 1);
     } catch (e) {
       print('Error adding calculation row: $e');
       if (mounted) {
@@ -348,7 +343,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   // Delete row
   Future<void> _deleteRow(String rowId) async {
     try {
-      await ref.read(sheetNotifierProvider.notifier).deleteRow(rowId);
+      await ref.read(inventoryProvider.notifier).deleteRow(rowId);
     } catch (e) {
       print('Error deleting row: $e');
       if (mounted) {
@@ -373,8 +368,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 Text('Cell References:',
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 Text('• A3 - References cell in column A, row 3'),
-                Text('• Quantity5 - References cell in Quantity column, row 5'),
+                Text('• SKU5 - References cell in SKU column, row 5'),
                 Text('• Name2 - References cell in Name column, row 2'),
+                Text('• Quantity3 - References cell in Quantity column, row 3'),
                 SizedBox(height: 12),
                 Text('Range Functions:',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -393,7 +389,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 Text('• A1 ^ 2 - Exponentiation'),
                 SizedBox(height: 12),
                 Text('Example:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('=SUM(Quantity1:Quantity5) + A6 * 2'),
+                Text('=SUM(Quantity1:Quantity5) + SKU6 * 2'),
               ],
             ),
           ),
@@ -446,8 +442,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                       tooltip: 'Refresh Data',
                       onPressed: () {
                         ref
-                            .read(sheetNotifierProvider.notifier)
-                            .getSheetByDate(null, null);
+                            .read(inventoryProvider.notifier)
+                            .getInventoryByDate(null, null);
                       },
                     ),
                     IconButton(
@@ -639,17 +635,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
 
   // Convert column index to Excel-like column letters (A, B, C, ... Z, AA, AB, etc.)
   String _getColumnLetter(int index) {
-    // Custom labels for specific columns
-    if (index == 0) return "Quantity";
-    if (index == 1) return "Name";
-    // For other columns, use Excel-like column letters (C, D, E, etc.)
+    // Use Excel-like column letters (A, B, C, etc.)
     String columnLetter = '';
-    int adjustedIndex =
-        index - 2; // Adjust index to start from 0 after our custom columns
-    while (adjustedIndex >= 0) {
-      columnLetter =
-          String.fromCharCode((adjustedIndex % 26) + 65) + columnLetter;
-      adjustedIndex = (adjustedIndex ~/ 26) - 1;
+    int tempIndex = index;
+
+    while (tempIndex >= 0) {
+      columnLetter = String.fromCharCode((tempIndex % 26) + 65) + columnLetter;
+      tempIndex = (tempIndex ~/ 26) - 1;
     }
     return columnLetter;
   }
