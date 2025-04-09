@@ -128,7 +128,7 @@ class KahonSheetDataSource extends DataGridSource {
                     itemBuilder: (context) => [
                       const PopupMenuItem<String>(
                         value: 'add_calculation',
-                        child: Text('Add Calculation Row After'),
+                        child: Text('Add Calculation Row(s) After'),
                       ),
                       const PopupMenuItem<String>(
                         value: 'delete',
@@ -411,33 +411,79 @@ class KahonSheetDataSource extends DataGridSource {
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'mult_left',
-                      child: Text('Multiply Left Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.close, color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Multiply Left Cells'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'add_left',
-                      child: Text('Add Left Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.add, color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Add Left Cells'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'add_vert',
-                      child: Text('Add Vertical Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.arrow_upward,
+                              color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Add Vertical Cells'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'sub_vert',
-                      child: Text('Subtract Vertical Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.remove,
+                              color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Subtract Vertical Cells'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'mult_vert',
-                      child: Text('Multiply Vertical Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.toll, color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Multiply Vertical Cells'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'mult_all',
-                      child: Text('Apply Multiply to All Rows'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.all_inclusive,
+                              color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Apply Multiply to All Rows'),
+                        ],
+                      ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'add_all_vert',
-                      child: Text('Add All Vertical Cells'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.functions,
+                              color: AppColors.primary, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Add All Vertical Cells'),
+                        ],
+                      ),
                     ),
                   ],
                 ),

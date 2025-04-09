@@ -50,6 +50,26 @@ class InventoryRepository {
     }
   }
 
+  Future<List<InventoryRowModel>> createInventoryRows(
+      String sheetId, List<int> rowIndexes) async {
+    try {
+      final response =
+          await _dio.instance.post('/inventory/calculation-rows', data: {
+        'inventoryId': sheetId,
+        'rowIndexes': rowIndexes,
+      });
+      return (response.data as List)
+          .map((row) => InventoryRowModel.fromJson(row))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
   Future<void> deleteRow(String rowId) async {
     try {
       await _dio.instance.delete('/inventory/row/$rowId');

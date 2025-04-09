@@ -18,6 +18,7 @@ mixin _$InventoryCellModel {
   String get id;
   int get columnIndex;
   String get inventoryRowId;
+  String? get color;
   String? get value;
   String? get formula;
   bool get isCalculated;
@@ -45,6 +46,7 @@ mixin _$InventoryCellModel {
                 other.columnIndex == columnIndex) &&
             (identical(other.inventoryRowId, inventoryRowId) ||
                 other.inventoryRowId == inventoryRowId) &&
+            (identical(other.color, color) || other.color == color) &&
             (identical(other.value, value) || other.value == value) &&
             (identical(other.formula, formula) || other.formula == formula) &&
             (identical(other.isCalculated, isCalculated) ||
@@ -58,11 +60,11 @@ mixin _$InventoryCellModel {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, columnIndex, inventoryRowId,
-      value, formula, isCalculated, createdAt, updatedAt);
+      color, value, formula, isCalculated, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'InventoryCellModel(id: $id, columnIndex: $columnIndex, inventoryRowId: $inventoryRowId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'InventoryCellModel(id: $id, columnIndex: $columnIndex, inventoryRowId: $inventoryRowId, color: $color, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -76,6 +78,7 @@ abstract mixin class $InventoryCellModelCopyWith<$Res> {
       {String id,
       int columnIndex,
       String inventoryRowId,
+      String? color,
       String? value,
       String? formula,
       bool isCalculated,
@@ -99,6 +102,7 @@ class _$InventoryCellModelCopyWithImpl<$Res>
     Object? id = null,
     Object? columnIndex = null,
     Object? inventoryRowId = null,
+    Object? color = freezed,
     Object? value = freezed,
     Object? formula = freezed,
     Object? isCalculated = null,
@@ -118,6 +122,10 @@ class _$InventoryCellModelCopyWithImpl<$Res>
           ? _self.inventoryRowId
           : inventoryRowId // ignore: cast_nullable_to_non_nullable
               as String,
+      color: freezed == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String?,
       value: freezed == value
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
@@ -149,6 +157,7 @@ class _InventoryCellModel implements InventoryCellModel {
       {required this.id,
       required this.columnIndex,
       required this.inventoryRowId,
+      this.color,
       this.value,
       this.formula,
       required this.isCalculated,
@@ -163,6 +172,8 @@ class _InventoryCellModel implements InventoryCellModel {
   final int columnIndex;
   @override
   final String inventoryRowId;
+  @override
+  final String? color;
   @override
   final String? value;
   @override
@@ -199,6 +210,7 @@ class _InventoryCellModel implements InventoryCellModel {
                 other.columnIndex == columnIndex) &&
             (identical(other.inventoryRowId, inventoryRowId) ||
                 other.inventoryRowId == inventoryRowId) &&
+            (identical(other.color, color) || other.color == color) &&
             (identical(other.value, value) || other.value == value) &&
             (identical(other.formula, formula) || other.formula == formula) &&
             (identical(other.isCalculated, isCalculated) ||
@@ -212,11 +224,11 @@ class _InventoryCellModel implements InventoryCellModel {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, columnIndex, inventoryRowId,
-      value, formula, isCalculated, createdAt, updatedAt);
+      color, value, formula, isCalculated, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'InventoryCellModel(id: $id, columnIndex: $columnIndex, inventoryRowId: $inventoryRowId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'InventoryCellModel(id: $id, columnIndex: $columnIndex, inventoryRowId: $inventoryRowId, color: $color, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -232,6 +244,7 @@ abstract mixin class _$InventoryCellModelCopyWith<$Res>
       {String id,
       int columnIndex,
       String inventoryRowId,
+      String? color,
       String? value,
       String? formula,
       bool isCalculated,
@@ -255,6 +268,7 @@ class __$InventoryCellModelCopyWithImpl<$Res>
     Object? id = null,
     Object? columnIndex = null,
     Object? inventoryRowId = null,
+    Object? color = freezed,
     Object? value = freezed,
     Object? formula = freezed,
     Object? isCalculated = null,
@@ -274,6 +288,10 @@ class __$InventoryCellModelCopyWithImpl<$Res>
           ? _self.inventoryRowId
           : inventoryRowId // ignore: cast_nullable_to_non_nullable
               as String,
+      color: freezed == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String?,
       value: freezed == value
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable

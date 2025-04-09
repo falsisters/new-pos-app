@@ -43,6 +43,21 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
     });
   }
 
+  Future<void> createCalculationRows(
+      String sheetId, List<int> rowIndexes) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _kahonRepository.createCalculationRows(sheetId, rowIndexes);
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        return SheetState(sheet: updatedSheet);
+      } catch (e) {
+        return SheetState(error: e.toString());
+      }
+    });
+  }
+
   Future<void> deleteRow(String rowId) async {
     state = const AsyncLoading();
 

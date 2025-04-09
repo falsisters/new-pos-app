@@ -95,23 +95,22 @@ class FormulaHandler {
         List<double> values = _getValuesInRange(
             startCell.columnIndex, startCell.rowIndex, endCell.rowIndex);
 
-        // Apply the function to the values and round down
+        // Apply the function to the values without rounding
         switch (function) {
           case 'SUM':
-            return values.fold(0.0, (a, b) => a + b).floor().toString();
+            return values.fold(0.0, (a, b) => a + b).toString();
           case 'AVG':
             if (values.isEmpty) return '0';
             return (values.fold(0.0, (a, b) => a + b) / values.length)
-                .floor()
                 .toString();
           case 'COUNT':
             return values.length.toString();
           case 'MAX':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a > b ? a : b).floor().toString();
+            return values.reduce((a, b) => a > b ? a : b).toString();
           case 'MIN':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a < b ? a : b).floor().toString();
+            return values.reduce((a, b) => a < b ? a : b).toString();
           default:
             return '0';
         }
@@ -194,7 +193,8 @@ class FormulaHandler {
           return '0';
         }
 
-        return value.floor().toString();
+        // Return exact value without rounding
+        return value.toString();
       } catch (e) {
         print('Error processing cell reference: $e');
         return '0';

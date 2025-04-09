@@ -48,6 +48,26 @@ class KahonRepository {
     }
   }
 
+  Future<List<RowModel>> createCalculationRows(
+      String sheetId, List<int> rowIndexes) async {
+    try {
+      final response =
+          await _dio.instance.post('/sheet/calculation-rows', data: {
+        'sheetId': sheetId,
+        'rowIndexes': rowIndexes,
+      });
+      return (response.data as List)
+          .map((row) => RowModel.fromJson(row))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
   Future<void> deleteRow(String rowId) async {
     try {
       await _dio.instance.delete('/sheet/row/$rowId');

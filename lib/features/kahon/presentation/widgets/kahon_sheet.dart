@@ -4,6 +4,7 @@ import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_data_source.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
@@ -331,9 +332,23 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   // Add calculation row
   Future<void> _addCalculationRow(int afterRowIndex) async {
     try {
+      // First save any pending changes
+      if (_pendingChanges.isNotEmpty) {
+        await _applyPendingChanges();
+      }
+
+      // Add the calculation row
       await ref
           .read(sheetNotifierProvider.notifier)
           .createCalculationRow(widget.sheet.id, afterRowIndex + 1);
+
+      // Ensure we stay in edit mode
+      if (!_isEditable) {
+        setState(() {
+          _isEditable = true;
+          _initializeDataSource();
+        });
+      }
     } catch (e) {
       print('Error adding calculation row: $e');
       if (mounted) {
@@ -341,6 +356,93 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           SnackBar(
               content: Text('Failed to add calculation row: ${e.toString()}')),
         );
+      }
+    }
+  }
+
+  // Add multiple calculation rows
+  Future<void> _addMultipleCalculationRows(int afterRowIndex) async {
+    int? numberOfRows = await showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        final TextEditingController controller =
+            TextEditingController(text: '1');
+        return AlertDialog(
+          title: const Text('Add Calculation Rows'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How many calculation rows do you want to add?'),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Number of Rows',
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Add'),
+              onPressed: () {
+                int? value = int.tryParse(controller.text);
+                if (value != null && value > 0) {
+                  Navigator.of(context).pop(value);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Please enter a valid number')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (numberOfRows != null && numberOfRows > 0) {
+      try {
+        // First save any pending changes
+        if (_pendingChanges.isNotEmpty) {
+          await _applyPendingChanges();
+        }
+
+        // Create a list of row indexes to add
+        List<int> rowIndexes = [];
+        int currentIndex = afterRowIndex + 1;
+        for (int i = 0; i < numberOfRows; i++) {
+          rowIndexes.add(currentIndex + i);
+        }
+
+        await ref
+            .read(sheetNotifierProvider.notifier)
+            .createCalculationRows(widget.sheet.id, rowIndexes);
+
+        // Ensure we stay in edit mode
+        if (!_isEditable) {
+          setState(() {
+            _isEditable = true;
+            _initializeDataSource();
+          });
+        }
+      } catch (e) {
+        print('Error adding calculation rows: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Failed to add calculation rows: ${e.toString()}')),
+          );
+        }
       }
     }
   }
@@ -459,7 +561,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                     if (_isEditable)
                       IconButton(
                         icon: const Icon(Icons.add, color: AppColors.primary),
-                        tooltip: 'Add Calculation Row',
+                        tooltip: 'Add Calculation Rows',
                         onPressed: () {
                           // Get currently selected row index or default to last row
                           int rowIndex = _dataGridController.selectedIndex != -1
@@ -469,13 +571,14 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                           // Find the actual row index from the model
                           if (rowIndex >= 0 &&
                               rowIndex < widget.sheet.rows.length) {
-                            _addCalculationRow(
+                            _addMultipleCalculationRows(
                                 widget.sheet.rows[rowIndex].rowIndex);
                           } else {
                             // Default to adding at the end
-                            _addCalculationRow(widget.sheet.rows.isNotEmpty
-                                ? widget.sheet.rows.last.rowIndex + 1
-                                : 0);
+                            _addMultipleCalculationRows(
+                                widget.sheet.rows.isNotEmpty
+                                    ? widget.sheet.rows.last.rowIndex
+                                    : 0);
                           }
                         },
                       ),

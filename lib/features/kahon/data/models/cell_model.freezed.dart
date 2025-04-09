@@ -18,6 +18,7 @@ mixin _$CellModel {
   String get id;
   int get columnIndex;
   String get rowId;
+  String? get color;
   String? get kahonItemId;
   String? get value;
   String? get formula;
@@ -44,6 +45,7 @@ mixin _$CellModel {
             (identical(other.columnIndex, columnIndex) ||
                 other.columnIndex == columnIndex) &&
             (identical(other.rowId, rowId) || other.rowId == rowId) &&
+            (identical(other.color, color) || other.color == color) &&
             (identical(other.kahonItemId, kahonItemId) ||
                 other.kahonItemId == kahonItemId) &&
             (identical(other.value, value) || other.value == value) &&
@@ -58,12 +60,12 @@ mixin _$CellModel {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, columnIndex, rowId,
+  int get hashCode => Object.hash(runtimeType, id, columnIndex, rowId, color,
       kahonItemId, value, formula, isCalculated, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'CellModel(id: $id, columnIndex: $columnIndex, rowId: $rowId, kahonItemId: $kahonItemId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'CellModel(id: $id, columnIndex: $columnIndex, rowId: $rowId, color: $color, kahonItemId: $kahonItemId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -76,6 +78,7 @@ abstract mixin class $CellModelCopyWith<$Res> {
       {String id,
       int columnIndex,
       String rowId,
+      String? color,
       String? kahonItemId,
       String? value,
       String? formula,
@@ -99,6 +102,7 @@ class _$CellModelCopyWithImpl<$Res> implements $CellModelCopyWith<$Res> {
     Object? id = null,
     Object? columnIndex = null,
     Object? rowId = null,
+    Object? color = freezed,
     Object? kahonItemId = freezed,
     Object? value = freezed,
     Object? formula = freezed,
@@ -119,6 +123,10 @@ class _$CellModelCopyWithImpl<$Res> implements $CellModelCopyWith<$Res> {
           ? _self.rowId
           : rowId // ignore: cast_nullable_to_non_nullable
               as String,
+      color: freezed == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String?,
       kahonItemId: freezed == kahonItemId
           ? _self.kahonItemId
           : kahonItemId // ignore: cast_nullable_to_non_nullable
@@ -154,6 +162,7 @@ class _CellModel implements CellModel {
       {required this.id,
       required this.columnIndex,
       required this.rowId,
+      this.color,
       this.kahonItemId,
       this.value,
       this.formula,
@@ -169,6 +178,8 @@ class _CellModel implements CellModel {
   final int columnIndex;
   @override
   final String rowId;
+  @override
+  final String? color;
   @override
   final String? kahonItemId;
   @override
@@ -206,6 +217,7 @@ class _CellModel implements CellModel {
             (identical(other.columnIndex, columnIndex) ||
                 other.columnIndex == columnIndex) &&
             (identical(other.rowId, rowId) || other.rowId == rowId) &&
+            (identical(other.color, color) || other.color == color) &&
             (identical(other.kahonItemId, kahonItemId) ||
                 other.kahonItemId == kahonItemId) &&
             (identical(other.value, value) || other.value == value) &&
@@ -220,12 +232,12 @@ class _CellModel implements CellModel {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, columnIndex, rowId,
+  int get hashCode => Object.hash(runtimeType, id, columnIndex, rowId, color,
       kahonItemId, value, formula, isCalculated, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'CellModel(id: $id, columnIndex: $columnIndex, rowId: $rowId, kahonItemId: $kahonItemId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'CellModel(id: $id, columnIndex: $columnIndex, rowId: $rowId, color: $color, kahonItemId: $kahonItemId, value: $value, formula: $formula, isCalculated: $isCalculated, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -241,6 +253,7 @@ abstract mixin class _$CellModelCopyWith<$Res>
       {String id,
       int columnIndex,
       String rowId,
+      String? color,
       String? kahonItemId,
       String? value,
       String? formula,
@@ -264,6 +277,7 @@ class __$CellModelCopyWithImpl<$Res> implements _$CellModelCopyWith<$Res> {
     Object? id = null,
     Object? columnIndex = null,
     Object? rowId = null,
+    Object? color = freezed,
     Object? kahonItemId = freezed,
     Object? value = freezed,
     Object? formula = freezed,
@@ -284,6 +298,10 @@ class __$CellModelCopyWithImpl<$Res> implements _$CellModelCopyWith<$Res> {
           ? _self.rowId
           : rowId // ignore: cast_nullable_to_non_nullable
               as String,
+      color: freezed == color
+          ? _self.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String?,
       kahonItemId: freezed == kahonItemId
           ? _self.kahonItemId
           : kahonItemId // ignore: cast_nullable_to_non_nullable

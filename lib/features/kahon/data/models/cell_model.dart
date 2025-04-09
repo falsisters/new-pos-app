@@ -9,6 +9,7 @@ sealed class CellModel with _$CellModel {
     required String id,
     required int columnIndex,
     required String rowId,
+    String? color,
     String? kahonItemId,
     String? value,
     String? formula,

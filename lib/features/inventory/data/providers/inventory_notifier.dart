@@ -46,6 +46,21 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
     });
   }
 
+  Future<void> createInventoryRows(String sheetId, List<int> rowIndexes) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _inventoryRepository.createInventoryRows(sheetId, rowIndexes);
+        final updatedInventory =
+            await _inventoryRepository.getInventoryByDate(null, null);
+        return InventoryState(sheet: updatedInventory);
+      } catch (e) {
+        return InventoryState(error: e.toString());
+      }
+    });
+  }
+
   Future<void> deleteRow(String rowId) async {
     state = const AsyncLoading();
 

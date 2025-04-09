@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:flutter/services.dart';
 
 class InventorySheet extends ConsumerStatefulWidget {
   final InventorySheetModel sheet;
@@ -43,7 +44,8 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
       sheet: widget.sheet,
       isEditable: _isEditable,
       cellSubmitCallback: _handleCellSubmit,
-      addCalculationRowCallback: _addCalculationRow,
+      addCalculationRowCallback:
+          _addCalculationRow, // This still uses the single row method
       deleteRowCallback: _deleteRow,
       formulaHandler: _formulaHandler,
     );
@@ -326,9 +328,23 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   // Add calculation row
   Future<void> _addCalculationRow(int afterRowIndex) async {
     try {
+      // Save changes first if there are any
+      if (_pendingChanges.isNotEmpty) {
+        await _applyPendingChanges();
+      }
+
+      // Add the row
       await ref
           .read(inventoryProvider.notifier)
           .createInventoryRow(widget.sheet.id, afterRowIndex + 1);
+
+      // Ensure we stay in edit mode
+      if (!_isEditable) {
+        setState(() {
+          _isEditable = true;
+          _initializeDataSource();
+        });
+      }
     } catch (e) {
       print('Error adding calculation row: $e');
       if (mounted) {
@@ -352,6 +368,123 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
         );
       }
     }
+  }
+
+  // Add multiple calculation rows
+  Future<void> _addMultipleCalculationRows(
+      int afterRowIndex, int rowCount) async {
+    try {
+      // Save changes first if there are any
+      if (_pendingChanges.isNotEmpty) {
+        await _applyPendingChanges();
+      }
+
+      // Calculate row indexes for all new rows
+      List<int> rowIndexes =
+          List.generate(rowCount, (index) => afterRowIndex + 1 + index);
+
+      await ref
+          .read(inventoryProvider.notifier)
+          .createInventoryRows(widget.sheet.id, rowIndexes);
+
+      // Ensure we stay in edit mode
+      if (!_isEditable) {
+        setState(() {
+          _isEditable = true;
+          _initializeDataSource();
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added $rowCount new rows')),
+      );
+    } catch (e) {
+      print('Error adding calculation rows: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to add calculation rows: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  // Show dialog to add multiple rows
+  void _showAddRowsDialog(int afterRowIndex) {
+    final TextEditingController controller = TextEditingController(text: '1');
+    final formKey = GlobalKey<FormState>();
+
+    // Save changes before showing the dialog if needed
+    if (_pendingChanges.isNotEmpty) {
+      _applyPendingChanges().then((_) {
+        _actuallyShowAddRowsDialog(afterRowIndex, controller, formKey);
+      });
+    } else {
+      _actuallyShowAddRowsDialog(afterRowIndex, controller, formKey);
+    }
+  }
+
+  // Extracted actual dialog showing logic
+  void _actuallyShowAddRowsDialog(int afterRowIndex,
+      TextEditingController controller, GlobalKey<FormState> formKey) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Calculation Rows'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('How many rows would you like to add?'),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Number of rows',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a number';
+                    }
+                    final number = int.tryParse(value);
+                    if (number == null || number <= 0) {
+                      return 'Please enter a valid positive number';
+                    }
+                    if (number > 100) {
+                      return 'Maximum 100 rows at once';
+                    }
+                    return null;
+                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('Add Rows'),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final rowCount = int.parse(controller.text);
+                  Navigator.of(context).pop();
+                  _addMultipleCalculationRows(afterRowIndex, rowCount);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showFormulaHelpDialog() {
@@ -455,7 +588,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                     if (_isEditable)
                       IconButton(
                         icon: const Icon(Icons.add, color: AppColors.primary),
-                        tooltip: 'Add Calculation Row',
+                        tooltip: 'Add Calculation Rows',
                         onPressed: () {
                           // Get currently selected row index or default to last row
                           int rowIndex = _dataGridController.selectedIndex != -1
@@ -465,12 +598,12 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                           // Find the actual row index from the model
                           if (rowIndex >= 0 &&
                               rowIndex < widget.sheet.rows.length) {
-                            _addCalculationRow(
+                            _showAddRowsDialog(
                                 widget.sheet.rows[rowIndex].rowIndex);
                           } else {
                             // Default to adding at the end
-                            _addCalculationRow(widget.sheet.rows.isNotEmpty
-                                ? widget.sheet.rows.last.rowIndex + 1
+                            _showAddRowsDialog(widget.sheet.rows.isNotEmpty
+                                ? widget.sheet.rows.last.rowIndex
                                 : 0);
                           }
                         },
