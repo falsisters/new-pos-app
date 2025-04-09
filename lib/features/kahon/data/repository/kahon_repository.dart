@@ -80,12 +80,13 @@ class KahonRepository {
     }
   }
 
-  Future<CellModel> createCell(
-      String rowId, int columnIndex, String value, String? formula) async {
+  Future<CellModel> createCell(String rowId, int columnIndex, String value,
+      String? color, String? formula) async {
     try {
       final response = await _dio.instance.post('/sheet/cell', data: {
         'rowId': rowId,
         'columnIndex': columnIndex,
+        'color': color,
         'value': value,
         'formula': formula,
       });
@@ -100,10 +101,11 @@ class KahonRepository {
   }
 
   Future<CellModel> updateCell(
-      String cellId, String value, String? formula) async {
+      String cellId, String value, String? color, String? formula) async {
     try {
       final response = await _dio.instance.patch('/sheet/cell/$cellId', data: {
         'value': value,
+        'color': color,
         'formula': formula,
       });
       return CellModel.fromJson(response.data);
@@ -135,6 +137,7 @@ class KahonRepository {
             .map((cell) => {
                   'id': cell['id'],
                   'value': cell['value'],
+                  'color': cell['color'],
                   'formula': cell['formula'],
                 })
             .toList(),
@@ -158,6 +161,7 @@ class KahonRepository {
             .map((cell) => {
                   'rowId': cell['rowId'],
                   'columnIndex': cell['columnIndex'],
+                  'color': cell['color'],
                   'value': cell['value'],
                   'formula': cell['formula'],
                 })

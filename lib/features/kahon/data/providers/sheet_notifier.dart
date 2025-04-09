@@ -72,13 +72,14 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
     });
   }
 
-  Future<void> createCell(
-      String rowId, int columnIndex, String value, String? formula) async {
+  Future<void> createCell(String rowId, int columnIndex, String value,
+      String? color, String? formula) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
-        await _kahonRepository.createCell(rowId, columnIndex, value, formula);
+        await _kahonRepository.createCell(
+            rowId, columnIndex, value, color, formula);
         final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
         return SheetState(sheet: updatedSheet);
       } catch (e) {
@@ -87,12 +88,13 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
     });
   }
 
-  Future<void> updateCell(String cellId, String value, String? formula) async {
+  Future<void> updateCell(
+      String cellId, String value, String? color, String? formula) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
-        await _kahonRepository.updateCell(cellId, value, formula);
+        await _kahonRepository.updateCell(cellId, value, color, formula);
         final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
         return SheetState(sheet: updatedSheet);
       } catch (e) {

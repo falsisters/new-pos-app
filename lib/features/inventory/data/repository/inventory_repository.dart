@@ -82,13 +82,14 @@ class InventoryRepository {
     }
   }
 
-  Future<InventoryCellModel> createCell(
-      String rowId, int columnIndex, String value, String? formula) async {
+  Future<InventoryCellModel> createCell(String rowId, int columnIndex,
+      String value, String? color, String? formula) async {
     try {
       final response = await _dio.instance.post('/inventory/cell', data: {
         'rowId': rowId,
         'columnIndex': columnIndex,
         'value': value,
+        'color': color,
         'formula': formula,
       });
       return InventoryCellModel.fromJson(response.data);
@@ -102,11 +103,12 @@ class InventoryRepository {
   }
 
   Future<InventoryCellModel> updateCell(
-      String cellId, String value, String? formula) async {
+      String cellId, String value, String? color, String? formula) async {
     try {
       final response =
           await _dio.instance.patch('/inventory/cell/$cellId', data: {
         'value': value,
+        'color': color,
         'formula': formula,
       });
 
@@ -140,6 +142,7 @@ class InventoryRepository {
             .map((cell) => {
                   'id': cell['id'],
                   'value': cell['value'],
+                  'color': cell['color'],
                   'formula': cell['formula'],
                 })
             .toList()
@@ -164,6 +167,7 @@ class InventoryRepository {
             .map((cell) => {
                   'rowId': cell['rowId'],
                   'columnIndex': cell['columnIndex'],
+                  'color': cell['color'],
                   'value': cell['value'],
                   'formula': cell['formula'],
                 })

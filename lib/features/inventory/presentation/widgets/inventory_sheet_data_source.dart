@@ -7,15 +7,21 @@ import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
 
 class InventorySheetDataSource extends DataGridSource {
   final InventorySheetModel sheet;
   final bool isEditable;
-  final Function(int rowIndex, int columnIndex, String value)
+  final Function(int rowIndex, int columnIndex, String value, String? color)
       cellSubmitCallback;
   final Function(int afterRowIndex) addCalculationRowCallback;
+  final Function(int afterRowIndex, int rowCount)?
+      addMultipleCalculationRowsCallback;
   final Function(String rowId) deleteRowCallback;
   final InventoryFormulaHandler formulaHandler;
+  final Function(int rowIndex, int columnIndex)? eraseCellCallback;
+
+  BuildContext? currentContext;
 
   InventorySheetModel get currentSheet => sheet;
 
@@ -28,6 +34,8 @@ class InventorySheetDataSource extends DataGridSource {
     required this.addCalculationRowCallback,
     required this.deleteRowCallback,
     required this.formulaHandler,
+    this.eraseCellCallback,
+    this.addMultipleCalculationRowsCallback,
   }) {
     _rows = _generateRows();
   }
@@ -38,22 +46,17 @@ class InventorySheetDataSource extends DataGridSource {
   List<DataGridRow> _generateRows() {
     List<DataGridRow> dataRows = [];
 
-    // Sort rows by rowIndex
     final sortedRows = List<InventoryRowModel>.from(sheet.rows)
       ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
     for (var row in sortedRows) {
-      // Create a list for cells that match our columns
       List<DataGridCell> cells = [];
 
-      // Add item name cell (first column)
       String itemNumber = '';
       if (row.isItemRow && row.itemId != null) {
-        // Using the index+1 as the item number
         int itemIndex = sortedRows.indexOf(row);
         itemNumber = (itemIndex + 1).toString();
       } else if (!row.isItemRow) {
-        // For non-item rows (headers, totals, etc.)
         itemNumber = row.rowIndex.toString();
       }
 
@@ -67,13 +70,11 @@ class InventorySheetDataSource extends DataGridSource {
         ),
       ));
 
-      // Create a map for easy access to cell data by column index
       Map<int, InventoryCellModel> cellMap = {};
       for (var cell in row.cells) {
         cellMap[cell.columnIndex] = cell;
       }
 
-      // Add cells for each column based on the sheet's column count
       for (int i = 0; i < sheet.columns; i++) {
         final InventoryCellModel? cellModel = cellMap[i];
         cells.add(DataGridCell<InventoryCellModel?>(
@@ -82,7 +83,6 @@ class InventorySheetDataSource extends DataGridSource {
         ));
       }
 
-      // Create DataGridRow
       dataRows.add(DataGridRow(cells: cells));
     }
 
@@ -93,7 +93,6 @@ class InventorySheetDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
       cells: row.getCells().map<Widget>((cell) {
-        // For item name column
         if (cell.columnName == 'itemName') {
           final rowData = cell.value as RowCellData;
           return Container(
@@ -116,7 +115,11 @@ class InventorySheetDataSource extends DataGridSource {
                         size: 16, color: AppColors.secondary),
                     onSelected: (value) {
                       if (value == 'add_calculation') {
-                        addCalculationRowCallback(rowData.rowIndex);
+                        if (addMultipleCalculationRowsCallback != null) {
+                          _showAddRowsDialog(rowData.rowIndex);
+                        } else {
+                          addCalculationRowCallback(rowData.rowIndex);
+                        }
                       } else if (value == 'delete') {
                         deleteRowCallback(rowData.rowId);
                       }
@@ -136,16 +139,20 @@ class InventorySheetDataSource extends DataGridSource {
               ],
             ),
           );
-        }
-        // For cell model columns
-        else if (cell.value is InventoryCellModel) {
+        } else if (cell.value is InventoryCellModel) {
           final cellModel = cell.value as InventoryCellModel;
+
+          Color? backgroundColor;
+          if (cellModel.color != null && cellModel.color!.isNotEmpty) {
+            backgroundColor = CellColorHandler.getColorFromHex(cellModel.color);
+          } else if (cellModel.isCalculated) {
+            backgroundColor = AppColors.primaryLight.withAlpha(25);
+          }
+
           return Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.all(8.0),
-            color: cellModel.isCalculated
-                ? AppColors.primaryLight.withAlpha(25)
-                : null,
+            color: backgroundColor,
             child: Text(
               cellModel.value ?? '',
               style: TextStyle(
@@ -154,9 +161,7 @@ class InventorySheetDataSource extends DataGridSource {
               ),
             ),
           );
-        }
-        // For empty cells or null values
-        else {
+        } else {
           return Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.all(8.0),
@@ -170,19 +175,15 @@ class InventorySheetDataSource extends DataGridSource {
   @override
   Widget? buildEditWidget(DataGridRow row, RowColumnIndex rowColumnIndex,
       GridColumn column, CellSubmit submitCell) {
-    // Only allow editing for cell values, not for headers or calculated cells
     if (column.columnName == 'itemName') {
       return null;
     }
 
-    // Get the row data
     final rowCellData = row.getCells().first.value as RowCellData;
     final rowIndex = rowCellData.rowIndex;
 
-    // Extract column index from column name
     final columnIndex = int.parse(column.columnName.replaceAll('column', ''));
 
-    // Find the cell model
     final cell = row
         .getCells()
         .firstWhere(
@@ -192,41 +193,70 @@ class InventorySheetDataSource extends DataGridSource {
         )
         .value as InventoryCellModel?;
 
-    // Don't allow editing calculated cells
-    if (cell != null && cell.isCalculated) {
-      return null;
-    }
+    bool isCalculatedCell = cell != null && cell.isCalculated;
 
-    // Default value for the text field
     String initialValue = '';
+    String? cellColor;
     if (cell != null) {
       initialValue = cell.formula ?? cell.value ?? '';
+      cellColor = cell.color;
     }
 
-    // Create text editing controller for the field
     final TextEditingController controller =
         TextEditingController(text: initialValue);
 
-    // Create edit widget with keyboard listener
-    return Container(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.centerRight,
+    Color? selectedColor =
+        cellColor != null ? CellColorHandler.getColorFromHex(cellColor) : null;
+
+    final FocusNode focusNode = FocusNode();
+
+    focusNode.addListener(() {
+      if (!focusNode.hasFocus && !isCalculatedCell) {
+        cellSubmitCallback(
+          rowIndex,
+          columnIndex,
+          controller.text,
+          selectedColor != null
+              ? CellColorHandler.getHexFromColor(selectedColor)
+              : null,
+        );
+        submitCell();
+      }
+    });
+
+    return StatefulBuilder(
+      builder: (context, setInnerState) {
+        currentContext = context;
+
+        String? colorHex = selectedColor != null
+            ? CellColorHandler.getHexFromColor(selectedColor)
+            : null;
+
+        return Container(
+          padding: const EdgeInsets.all(4),
+          child: Column(
             children: [
               RawKeyboardListener(
                 focusNode: FocusNode(),
                 onKey: (event) {
                   if (event is RawKeyDownEvent &&
                       event.logicalKey == LogicalKeyboardKey.enter) {
-                    cellSubmitCallback(rowIndex, columnIndex, controller.text);
+                    if (!isCalculatedCell) {
+                      cellSubmitCallback(
+                        rowIndex,
+                        columnIndex,
+                        controller.text,
+                        colorHex,
+                      );
+                    }
                     submitCell();
                   }
                 },
                 child: TextField(
                   autofocus: true,
+                  focusNode: focusNode,
                   controller: controller,
+                  enabled: !isCalculatedCell,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
@@ -236,278 +266,99 @@ class InventorySheetDataSource extends DataGridSource {
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 8,
-                      horizontal: 24, // Extra padding to avoid text under icon
+                      horizontal: 12, // Reduced padding since no icon
                     ),
+                    fillColor: selectedColor,
+                    filled: selectedColor != null,
                   ),
                   onSubmitted: (value) {
-                    cellSubmitCallback(rowIndex, columnIndex, value);
+                    if (!isCalculatedCell) {
+                      cellSubmitCallback(
+                        rowIndex,
+                        columnIndex,
+                        value,
+                        colorHex,
+                      );
+                    }
                     submitCell();
                   },
-                ),
-              ),
-              // Popup menu button as overlay
-              Positioned(
-                right: 2,
-                child: PopupMenuButton<String>(
-                  icon:
-                      Icon(Icons.more_vert, color: AppColors.primary, size: 18),
-                  padding: EdgeInsets.zero,
-                  tooltip: 'Formula options',
-                  splashRadius: 20,
-                  onSelected: (value) {
-                    String formula = '';
-
-                    switch (value) {
-                      case 'mult_left':
-                        if (columnIndex >= 2) {
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex * ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
-                        }
-                        break;
-                      case 'add_left':
-                        if (columnIndex >= 2) {
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex + ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
-                        }
-                        break;
-                      case 'add_vert':
-                        if (rowIndex >= 2) {
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} + ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
-                        }
-                        break;
-                      case 'sub_vert':
-                        if (rowIndex >= 2) {
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} - ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
-                        }
-                        break;
-                      case 'mult_vert':
-                        if (rowIndex >= 2) {
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex)}${rowIndex - 2} * ${_getColumnNameForIndex(columnIndex)}${rowIndex - 1}';
-                        }
-                        break;
-                      case 'mult_all':
-                        if (columnIndex >= 2) {
-                          // Apply multiply formula to this cell
-                          formula =
-                              '=${_getColumnNameForIndex(columnIndex - 2)}$rowIndex * ${_getColumnNameForIndex(columnIndex - 1)}$rowIndex';
-                          controller.text = formula;
-
-                          // Apply to current cell first
-                          cellSubmitCallback(rowIndex, columnIndex, formula);
-
-                          // Schedule the updates to other cells to happen after this edit is completed
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            // Find all rows with valid numerical values to apply formula
-                            for (var row in sortedRows) {
-                              if (row.rowIndex == rowIndex) {
-                                continue; // Skip current row
-                              }
-
-                              // Check if cell already exists in this column for this row
-                              final existingCell = row.cells
-                                  .where((c) => c.columnIndex == columnIndex)
-                                  .firstOrNull;
-
-                              // Skip if the cell already has a value or is a calculated cell
-                              if (existingCell != null &&
-                                  (existingCell.value != null &&
-                                          existingCell.value!.isNotEmpty ||
-                                      existingCell.isCalculated)) {
-                                continue; // Skip this row as it already has a value or formula
-                              }
-
-                              // Check if source cells have valid numerical values
-                              final leftCell1 = row.cells
-                                  .where(
-                                      (c) => c.columnIndex == columnIndex - 2)
-                                  .firstOrNull;
-                              final leftCell2 = row.cells
-                                  .where(
-                                      (c) => c.columnIndex == columnIndex - 1)
-                                  .firstOrNull;
-
-                              if (leftCell1 != null && leftCell2 != null) {
-                                try {
-                                  // Verify both source cells have numerical values
-                                  double.parse(leftCell1.value ?? '');
-                                  double.parse(leftCell2.value ?? '');
-
-                                  // Create formula for this row
-                                  String targetFormula =
-                                      '=${_getColumnNameForIndex(columnIndex - 2)}${row.rowIndex} * ${_getColumnNameForIndex(columnIndex - 1)}${row.rowIndex}';
-
-                                  // Apply the formula to this cell
-                                  cellSubmitCallback(
-                                      row.rowIndex, columnIndex, targetFormula);
-                                } catch (_) {
-                                  // Skip if source cells don't have valid numerical values
-                                }
-                              }
-                            }
-
-                            // Refresh data source to show updated values
-                            notifyListeners();
-                          });
-
-                          // Submit current cell edit
-                          submitCell();
-                        }
-                        break;
-                      case 'add_all_vert':
-                        String formula = '=';
-                        bool hasValues = false;
-
-                        // Go through all rows in the sheet
-                        for (var row in sortedRows) {
-                          // Skip current row
-                          if (row.rowIndex == rowIndex) {
-                            continue;
-                          }
-
-                          // Find cell in the same column
-                          final cellInColumn = row.cells
-                              .where((c) => c.columnIndex == columnIndex)
-                              .firstOrNull;
-
-                          if (cellInColumn != null &&
-                              cellInColumn.value != null &&
-                              cellInColumn.value!.isNotEmpty) {
-                            try {
-                              // Try parsing to verify it's a valid number
-                              double.parse(cellInColumn.value!);
-
-                              // Add to formula
-                              if (hasValues) {
-                                formula += ' + ';
-                              }
-                              formula +=
-                                  '${_getColumnNameForIndex(columnIndex)}${row.rowIndex}';
-                              hasValues = true;
-                            } catch (_) {
-                              // Skip non-numeric values
-                            }
-                          }
-                        }
-
-                        if (hasValues) {
-                          controller.text = formula;
-                          cellSubmitCallback(rowIndex, columnIndex, formula);
-                          submitCell();
-                        }
-                        break;
-                    }
-
-                    if (formula.isNotEmpty) {
-                      controller.text = formula;
-                      cellSubmitCallback(rowIndex, columnIndex, formula);
-                      submitCell();
-                    }
+                  onTapOutside: (_) {
+                    FocusManager.instance.primaryFocus?.unfocus();
                   },
-                  itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'mult_left',
-                      child: Row(
-                        children: [
-                          Icon(Icons.close, color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Multiply Left Cells'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'add_left',
-                      child: Row(
-                        children: [
-                          Icon(Icons.add, color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Add Left Cells'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'add_vert',
-                      child: Row(
-                        children: [
-                          Icon(Icons.arrow_upward,
-                              color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Add Vertical Cells'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'sub_vert',
-                      child: Row(
-                        children: [
-                          Icon(Icons.remove,
-                              color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Subtract Vertical Cells'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'mult_vert',
-                      child: Row(
-                        children: [
-                          Icon(Icons.toll, color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Multiply Vertical Cells'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'mult_all',
-                      child: Row(
-                        children: [
-                          Icon(Icons.all_inclusive,
-                              color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Apply Multiply to All Rows'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'add_all_vert',
-                      child: Row(
-                        children: [
-                          Icon(Icons.functions,
-                              color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Add All Vertical Cells'),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // Helper method to convert column index to column name (A, B, C, etc.)
-  String _getColumnNameForIndex(int index) {
-    // Use Excel-like column letters (A, B, C, etc.)
-    String columnLetter = '';
-    int tempIndex = index;
+  void _showAddRowsDialog(int afterRowIndex) {
+    if (currentContext == null || addMultipleCalculationRowsCallback == null)
+      return;
 
-    while (tempIndex >= 0) {
-      columnLetter = String.fromCharCode((tempIndex % 26) + 65) + columnLetter;
-      tempIndex = (tempIndex ~/ 26) - 1;
-    }
-    return columnLetter;
-  }
+    final TextEditingController controller = TextEditingController(text: '1');
+    final formKey = GlobalKey<FormState>();
 
-  // Get sorted rows for use in buildEditWidget
-  List<InventoryRowModel> get sortedRows {
-    return List<InventoryRowModel>.from(sheet.rows)
-      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+    showDialog(
+      context: currentContext!,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Calculation Rows'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('How many rows would you like to add?'),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Number of rows',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a number';
+                    }
+                    final number = int.tryParse(value);
+                    if (number == null || number <= 0) {
+                      return 'Please enter a valid positive number';
+                    }
+                    if (number > 100) {
+                      return 'Maximum 100 rows at once';
+                    }
+                    return null;
+                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('Add Rows'),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final rowCount = int.parse(controller.text);
+                  Navigator.of(context).pop();
+                  addMultipleCalculationRowsCallback!(afterRowIndex, rowCount);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

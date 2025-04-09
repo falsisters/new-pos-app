@@ -1,11 +1,15 @@
+// ignore_for_file: unused_field, unused_local_variable
+
 import 'package:falsisters_pos_android/features/inventory/data/models/inventory_cell_model.dart';
 import 'package:falsisters_pos_android/features/inventory/data/models/inventory_row_model.dart';
 import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
 import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_formula_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet_data_source.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
@@ -32,6 +36,12 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   // Store pending cell changes
   final Map<String, CellChange> _pendingChanges = {};
 
+  // Add variables to track currently selected cell
+  int? _selectedRowIndex;
+  int? _selectedColumnIndex;
+  InventoryCellModel? _selectedCell;
+  String? _selectedCellValue;
+
   @override
   void initState() {
     super.initState();
@@ -44,10 +54,12 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
       sheet: widget.sheet,
       isEditable: _isEditable,
       cellSubmitCallback: _handleCellSubmit,
-      addCalculationRowCallback:
-          _addCalculationRow, // This still uses the single row method
+      addCalculationRowCallback: _addCalculationRow,
       deleteRowCallback: _deleteRow,
       formulaHandler: _formulaHandler,
+      eraseCellCallback: _eraseCell,
+      // Add the callback for multiple rows
+      addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
     );
   }
 
@@ -90,18 +102,20 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
             'id': change.cellId,
             'value': change.displayValue,
             'formula': change.formula,
+            'color': change.color, // Include color in update
           });
           print(
-              "Update cell: id=${change.cellId}, value=${change.displayValue}");
+              "Update cell: id=${change.cellId}, value=${change.displayValue}, color=${change.color}");
         } else {
           cellsToCreate.add({
             'rowId': change.rowId,
             'columnIndex': change.columnIndex,
             'value': change.displayValue,
             'formula': change.formula,
+            'color': change.color, // Include color in create
           });
           print(
-              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}");
+              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, color=${change.color}");
         }
       }
 
@@ -143,9 +157,9 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
 
   // Handle cell operations (create, update)
   Future<void> _handleCellSubmit(
-      int rowIndex, int columnIndex, String value) async {
+      int rowIndex, int columnIndex, String value, String? color) async {
     print(
-        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value");
+        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$color");
     try {
       // Use a local variable to store the current sheet state
       InventorySheetModel currentSheet = widget.sheet;
@@ -170,8 +184,18 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
       String? formula;
       String displayValue = value;
 
-      // Check if the value is a formula
-      if (value.startsWith('=')) {
+      // Make sure we keep the existing formula if we're just changing color
+      // and the passed value matches the current value (indicating a color-only change)
+      if (existingCell != null &&
+          color != null &&
+          existingCell.formula != null &&
+          ((existingCell.value == value) ||
+              (value.isEmpty && existingCell.value == null))) {
+        formula = existingCell.formula;
+        displayValue = existingCell.value ?? '';
+      }
+      // Otherwise, check if the value is a formula
+      else if (value.startsWith('=')) {
         formula = value;
         try {
           displayValue =
@@ -194,6 +218,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
           columnIndex: columnIndex, // Add columnIndex for clearer tracking
           displayValue: displayValue,
           formula: formula,
+          color: color, // Include color in the change
         );
         print("Added update to pending changes: $changeKey");
       } else {
@@ -203,6 +228,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
           columnIndex: columnIndex,
           displayValue: displayValue,
           formula: formula,
+          color: color, // Include color in the change
         );
         print("Added create to pending changes: $changeKey");
       }
@@ -234,6 +260,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                     columnIndex: existingCell.columnIndex,
                     value: displayValue,
                     formula: formula,
+                    color: color, // Include color in the model
                     isCalculated: formula != null,
                     createdAt: existingCell.createdAt,
                     updatedAt: DateTime.now(),
@@ -247,6 +274,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                   columnIndex: columnIndex,
                   value: displayValue,
                   formula: formula,
+                  color: color, // Include color in the model
                   isCalculated: formula != null,
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
@@ -280,6 +308,8 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
           addCalculationRowCallback: _addCalculationRow,
           deleteRowCallback: _deleteRow,
           formulaHandler: _formulaHandler,
+          eraseCellCallback: _eraseCell,
+          addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
         );
       });
     } catch (e) {
@@ -288,6 +318,113 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update cell: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  // Add new method to handle cell erasure
+  void _eraseCell(int rowIndex, int columnIndex) async {
+    try {
+      // Find the corresponding row
+      final rowModel = widget.sheet.rows.firstWhere(
+        (r) => r.rowIndex == rowIndex,
+        orElse: () => throw Exception('Row not found'),
+      );
+
+      // Check if the cell already exists
+      final existingCell = rowModel.cells.firstWhereOrNull(
+        (c) => c.columnIndex == columnIndex,
+      );
+
+      if (existingCell != null) {
+        // Create a unique key for this cell change
+        String changeKey = '${rowIndex}_${columnIndex}';
+
+        // Store the change in pending changes with empty value and no formula
+        _pendingChanges[changeKey] = CellChange(
+          isUpdate: true,
+          cellId: existingCell.id,
+          rowId: rowModel.id,
+          columnIndex: columnIndex,
+          displayValue: '', // Empty value
+          formula: null, // Clear formula
+          color: null, // Clear color
+        );
+
+        print("Added cell erase to pending changes: $changeKey");
+
+        // Update UI immediately to show the change
+        setState(() {
+          // Make sure we're working with the most current sheet state
+          InventorySheetModel currentSheet = _dataSource.currentSheet;
+
+          // Create a mutable copy of the sheet for UI updates
+          InventorySheetModel updatedSheet = InventorySheetModel(
+            id: currentSheet.id,
+            name: currentSheet.name,
+            columns: currentSheet.columns,
+            inventoryId: currentSheet.inventoryId,
+            createdAt: currentSheet.createdAt,
+            updatedAt: currentSheet.updatedAt,
+            rows: currentSheet.rows.map((row) {
+              // If this is the row we're modifying
+              if (row.id == rowModel.id) {
+                // Create a mutable copy of cells
+                List<InventoryCellModel> updatedCells = [...row.cells];
+
+                // Update existing cell
+                int cellIndex =
+                    updatedCells.indexWhere((c) => c.id == existingCell.id);
+                if (cellIndex != -1) {
+                  updatedCells[cellIndex] = InventoryCellModel(
+                    id: existingCell.id,
+                    inventoryRowId: existingCell.inventoryRowId,
+                    columnIndex: existingCell.columnIndex,
+                    value: '', // Clear value
+                    formula: null, // Clear formula
+                    color: null, // Clear color
+                    isCalculated: false, // No longer calculated
+                    createdAt: existingCell.createdAt,
+                    updatedAt: DateTime.now(),
+                  );
+                }
+
+                // Return updated row with new cells list
+                return InventoryRowModel(
+                  id: row.id,
+                  inventorySheetId: row.inventorySheetId,
+                  rowIndex: row.rowIndex,
+                  isItemRow: row.isItemRow,
+                  itemId: row.itemId,
+                  cells: updatedCells,
+                  createdAt: row.createdAt,
+                  updatedAt: row.updatedAt,
+                );
+              }
+              return row; // Return unchanged row
+            }).toList(),
+          );
+
+          // Update formula handler and data source
+          _formulaHandler = InventoryFormulaHandler(sheet: updatedSheet);
+          _dataSource = InventorySheetDataSource(
+            sheet: updatedSheet,
+            isEditable: _isEditable,
+            cellSubmitCallback: _handleCellSubmit,
+            addCalculationRowCallback: _addCalculationRow,
+            deleteRowCallback: _deleteRow,
+            formulaHandler: _formulaHandler,
+            eraseCellCallback: _eraseCell,
+            addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
+          );
+        });
+      }
+    } catch (e) {
+      print('Error erasing cell: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to erase cell: ${e.toString()}')),
         );
       }
     }
@@ -684,8 +821,50 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
               navigationMode: GridNavigationMode.cell,
               frozenColumnsCount: 1, // Freeze the first column (item names)
               columns: _buildColumns(),
+              onCellTap: (details) {
+                if (details.rowColumnIndex.rowIndex > 0 && // Skip header
+                    details.column.columnName != 'itemName') {
+                  // Get the actual data grid row - fixing the undefined getter error
+                  final rowData = _dataSource.rows.isNotEmpty &&
+                          details.rowColumnIndex.rowIndex - 1 <
+                              _dataSource.rows.length
+                      ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
+                      : null;
+
+                  if (rowData != null) {
+                    // Extract row cell data from the first column
+                    final firstCell = rowData.getCells().first;
+                    if (firstCell.value is RowCellData) {
+                      final rowCellData = firstCell.value as RowCellData;
+                      final rowIndex = rowCellData.rowIndex;
+                      final columnIndex = int.parse(
+                          details.column.columnName.replaceAll('column', ''));
+
+                      // Find the cell in the data model
+                      final rowModel = widget.sheet.rows.firstWhereOrNull(
+                        (r) => r.rowIndex == rowIndex,
+                      );
+
+                      InventoryCellModel? cell;
+                      if (rowModel != null) {
+                        cell = rowModel.cells.firstWhereOrNull(
+                          (c) => c.columnIndex == columnIndex,
+                        );
+                      }
+
+                      setState(() {
+                        _selectedRowIndex = rowIndex;
+                        _selectedColumnIndex = columnIndex;
+                        _selectedCell = cell;
+                        _selectedCellValue = cell?.value ?? '';
+                      });
+                    }
+                  }
+                }
+              },
             ),
           ),
+
           // Add save button at the bottom when in edit mode
           if (_isEditable)
             Padding(
@@ -701,6 +880,81 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  Expanded(child: Container()), // Spacer
+
+                  // Add cell operation buttons
+                  if (_selectedRowIndex != null && _selectedColumnIndex != null)
+                    Row(
+                      children: [
+                        // Add Quick Formulas button
+                        ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.functions,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          label: const Text('Quick Formulas',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.white)),
+                          onPressed: () {
+                            _showQuickFormulasMenu();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                          label: const Text('Erase Cell Value',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.red)),
+                          onPressed: () {
+                            if (_selectedRowIndex != null &&
+                                _selectedColumnIndex != null) {
+                              _eraseCell(
+                                  _selectedRowIndex!, _selectedColumnIndex!);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Color picker button
+                        ElevatedButton.icon(
+                          icon: Icon(
+                            Icons.color_lens,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          label: const Text('Change Color',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.white)),
+                          onPressed: () {
+                            _showColorPickerDialog(
+                                _selectedRowIndex!,
+                                _selectedColumnIndex!,
+                                _selectedCellValue ?? '');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                    ),
+
                   ElevatedButton.icon(
                     onPressed: _saveChanges,
                     icon: const Icon(Icons.save),
@@ -716,6 +970,365 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
         ],
       ),
     );
+  }
+
+  // Add a new method to show quick formulas menu
+  void _showQuickFormulasMenu() {
+    if (_selectedRowIndex == null || _selectedColumnIndex == null) return;
+
+    final rowIndex = _selectedRowIndex!;
+    final columnIndex = _selectedColumnIndex!;
+    final existingCell = _findCellInSheet(rowIndex, columnIndex);
+    final value = existingCell?.value ?? '';
+    final colorHex = existingCell?.color;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Quick Formulas'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildFormulaOption(
+                  context,
+                  'Add Vertical Cells',
+                  Icons.arrow_upward,
+                  () {
+                    if (rowIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} + ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not enough rows above')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Subtract Vertical Cells',
+                  Icons.remove,
+                  () {
+                    if (rowIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} - ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not enough rows above')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Apply Multiply to All Rows',
+                  Icons.all_inclusive,
+                  () {
+                    if (columnIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex - 2)}$rowIndex * ${_getColumnLetter(columnIndex - 1)}$rowIndex';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+
+                      // Apply to all other rows
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final sortedRows = List<InventoryRowModel>.from(
+                            widget.sheet.rows)
+                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                        for (var row in sortedRows) {
+                          if (row.rowIndex == rowIndex) continue;
+
+                          final leftCell1 = row.cells
+                              .where((c) => c.columnIndex == columnIndex - 2)
+                              .firstOrNull;
+                          final leftCell2 = row.cells
+                              .where((c) => c.columnIndex == columnIndex - 1)
+                              .firstOrNull;
+
+                          if (leftCell1 != null && leftCell2 != null) {
+                            try {
+                              double.parse(leftCell1.value ?? '');
+                              double.parse(leftCell2.value ?? '');
+
+                              String targetFormula =
+                                  '=${_getColumnLetter(columnIndex - 2)}${row.rowIndex} * ${_getColumnLetter(columnIndex - 1)}${row.rowIndex}';
+                              _handleCellSubmit(row.rowIndex, columnIndex,
+                                  targetFormula, null);
+                            } catch (_) {}
+                          }
+                        }
+                      });
+
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Not enough columns to the left')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Apply Addition to Row',
+                  Icons.functions,
+                  () {
+                    if (columnIndex >= 1) {
+                      String formula = '=';
+                      bool hasValues = false;
+
+                      // Loop through all columns to the left of current column
+                      for (int leftColIndex = 0;
+                          leftColIndex < columnIndex;
+                          leftColIndex++) {
+                        final String colName = _getColumnLetter(leftColIndex);
+
+                        // Add this cell reference to the formula
+                        if (hasValues) {
+                          formula += ' + ';
+                        }
+                        formula += '$colName$rowIndex';
+                        hasValues = true;
+                      }
+
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+
+                      // Apply the same formula to all other rows
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final sortedRows = List<InventoryRowModel>.from(
+                            widget.sheet.rows)
+                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                        for (var row in sortedRows) {
+                          if (row.rowIndex == rowIndex) continue;
+
+                          // Check if this row has any values in the left columns
+                          bool rowHasValues = false;
+                          for (int leftColIndex = 0;
+                              leftColIndex < columnIndex;
+                              leftColIndex++) {
+                            final leftCell = row.cells
+                                .where((c) => c.columnIndex == leftColIndex)
+                                .firstOrNull;
+                            if (leftCell != null &&
+                                leftCell.value != null &&
+                                leftCell.value!.isNotEmpty) {
+                              rowHasValues = true;
+                              break;
+                            }
+                          }
+
+                          // Skip rows with no values in left columns
+                          if (!rowHasValues) continue;
+
+                          // Create the same formula but for this row
+                          String targetFormula = '=';
+                          bool targetHasValues = false;
+
+                          for (int leftColIndex = 0;
+                              leftColIndex < columnIndex;
+                              leftColIndex++) {
+                            final String colName =
+                                _getColumnLetter(leftColIndex);
+
+                            if (targetHasValues) {
+                              targetFormula += ' + ';
+                            }
+                            targetFormula += '$colName${row.rowIndex}';
+                            targetHasValues = true;
+                          }
+
+                          _handleCellSubmit(
+                              row.rowIndex, columnIndex, targetFormula, null);
+                        }
+                      });
+
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Not enough columns to the left')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Add All Vertical Cells',
+                  Icons.functions,
+                  () {
+                    String formula = '=';
+                    bool hasValues = false;
+
+                    final sortedRows =
+                        List<InventoryRowModel>.from(widget.sheet.rows)
+                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                    for (var row in sortedRows) {
+                      if (row.rowIndex == rowIndex) continue;
+
+                      final cellInColumn = row.cells
+                          .where((c) => c.columnIndex == columnIndex)
+                          .firstOrNull;
+
+                      if (cellInColumn != null &&
+                          cellInColumn.value != null &&
+                          cellInColumn.value!.isNotEmpty) {
+                        try {
+                          double.parse(cellInColumn.value!);
+
+                          if (hasValues) {
+                            formula += ' + ';
+                          }
+                          formula +=
+                              '${_getColumnLetter(columnIndex)}${row.rowIndex}';
+                          hasValues = true;
+                        } catch (_) {}
+                      }
+                    }
+
+                    if (hasValues) {
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('No numeric cells found in this column')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method to build formula option items
+  Widget _buildFormulaOption(
+      BuildContext context, String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(title),
+      onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+    );
+  }
+
+  // Add a method to show color picker dialog for the selected cell
+  void _showColorPickerDialog(int rowIndex, int columnIndex, String value) {
+    final existingCell = _findCellInSheet(rowIndex, columnIndex);
+    String? currentColorHex = existingCell?.color;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Cell Color'),
+          content: SizedBox(
+            width: 300,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: CellColorHandler.colorPalette.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return InkWell(
+                    onTap: () {
+                      _handleCellSubmit(rowIndex, columnIndex, value, null);
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.format_color_reset),
+                      ),
+                    ),
+                  );
+                }
+
+                final colorEntry =
+                    CellColorHandler.colorPalette.entries.elementAt(index - 1);
+
+                return InkWell(
+                  onTap: () {
+                    final colorHex =
+                        CellColorHandler.getHexFromColor(colorEntry.value);
+                    _handleCellSubmit(rowIndex, columnIndex, value, colorHex);
+                    Navigator.of(context).pop();
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorEntry.value,
+                      border: Border.all(
+                        color: Colors.black,
+                        width: currentColorHex != null &&
+                                CellColorHandler.getHexFromColor(
+                                        colorEntry.value) ==
+                                    currentColorHex
+                            ? 2
+                            : 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Center(),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method to find a cell in the sheet
+  InventoryCellModel? _findCellInSheet(int rowIndex, int columnIndex) {
+    final rowModel = widget.sheet.rows.firstWhereOrNull(
+      (r) => r.rowIndex == rowIndex,
+    );
+
+    if (rowModel != null) {
+      return rowModel.cells.firstWhereOrNull(
+        (c) => c.columnIndex == columnIndex,
+      );
+    }
+
+    return null;
   }
 
   List<GridColumn> _buildColumns() {

@@ -76,14 +76,14 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
     });
   }
 
-  Future<void> createCell(
-      String rowId, int columnIndex, String value, String? formula) async {
+  Future<void> createCell(String rowId, int columnIndex, String value,
+      String? color, String? formula) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
         await _inventoryRepository.createCell(
-            rowId, columnIndex, value, formula);
+            rowId, columnIndex, value, color, formula);
         final updatedInventory =
             await _inventoryRepository.getInventoryByDate(null, null);
         return InventoryState(sheet: updatedInventory);
@@ -93,12 +93,13 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
     });
   }
 
-  Future<void> updateCell(String cellId, String value, String? formula) async {
+  Future<void> updateCell(
+      String cellId, String value, String? color, String? formula) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
-        await _inventoryRepository.updateCell(cellId, value, formula);
+        await _inventoryRepository.updateCell(cellId, value, color, formula);
         final updatedInventory =
             await _inventoryRepository.getInventoryByDate(null, null);
         return InventoryState(sheet: updatedInventory);

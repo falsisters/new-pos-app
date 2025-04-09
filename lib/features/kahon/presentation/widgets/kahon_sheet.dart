@@ -1,8 +1,12 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_data_source.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +33,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   bool _isEditable = false;
   late FormulaHandler _formulaHandler;
 
+  // Track the currently selected cell
+  int? _selectedRowIndex;
+  int? _selectedColumnIndex;
+  String? _selectedCellValue;
+  String? _selectedCellColorHex;
+  TextEditingController _cellValueController = TextEditingController();
+
   // Store pending cell changes
   final Map<String, CellChange> _pendingChanges = {};
 
@@ -39,21 +50,277 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     _initializeDataSource();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set the current context in the data source
+    KahonSheetDataSource.currentContext = context;
+  }
+
   void _initializeDataSource() {
     _dataSource = KahonSheetDataSource(
       sheet: widget.sheet,
-      kahonItems: const [], // Add an empty list for kahonItems or provide actual items
+      kahonItems: const [],
       isEditable: _isEditable,
       cellSubmitCallback: _handleCellSubmit,
       addCalculationRowCallback: _addCalculationRow,
       deleteRowCallback: _deleteRow,
       formulaHandler: _formulaHandler,
+      onCellSelected: _handleCellSelected,
+    );
+
+    // Make sure to set the context
+    KahonSheetDataSource.currentContext = context;
+  }
+
+  // Handle cell selection
+  void _handleCellSelected(
+      int rowIndex, int columnIndex, String? value, String? colorHex) {
+    setState(() {
+      _selectedRowIndex = rowIndex;
+      _selectedColumnIndex = columnIndex;
+      _selectedCellValue = value;
+      _selectedCellColorHex = colorHex;
+      _cellValueController.text = value ?? '';
+    });
+  }
+
+  // Clear selected cell
+  void _clearSelectedCell() {
+    setState(() {
+      _selectedRowIndex = null;
+      _selectedColumnIndex = null;
+      _selectedCellValue = null;
+      _selectedCellColorHex = null;
+      _cellValueController.clear();
+    });
+  }
+
+  // Erase selected cell
+  void _eraseSelectedCell() {
+    if (_selectedRowIndex != null && _selectedColumnIndex != null) {
+      try {
+        // Find the corresponding row in the current sheet
+        final rowModel = widget.sheet.rows.firstWhereOrNull(
+          (r) => r.rowIndex == _selectedRowIndex,
+        );
+
+        if (rowModel == null) {
+          print('Row not found for index: $_selectedRowIndex');
+          return;
+        }
+
+        // Check if the cell exists
+        final existingCell = rowModel.cells.firstWhereOrNull(
+          (c) => c.columnIndex == _selectedColumnIndex,
+        );
+
+        if (existingCell != null) {
+          // Create a unique key for this cell change
+          String changeKey = '${_selectedRowIndex}_${_selectedColumnIndex}';
+
+          // Store the change in pending changes with empty value and no formula
+          _pendingChanges[changeKey] = CellChange(
+            isUpdate: true,
+            cellId: existingCell.id,
+            rowId: rowModel.id,
+            columnIndex: _selectedColumnIndex!,
+            displayValue: '', // Empty value
+            formula: null, // Clear formula
+            color: null, // Clear color
+          );
+
+          print("Added cell erase to pending changes: $changeKey");
+
+          // Update UI immediately to show the change
+          setState(() {
+            // Make sure we're working with the most current sheet state
+            SheetModel currentSheet = _dataSource.currentSheet;
+
+            // Create a mutable copy of the sheet for UI updates
+            SheetModel updatedSheet = SheetModel(
+              id: currentSheet.id,
+              name: currentSheet.name,
+              columns: currentSheet.columns,
+              kahonId: currentSheet.kahonId,
+              createdAt: currentSheet.createdAt,
+              updatedAt: currentSheet.updatedAt,
+              rows: currentSheet.rows.map((row) {
+                // If this is the row we're modifying
+                if (row.id == rowModel.id) {
+                  // Create a mutable copy of cells
+                  List<CellModel> updatedCells = [...row.cells];
+
+                  // Update existing cell
+                  int cellIndex =
+                      updatedCells.indexWhere((c) => c.id == existingCell.id);
+                  if (cellIndex != -1) {
+                    updatedCells[cellIndex] = CellModel(
+                      id: existingCell.id,
+                      rowId: existingCell.rowId,
+                      columnIndex: existingCell.columnIndex,
+                      value: '', // Clear value
+                      formula: null, // Clear formula
+                      color: null, // Clear color
+                      isCalculated: false, // No longer calculated
+                      createdAt: existingCell.createdAt,
+                      updatedAt: DateTime.now(),
+                    );
+                  }
+
+                  // Return updated row with new cells list
+                  return RowModel(
+                    id: row.id,
+                    sheetId: row.sheetId,
+                    rowIndex: row.rowIndex,
+                    isItemRow: row.isItemRow,
+                    itemId: row.itemId,
+                    cells: updatedCells,
+                    createdAt: row.createdAt,
+                    updatedAt: row.updatedAt,
+                  );
+                }
+                return row; // Return unchanged row
+              }).toList(),
+            );
+
+            // Update formula handler and data source
+            _formulaHandler = FormulaHandler(sheet: updatedSheet);
+            _dataSource = KahonSheetDataSource(
+              sheet: updatedSheet,
+              kahonItems: const [],
+              isEditable: _isEditable,
+              cellSubmitCallback: _handleCellSubmit,
+              addCalculationRowCallback: _addCalculationRow,
+              deleteRowCallback: _deleteRow,
+              formulaHandler: _formulaHandler,
+              onCellSelected: _handleCellSelected,
+            );
+
+            // Clear the selected cell data
+            _selectedCellValue = '';
+            _selectedCellColorHex = null;
+            _cellValueController.clear();
+          });
+        } else {
+          // If the cell doesn't exist yet, we can just clear the UI state
+          _clearSelectedCell();
+        }
+      } catch (e) {
+        print('Error erasing cell: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to erase cell: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  }
+
+  // Show color picker for selected cell
+  void _showColorPickerForSelectedCell() {
+    if (_selectedRowIndex != null && _selectedColumnIndex != null) {
+      _showColorPicker(_selectedRowIndex!, _selectedColumnIndex!,
+          _selectedCellValue ?? '', _selectedCellColorHex);
+    }
+  }
+
+  // Method to show color picker popup
+  void _showColorPicker(
+      int rowIndex, int columnIndex, String value, String? currentColorHex) {
+    // Use the provided context or the statically stored context
+    BuildContext? context = this.context;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Cell Color'),
+          content: SizedBox(
+            width: 300,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: CellColorHandler.colorPalette.length +
+                  1, // +1 for clear option
+              itemBuilder: (context, index) {
+                // First option is to clear the color
+                if (index == 0) {
+                  return InkWell(
+                    onTap: () {
+                      _handleCellSubmit(rowIndex, columnIndex, value, null);
+                      Navigator.of(context).pop();
+                      // Update the selected cell color after clearing
+                      setState(() {
+                        _selectedCellColorHex = null;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.format_color_reset),
+                      ),
+                    ),
+                  );
+                }
+
+                // Get color from palette (adjust index for the clear option)
+                final colorEntry =
+                    CellColorHandler.colorPalette.entries.elementAt(index - 1);
+
+                return InkWell(
+                  onTap: () {
+                    final colorHex =
+                        CellColorHandler.getHexFromColor(colorEntry.value);
+                    _handleCellSubmit(rowIndex, columnIndex, value, colorHex);
+                    Navigator.of(context).pop();
+                    // Update the selected cell color after selecting
+                    setState(() {
+                      _selectedCellColorHex = colorHex;
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorEntry.value,
+                      border: Border.all(
+                        color: Colors.black,
+                        width: currentColorHex != null &&
+                                CellColorHandler.getHexFromColor(
+                                        colorEntry.value) ==
+                                    currentColorHex
+                            ? 2
+                            : 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Center(),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 
   void _toggleEditMode() {
     setState(() {
       _isEditable = !_isEditable;
+      _clearSelectedCell(); // Clear selected cell when toggling edit mode
       _initializeDataSource(); // Refresh data source with new editable state
     });
   }
@@ -90,18 +357,20 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
             'id': change.cellId,
             'value': change.displayValue,
             'formula': change.formula,
+            'color': change.color,
           });
           print(
-              "Update cell: id=${change.cellId}, value=${change.displayValue}");
+              "Update cell: id=${change.cellId}, value=${change.displayValue}, color=${change.color}");
         } else {
           cellsToCreate.add({
             'rowId': change.rowId,
             'columnIndex': change.columnIndex,
             'value': change.displayValue,
             'formula': change.formula,
+            'color': change.color,
           });
           print(
-              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}");
+              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, color=${change.color}");
         }
       }
 
@@ -145,11 +414,20 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     }
   }
 
-  // Handle cell operations (create, update)
+  // Handle cell submission
   Future<void> _handleCellSubmit(
-      int rowIndex, int columnIndex, String value) async {
+      int rowIndex, int columnIndex, String value, String? colorHex) async {
     print(
-        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value");
+        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex");
+
+    // Skip submitting empty unchanged values
+    if (_selectedRowIndex == rowIndex &&
+        _selectedColumnIndex == columnIndex &&
+        _selectedCellValue == value &&
+        _selectedCellColorHex == colorHex) {
+      return; // No changes, don't process
+    }
+
     try {
       // Use a local variable to store the current sheet state
       SheetModel currentSheet = widget.sheet;
@@ -194,10 +472,11 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
         _pendingChanges[changeKey] = CellChange(
           isUpdate: true,
           cellId: existingCell.id,
-          rowId: rowModel.id, // Add rowId for clearer tracking
-          columnIndex: columnIndex, // Add columnIndex for clearer tracking
+          rowId: rowModel.id,
+          columnIndex: columnIndex,
           displayValue: displayValue,
           formula: formula,
+          color: colorHex,
         );
         print("Added update to pending changes: $changeKey");
       } else {
@@ -207,6 +486,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           columnIndex: columnIndex,
           displayValue: displayValue,
           formula: formula,
+          color: colorHex,
         );
         print("Added create to pending changes: $changeKey");
       }
@@ -238,6 +518,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                     columnIndex: existingCell.columnIndex,
                     value: displayValue,
                     formula: formula,
+                    color: colorHex, // Set the color
                     isCalculated: formula != null,
                     createdAt: existingCell.createdAt,
                     updatedAt: DateTime.now(),
@@ -251,6 +532,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                   columnIndex: columnIndex,
                   value: displayValue,
                   formula: formula,
+                  color: colorHex, // Set the color
                   isCalculated: formula != null,
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
@@ -276,6 +558,11 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
         // Create a new FormulaHandler with updated sheet
         _formulaHandler = FormulaHandler(sheet: updatedSheet);
 
+        // Update the selected cell values to match our changes
+        _selectedCellValue = value;
+        _selectedCellColorHex = colorHex;
+        _cellValueController.text = value;
+
         // Re-initialize data source with updated sheet
         _dataSource = KahonSheetDataSource(
           sheet: updatedSheet,
@@ -285,6 +572,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           addCalculationRowCallback: _addCalculationRow,
           deleteRowCallback: _deleteRow,
           formulaHandler: _formulaHandler,
+          onCellSelected: _handleCellSelected,
         );
       });
     } catch (e) {
@@ -510,6 +798,284 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     );
   }
 
+  void _showQuickFormulasMenu() {
+    if (_selectedRowIndex == null || _selectedColumnIndex == null) return;
+
+    final rowIndex = _selectedRowIndex!;
+    final columnIndex = _selectedColumnIndex!;
+    final value = _selectedCellValue ?? '';
+    final colorHex = _selectedCellColorHex;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Quick Formulas'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildFormulaOption(
+                  context,
+                  'Add Vertical Cells',
+                  Icons.arrow_upward,
+                  () {
+                    if (rowIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} + ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not enough rows above')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Subtract Vertical Cells',
+                  Icons.remove,
+                  () {
+                    if (rowIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} - ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not enough rows above')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Multiply Vertical Cells',
+                  Icons.clear,
+                  () {
+                    if (rowIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Not enough rows above')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Apply Multiply to All Rows',
+                  Icons.all_inclusive,
+                  () {
+                    if (columnIndex >= 2) {
+                      String formula =
+                          '=${_getColumnLetter(columnIndex - 2)}$rowIndex * ${_getColumnLetter(columnIndex - 1)}$rowIndex';
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+
+                      // Apply to all other rows
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final sortedRows = List<RowModel>.from(
+                            widget.sheet.rows)
+                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                        for (var row in sortedRows) {
+                          if (row.rowIndex == rowIndex) continue;
+
+                          final leftCell1 = row.cells
+                              .where((c) => c.columnIndex == columnIndex - 2)
+                              .firstOrNull;
+                          final leftCell2 = row.cells
+                              .where((c) => c.columnIndex == columnIndex - 1)
+                              .firstOrNull;
+
+                          if (leftCell1 != null && leftCell2 != null) {
+                            try {
+                              double.parse(leftCell1.value ?? '');
+                              double.parse(leftCell2.value ?? '');
+
+                              String targetFormula =
+                                  '=${_getColumnLetter(columnIndex - 2)}${row.rowIndex} * ${_getColumnLetter(columnIndex - 1)}${row.rowIndex}';
+                              _handleCellSubmit(row.rowIndex, columnIndex,
+                                  targetFormula, null);
+                            } catch (_) {}
+                          }
+                        }
+                      });
+
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Not enough columns to the left')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Apply Addition to Row',
+                  Icons.functions,
+                  () {
+                    if (columnIndex >= 1) {
+                      String formula = '=';
+                      bool hasValues = false;
+
+                      // Loop through all columns to the left of current column
+                      for (int leftColIndex = 0;
+                          leftColIndex < columnIndex;
+                          leftColIndex++) {
+                        final String colName = _getColumnLetter(leftColIndex);
+
+                        // Add this cell reference to the formula
+                        if (hasValues) {
+                          formula += ' + ';
+                        }
+                        formula += '$colName$rowIndex';
+                        hasValues = true;
+                      }
+
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+
+                      // Apply the same formula to all other rows
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final sortedRows = List<RowModel>.from(
+                            widget.sheet.rows)
+                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                        for (var row in sortedRows) {
+                          if (row.rowIndex == rowIndex) continue;
+
+                          // Check if this row has any values in the left columns
+                          bool rowHasValues = false;
+                          for (int leftColIndex = 0;
+                              leftColIndex < columnIndex;
+                              leftColIndex++) {
+                            final leftCell = row.cells
+                                .where((c) => c.columnIndex == leftColIndex)
+                                .firstOrNull;
+                            if (leftCell != null &&
+                                leftCell.value != null &&
+                                leftCell.value!.isNotEmpty) {
+                              rowHasValues = true;
+                              break;
+                            }
+                          }
+
+                          // Skip rows with no values in left columns
+                          if (!rowHasValues) continue;
+
+                          // Create the same formula but for this row
+                          String targetFormula = '=';
+                          bool targetHasValues = false;
+
+                          for (int leftColIndex = 0;
+                              leftColIndex < columnIndex;
+                              leftColIndex++) {
+                            final String colName =
+                                _getColumnLetter(leftColIndex);
+
+                            if (targetHasValues) {
+                              targetFormula += ' + ';
+                            }
+                            targetFormula += '$colName${row.rowIndex}';
+                            targetHasValues = true;
+                          }
+
+                          _handleCellSubmit(
+                              row.rowIndex, columnIndex, targetFormula, null);
+                        }
+                      });
+
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Not enough columns to the left')),
+                      );
+                    }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Add All Vertical Cells',
+                  Icons.functions,
+                  () {
+                    String formula = '=';
+                    bool hasValues = false;
+
+                    final sortedRows = List<RowModel>.from(widget.sheet.rows)
+                      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                    for (var row in sortedRows) {
+                      if (row.rowIndex == rowIndex) continue;
+
+                      final cellInColumn = row.cells
+                          .where((c) => c.columnIndex == columnIndex)
+                          .firstOrNull;
+
+                      if (cellInColumn != null &&
+                          cellInColumn.value != null &&
+                          cellInColumn.value!.isNotEmpty) {
+                        try {
+                          double.parse(cellInColumn.value!);
+
+                          if (hasValues) {
+                            formula += ' + ';
+                          }
+                          formula +=
+                              '${_getColumnLetter(columnIndex)}${row.rowIndex}';
+                          hasValues = true;
+                        } catch (_) {}
+                      }
+                    }
+
+                    if (hasValues) {
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula, colorHex);
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('No numeric cells found in this column')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFormulaOption(
+      BuildContext context, String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(title),
+      onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -658,6 +1224,49 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
               navigationMode: GridNavigationMode.cell,
               frozenColumnsCount: 1, // Freeze the first column (item names)
               columns: _buildColumns(),
+              // Add onCellTap callback to track cell selection
+              onCellTap: (details) {
+                if (details.rowColumnIndex.rowIndex > 0 && // Skip header
+                    details.column.columnName != 'itemName') {
+                  // Get the actual data grid row
+                  final rowData = _dataSource.rows.isNotEmpty &&
+                          details.rowColumnIndex.rowIndex - 1 <
+                              _dataSource.rows.length
+                      ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
+                      : null;
+
+                  if (rowData != null) {
+                    // Extract row cell data from the first column
+                    final firstCell = rowData.getCells().first;
+                    if (firstCell.value is RowCellData) {
+                      final rowCellData = firstCell.value as RowCellData;
+                      final rowIndex = rowCellData.rowIndex;
+                      final columnIndex = int.parse(
+                          details.column.columnName.replaceAll('column', ''));
+
+                      // Find the cell in the data model
+                      final rowModel = widget.sheet.rows.firstWhereOrNull(
+                        (r) => r.rowIndex == rowIndex,
+                      );
+
+                      CellModel? cell;
+                      if (rowModel != null) {
+                        cell = rowModel.cells.firstWhereOrNull(
+                          (c) => c.columnIndex == columnIndex,
+                        );
+                      }
+
+                      setState(() {
+                        _selectedRowIndex = rowIndex;
+                        _selectedColumnIndex = columnIndex;
+                        _selectedCellValue = cell?.value ?? '';
+                        _selectedCellColorHex = cell?.color;
+                        _cellValueController.text = cell?.value ?? '';
+                      });
+                    }
+                  }
+                }
+              },
             ),
           ),
           // Add save button at the bottom when in edit mode
@@ -667,22 +1276,93 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_pendingChanges.isNotEmpty)
-                    Text(
-                      '${_pendingChanges.length} unsaved changes',
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      if (_pendingChanges.isNotEmpty)
+                        Text(
+                          '${_pendingChanges.length} unsaved changes',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Show cell manipulation buttons only when a cell is selected
+                      if (_selectedRowIndex != null &&
+                          _selectedColumnIndex != null)
+                        Row(
+                          children: [
+                            // Add Quick Formulas button
+                            ElevatedButton.icon(
+                              icon: const Icon(
+                                Icons.functions,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              label: const Text('Quick Formulas',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.white)),
+                              onPressed: _showQuickFormulasMenu,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Erase button with eraser icon instead of trash
+                            ElevatedButton.icon(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.red,
+                                size: 16,
+                              ),
+                              label: const Text('Erase Cell Value',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.red)),
+                              onPressed: _eraseSelectedCell,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 8,
+                            ),
+                            // Color selector button with label
+                            ElevatedButton.icon(
+                              icon: Icon(
+                                Icons.color_lens,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              label: const Text('Change Color',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.white)),
+                              onPressed: _showColorPickerForSelectedCell,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                          ],
+                        ),
+                      ElevatedButton.icon(
+                        onPressed: _saveChanges,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Save Changes'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
-                    ),
-                  ElevatedButton.icon(
-                    onPressed: _saveChanges,
-                    icon: const Icon(Icons.save),
-                    label: const Text('Save Changes'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
+                    ],
                   ),
                 ],
               ),
