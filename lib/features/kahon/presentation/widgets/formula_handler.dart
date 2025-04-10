@@ -259,6 +259,53 @@ class FormulaHandler {
     }
   }
 
+  // Check if a cell contains a formula
+  bool isCellFormula(int rowIndex, int columnIndex) {
+    try {
+      var rowModel = sheet.rows.firstWhereOrNull(
+        (row) => row.rowIndex == rowIndex,
+      );
+
+      if (rowModel == null) return false;
+
+      var cellModel = rowModel.cells.firstWhereOrNull(
+        (cell) => cell.columnIndex == columnIndex,
+      );
+
+      if (cellModel == null) return false;
+
+      return cellModel.formula != null && cellModel.formula!.startsWith('=');
+    } catch (e) {
+      print('Error checking if cell is formula: $e');
+      return false;
+    }
+  }
+
+  // Get all formula cells in the sheet
+  List<Map<String, dynamic>> getAllFormulaCells() {
+    List<Map<String, dynamic>> formulaCells = [];
+
+    try {
+      for (var row in sheet.rows) {
+        for (var cell in row.cells) {
+          if (cell.formula != null && cell.formula!.startsWith('=')) {
+            formulaCells.add({
+              'rowIndex': row.rowIndex,
+              'columnIndex': cell.columnIndex,
+              'formula': cell.formula,
+              'cellId': cell.id,
+              'rowId': row.id,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error getting all formula cells: $e');
+    }
+
+    return formulaCells;
+  }
+
   // Evaluate a mathematical expression
   double _evaluateExpression(String expression) {
     // Handle basic arithmetic

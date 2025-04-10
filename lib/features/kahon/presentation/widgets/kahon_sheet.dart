@@ -672,6 +672,95 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     }
   }
 
+  // Recalculate all formula cells in the sheet
+  void _recalculateAllFormulas(SheetModel currentSheet) {
+    print("Starting full formula recalculation...");
+
+    // Create a mutable copy of the sheet
+    SheetModel updatedSheet = SheetModel(
+      id: currentSheet.id,
+      name: currentSheet.name,
+      columns: currentSheet.columns,
+      kahonId: currentSheet.kahonId,
+      createdAt: currentSheet.createdAt,
+      updatedAt: currentSheet.updatedAt,
+      rows: [...currentSheet.rows],
+    );
+
+    // Process all cells with formulas
+    int formulasProcessed = 0;
+    for (var row in updatedSheet.rows) {
+      for (var cell in row.cells) {
+        if (cell.formula != null && cell.formula!.startsWith('=')) {
+          try {
+            String newValue = _formulaHandler.evaluateFormula(
+                cell.formula!, row.rowIndex, cell.columnIndex);
+
+            // Only update if value changed
+            if (newValue != cell.value) {
+              String changeKey = '${row.rowIndex}_${cell.columnIndex}';
+              _pendingChanges[changeKey] = CellChange(
+                isUpdate: true,
+                cellId: cell.id,
+                rowId: row.id,
+                columnIndex: cell.columnIndex,
+                displayValue: newValue,
+                formula: cell.formula,
+                color: cell.color,
+              );
+
+              // Find cell index and update in our working copy
+              int rowIdx = updatedSheet.rows.indexWhere((r) => r.id == row.id);
+              if (rowIdx >= 0) {
+                int cellIdx = updatedSheet.rows[rowIdx].cells
+                    .indexWhere((c) => c.id == cell.id);
+
+                if (cellIdx >= 0) {
+                  // Update the cell in our working copy
+                  updatedSheet.rows[rowIdx].cells[cellIdx] = CellModel(
+                    id: cell.id,
+                    rowId: cell.rowId,
+                    columnIndex: cell.columnIndex,
+                    value: newValue,
+                    formula: cell.formula,
+                    color: cell.color,
+                    isCalculated: true,
+                    createdAt: cell.createdAt,
+                    updatedAt: DateTime.now(),
+                  );
+                }
+              }
+
+              formulasProcessed++;
+            }
+          } catch (e) {
+            print("Error recalculating formula ${cell.formula}: $e");
+          }
+        }
+      }
+    }
+
+    print(
+        "Formula recalculation complete. Updated $formulasProcessed formulas.");
+
+    if (formulasProcessed > 0) {
+      // Update the data source with our recalculated sheet
+      setState(() {
+        _formulaHandler = FormulaHandler(sheet: updatedSheet);
+        _dataSource = KahonSheetDataSource(
+          sheet: updatedSheet,
+          kahonItems: const [],
+          isEditable: _isEditable,
+          cellSubmitCallback: _handleCellSubmit,
+          addCalculationRowCallback: _addCalculationRow,
+          deleteRowCallback: _deleteRow,
+          formulaHandler: _formulaHandler,
+          onCellSelected: _handleCellSelected,
+        );
+      });
+    }
+  }
+
   // Handle cell submission
   Future<void> _handleCellSubmit(
       int rowIndex, int columnIndex, String value, String? colorHex) async {
@@ -836,9 +925,16 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
         // Important - rebuild formula dependency map BEFORE updating dependents
         _buildFormulaDependencyMap();
 
-        // Update cells that depend on this one if cell value changed or it's a formula
-        if (value.startsWith('=') ||
-            (existingCell != null && existingCell.value != displayValue)) {
+        // If this is a formula cell or it depends on other cells, recalculate all formulas
+        // This ensures that complex interdependencies are maintained
+        if (value.startsWith('=')) {
+          // First update direct dependencies
+          _updateDependentFormulas(rowIndex, columnIndex, updatedSheet);
+
+          // Then trigger a complete recalculation to handle complex dependencies
+          _recalculateAllFormulas(updatedSheet);
+        } else if (existingCell != null && existingCell.value != displayValue) {
+          // If just a value changed, update direct dependencies
           _updateDependentFormulas(rowIndex, columnIndex, updatedSheet);
         }
       });
@@ -854,33 +950,50 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
 
   // Recalculate all formulas in the sheet
   Future<void> _recalculateFormulas() async {
-    List<Map<String, dynamic>> cellsToUpdate = [];
+    try {
+      // First get the current sheet state
+      SheetModel currentSheet = widget.sheet;
 
-    for (var row in widget.sheet.rows) {
-      for (var cell in row.cells) {
-        if (cell.formula != null && cell.formula!.startsWith('=')) {
-          try {
-            final newValue = _formulaHandler.evaluateFormula(
-                cell.formula!, row.rowIndex, cell.columnIndex);
+      // If we already have a modified sheet in progress, use that instead
+      if (_dataSource.sheet != widget.sheet) {
+        currentSheet = _dataSource.sheet;
+      }
 
+      // Use our comprehensive formula recalculation
+      _recalculateAllFormulas(currentSheet);
+
+      // Apply all pending changes
+      if (_pendingChanges.isNotEmpty) {
+        List<Map<String, dynamic>> cellsToUpdate = [];
+
+        for (var change in _pendingChanges.values) {
+          if (change.isUpdate) {
             cellsToUpdate.add({
-              'id': cell.id,
-              'value': newValue,
-              'formula': cell.formula,
-            });
-          } catch (e) {
-            cellsToUpdate.add({
-              'id': cell.id,
-              'value': '#ERROR',
-              'formula': cell.formula,
+              'id': change.cellId,
+              'value': change.displayValue,
+              'formula': change.formula,
+              'color': change.color,
             });
           }
         }
-      }
-    }
 
-    if (cellsToUpdate.isNotEmpty) {
-      await ref.read(sheetNotifierProvider.notifier).updateCells(cellsToUpdate);
+        if (cellsToUpdate.isNotEmpty) {
+          print("Saving ${cellsToUpdate.length} recalculated cells");
+          await ref
+              .read(sheetNotifierProvider.notifier)
+              .updateCells(cellsToUpdate);
+        }
+
+        _pendingChanges.clear();
+      }
+    } catch (e) {
+      print('Error during formula recalculation: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error recalculating formulas: ${e.toString()}')),
+        );
+      }
     }
   }
 
