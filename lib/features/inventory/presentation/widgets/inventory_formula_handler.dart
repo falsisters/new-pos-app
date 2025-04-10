@@ -35,6 +35,117 @@ class InventoryFormulaHandler {
     return columnLetter;
   }
 
+  // Improved function to convert column letter to index
+  int? _getColumnIndexFromLetter(String columnLetter) {
+    // Handle uppercase and lowercase letters
+    columnLetter = columnLetter.toUpperCase();
+
+    // Check if it's a named column
+    if (_columnIndexMap.containsKey(columnLetter)) {
+      return _columnIndexMap[columnLetter];
+    }
+
+    // Handle Excel-style column letters (A=0, B=1, AA=26, etc.)
+    int result = 0;
+    for (int i = 0; i < columnLetter.length; i++) {
+      int charValue = columnLetter.codeUnitAt(i) - 'A'.codeUnitAt(0);
+      if (charValue < 0 || charValue > 25) {
+        // Invalid character in column name
+        return null;
+      }
+      result = result * 26 + charValue + 1;
+    }
+    return result - 1; // Convert to 0-based index
+  }
+
+  // Extracts cell references from a formula for dependency tracking
+  Set<String> extractCellReferencesFromFormula(String formula) {
+    Set<String> references = {};
+
+    // Remove the leading equals sign
+    if (formula.startsWith('=')) {
+      formula = formula.substring(1).trim();
+    }
+
+    // Pattern to match a cell reference like A1, B2, AA34
+    RegExp cellReferencePattern = RegExp(r'([A-Za-z]+)(\d+)');
+
+    // Find all matches
+    Iterable<RegExpMatch> matches = cellReferencePattern.allMatches(formula);
+
+    for (RegExpMatch match in matches) {
+      String columnRef = match.group(1)!;
+      String rowRef = match.group(2)!;
+
+      try {
+        int rowIndex = int.parse(rowRef);
+
+        // Get column index if available
+        int? columnIndex;
+        if (_columnIndexMap.containsKey(columnRef.toUpperCase())) {
+          columnIndex = _columnIndexMap[columnRef.toUpperCase()];
+        } else {
+          // Try to parse column letter to index directly
+          columnIndex = _getColumnIndexFromLetter(columnRef);
+        }
+
+        // Store references if we could determine the column index
+        if (columnIndex != null) {
+          String rowColKey = '${rowIndex}_${columnIndex}';
+          String namedRef = '$columnRef$rowIndex';
+
+          references.add(rowColKey);
+          references.add(namedRef);
+
+          // Print for debugging
+          print('Formula dependency found: $rowColKey ($namedRef)');
+        }
+      } catch (e) {
+        print('Error parsing cell reference: $e');
+      }
+    }
+
+    // Also look for range references like SUM(A1:A10)
+    RegExp rangePattern = RegExp(r'([A-Za-z]+)(\d+):([A-Za-z]+)(\d+)');
+    matches = rangePattern.allMatches(formula);
+
+    for (RegExpMatch match in matches) {
+      String startCol = match.group(1)!;
+      int startRow = int.parse(match.group(2)!);
+      String endCol = match.group(3)!;
+      int endRow = int.parse(match.group(4)!);
+
+      int? startColIndex, endColIndex;
+
+      if (_columnIndexMap.containsKey(startCol.toUpperCase())) {
+        startColIndex = _columnIndexMap[startCol.toUpperCase()];
+      } else {
+        startColIndex = _getColumnIndexFromLetter(startCol);
+      }
+
+      if (_columnIndexMap.containsKey(endCol.toUpperCase())) {
+        endColIndex = _columnIndexMap[endCol.toUpperCase()];
+      } else {
+        endColIndex = _getColumnIndexFromLetter(endCol);
+      }
+
+      if (startColIndex != null && endColIndex != null) {
+        // Add all cells in the range
+        for (int row = startRow; row <= endRow; row++) {
+          for (int col = startColIndex; col <= endColIndex; col++) {
+            String rowColKey = '${row}_$col';
+            String colLetter = _getColumnLetter(col);
+            String namedRef = '$colLetter$row';
+            references.add(rowColKey);
+            references.add(namedRef);
+          }
+        }
+      }
+    }
+
+    return references;
+  }
+
   // Main method to evaluate formulas
   String evaluateFormula(
       String formula, int currentRowIndex, int currentColumnIndex) {
@@ -68,7 +179,6 @@ class InventoryFormulaHandler {
 
   // Process range functions like SUM, AVG, COUNT, MAX, MIN
   String _processRangeFunctions(String formula) {
-    // Pattern to match range functions: SUM(A1:A10), AVG(A1:A10), etc.
     RegExp rangePattern =
         RegExp(r'(SUM|AVG|COUNT|MAX|MIN)\(([A-Za-z0-9]+):([A-Za-z0-9]+)\)');
 
@@ -78,20 +188,16 @@ class InventoryFormulaHandler {
       String endRef = match.group(3)!;
 
       try {
-        // Parse cell references
         CellReference startCell = _parseCellReference(startRef);
         CellReference endCell = _parseCellReference(endRef);
 
-        // Ensure column indices match for ranges
         if (startCell.columnIndex != endCell.columnIndex) {
           throw Exception('Range must be in the same column');
         }
 
-        // Get values in the range
         List<double> values = _getValuesInRange(
             startCell.columnIndex, startCell.rowIndex, endCell.rowIndex);
 
-        // Apply the function to the values without rounding intermediate values
         switch (function) {
           case 'SUM':
             return values.fold(0.0, (a, b) => a + b).toString();
@@ -122,24 +228,19 @@ class InventoryFormulaHandler {
       int columnIndex, int startRowIndex, int endRowIndex) {
     List<double> values = [];
 
-    // Ensure proper range ordering
     int start = startRowIndex < endRowIndex ? startRowIndex : endRowIndex;
     int end = startRowIndex > endRowIndex ? startRowIndex : endRowIndex;
 
-    // Collect values from cells in the range
     for (int rowIndex = start; rowIndex <= end; rowIndex++) {
       try {
-        // Find the row
         InventoryRowModel? row =
             sheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
         if (row == null) continue;
 
-        // Find the cell
         InventoryCellModel? cell =
             row.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
         if (cell == null || cell.value == null || cell.value!.isEmpty) continue;
 
-        // Try to parse the value
         double? value = double.tryParse(cell.value!);
         if (value != null) {
           values.add(value);
@@ -154,7 +255,6 @@ class InventoryFormulaHandler {
 
   // Process individual cell references like A1, B2, etc.
   String _processCellReferences(String formula, int currentRowIndex) {
-    // Pattern to match cell references: A1, B2, Quantity5, etc.
     RegExp cellPattern = RegExp(r'([A-Za-z]+)([0-9]+)');
 
     return formula.replaceAllMapped(cellPattern, (match) {
@@ -162,34 +262,29 @@ class InventoryFormulaHandler {
       int rowIndex = int.parse(match.group(2)!);
 
       try {
-        // Check if the column exists in our mapping
         if (!_columnIndexMap.containsKey(column.toUpperCase())) {
           throw Exception('Invalid column reference: $column');
         }
 
         int columnIndex = _columnIndexMap[column.toUpperCase()]!;
 
-        // Find the row
         InventoryRowModel? row =
             sheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
         if (row == null) {
           return '0';
         }
 
-        // Find the cell
         InventoryCellModel? cell =
             row.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
         if (cell == null || cell.value == null || cell.value!.isEmpty) {
           return '0';
         }
 
-        // Try to parse the value, return 0 if not a number
         double? value = double.tryParse(cell.value!);
         if (value == null) {
           return '0';
         }
 
-        // Return the exact value without rounding
         return value.toString();
       } catch (e) {
         print('Error processing cell reference: $e');
@@ -210,7 +305,6 @@ class InventoryFormulaHandler {
     String column = match.group(1)!;
     int rowIndex = int.parse(match.group(2)!);
 
-    // Check if the column exists in our mapping
     if (!_columnIndexMap.containsKey(column.toUpperCase())) {
       throw Exception('Invalid column reference: $column');
     }

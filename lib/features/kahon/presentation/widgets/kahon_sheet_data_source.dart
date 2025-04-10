@@ -160,18 +160,31 @@ class KahonSheetDataSource extends DataGridSource {
             backgroundColor = CellColorHandler.getColorFromHex(cellModel.color);
           }
 
-          return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
-            color: backgroundColor ??
-                (cellModel.isCalculated
-                    ? AppColors.primaryLight.withAlpha(25)
-                    : null),
-            child: Text(
-              cellModel.value ?? '',
-              style: TextStyle(
-                color:
-                    cellModel.isCalculated ? AppColors.primary : Colors.black87,
+          return GestureDetector(
+            // Handle double tap to toggle edit mode even when not in edit mode
+            onDoubleTap: isEditable
+                ? null
+                : () {
+                    if (currentContext != null) {
+                      // Find the sheet widget and toggle its edit mode
+                      // This is handled in the parent by wrapping the entire sheet in GestureDetector
+                      // but can be extended here to handle specific cell double-taps
+                    }
+                  },
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8.0),
+              color: backgroundColor ??
+                  (cellModel.isCalculated
+                      ? AppColors.primaryLight.withAlpha(25)
+                      : null),
+              child: Text(
+                cellModel.value ?? '',
+                style: TextStyle(
+                  color: cellModel.isCalculated
+                      ? AppColors.primary
+                      : Colors.black87,
+                ),
               ),
             ),
           );

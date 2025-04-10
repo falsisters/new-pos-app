@@ -1,4 +1,4 @@
-import 'package:board_datetime_picker/board_datetime_picker.dart';
+// ignore_for_file: use_build_context_synchronously
 import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
@@ -52,25 +52,43 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: () async {
-              final result = await showBoardDateTimeMultiPicker(
+              // First pick start date
+              final DateTime? startDate = await showDatePicker(
                 context: context,
-                pickerType: DateTimePickerType.datetime,
+                initialDate: _selectedStartDate ?? DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
               );
 
-              if (result != null) {
-                setState(() {
-                  _selectedStartDate = result.start;
-                  _selectedEndDate = result.end;
-                });
-                // Fetch sheet data for selected date range for both tabs
-                ref
-                    .read(sheetNotifierProvider.notifier)
-                    .getSheetByDate(_selectedStartDate, _selectedEndDate);
+              // If start date is selected, pick end date
+              if (startDate != null) {
+                final DateTime? endDate = await showDatePicker(
+                  context: context,
+                  initialDate: startDate.add(const Duration(days: 1)),
+                  firstDate: startDate,
+                  lastDate: DateTime(2030),
+                );
 
-                ref.read(inventoryProvider.notifier).getInventoryByDate(
-                      _selectedStartDate,
-                      _selectedEndDate,
-                    );
+                // Create result object using the built-in DateTimeRange class
+                final result = endDate != null
+                    ? DateTimeRange(start: startDate, end: endDate)
+                    : null;
+
+                if (result != null) {
+                  setState(() {
+                    _selectedStartDate = result.start;
+                    _selectedEndDate = result.end;
+                  });
+                  // Fetch sheet data for selected date range for both tabs
+                  ref
+                      .read(sheetNotifierProvider.notifier)
+                      .getSheetByDate(_selectedStartDate, _selectedEndDate);
+
+                  ref.read(inventoryProvider.notifier).getInventoryByDate(
+                        _selectedStartDate,
+                        _selectedEndDate,
+                      );
+                }
               }
             },
             tooltip: 'Select Date Range',

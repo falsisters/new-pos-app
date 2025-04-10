@@ -33,6 +33,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   bool _isEditable = false;
   late FormulaHandler _formulaHandler;
 
+  // Track cells that depend on other cells for formula calculation
+  final Map<String, Set<String>> _formulaDependencies = {};
+
   // Track the currently selected cell
   int? _selectedRowIndex;
   int? _selectedColumnIndex;
@@ -48,6 +51,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     super.initState();
     _formulaHandler = FormulaHandler(sheet: widget.sheet);
     _initializeDataSource();
+    _buildFormulaDependencyMap();
   }
 
   @override
@@ -55,6 +59,43 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     super.didChangeDependencies();
     // Set the current context in the data source
     KahonSheetDataSource.currentContext = context;
+  }
+
+  // Build a map of formula dependencies with improved debugging
+  void _buildFormulaDependencyMap() {
+    _formulaDependencies.clear();
+    print("Rebuilding formula dependency map...");
+
+    for (var row in widget.sheet.rows) {
+      for (var cell in row.cells) {
+        if (cell.formula != null && cell.formula!.startsWith('=')) {
+          // Get cell references from formula
+          Set<String> dependencies =
+              _formulaHandler.extractCellReferencesFromFormula(cell.formula!);
+
+          // Debug cells with no dependencies
+          if (dependencies.isEmpty) {
+            print("No dependencies found for formula: ${cell.formula}");
+          }
+
+          // For each cell this formula depends on, add this cell as a dependent
+          for (String dependency in dependencies) {
+            if (!_formulaDependencies.containsKey(dependency)) {
+              _formulaDependencies[dependency] = {};
+            }
+
+            String cellKey = '${row.rowIndex}_${cell.columnIndex}';
+            _formulaDependencies[dependency]!.add(cellKey);
+
+            print(
+                "Added dependency: $dependency -> $cellKey (formula: ${cell.formula})");
+          }
+        }
+      }
+    }
+
+    print(
+        'Formula dependencies built with ${_formulaDependencies.length} entries');
   }
 
   void _initializeDataSource() {
@@ -231,6 +272,21 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     // Use the provided context or the statically stored context
     BuildContext? context = this.context;
 
+    // Store the current cell value to preserve it
+    String cellValue = value;
+
+    // Find the current formula if it exists
+    String? formula;
+    final rowModel = widget.sheet.rows.firstWhereOrNull(
+      (r) => r.rowIndex == rowIndex,
+    );
+    if (rowModel != null) {
+      final cell = rowModel.cells.firstWhereOrNull(
+        (c) => c.columnIndex == columnIndex,
+      );
+      formula = cell?.formula;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -252,7 +308,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 if (index == 0) {
                   return InkWell(
                     onTap: () {
-                      _handleCellSubmit(rowIndex, columnIndex, value, null);
+                      // Pass the original value/formula when clearing color
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, formula ?? cellValue, null);
                       Navigator.of(context).pop();
                       // Update the selected cell color after clearing
                       setState(() {
@@ -279,7 +337,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                   onTap: () {
                     final colorHex =
                         CellColorHandler.getHexFromColor(colorEntry.value);
-                    _handleCellSubmit(rowIndex, columnIndex, value, colorHex);
+                    // Pass the original value/formula when setting color
+                    _handleCellSubmit(
+                        rowIndex, columnIndex, formula ?? cellValue, colorHex);
                     Navigator.of(context).pop();
                     // Update the selected cell color after selecting
                     setState(() {
@@ -411,6 +471,204 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
     if (oldWidget.sheet != widget.sheet) {
       _formulaHandler = FormulaHandler(sheet: widget.sheet);
       _initializeDataSource();
+      _buildFormulaDependencyMap();
+    }
+  }
+
+  // Update dependent formulas after cell value change - Fixed version
+  void _updateDependentFormulas(
+      int rowIndex, int columnIndex, SheetModel currentSheet) {
+    // Create cell key in format used by dependency map
+    String cellKey = '${rowIndex}_${columnIndex}';
+    String columnLetter = _getColumnLetter(columnIndex);
+
+    // Also check for column name references (like "Quantity1")
+    String namedCellKey = '$columnLetter$rowIndex';
+
+    // Process cells that depend on this cell
+    Set<String> dependentCells = {};
+    if (_formulaDependencies.containsKey(cellKey)) {
+      dependentCells.addAll(_formulaDependencies[cellKey]!);
+    }
+    if (_formulaDependencies.containsKey(namedCellKey)) {
+      dependentCells.addAll(_formulaDependencies[namedCellKey]!);
+    }
+
+    if (dependentCells.isEmpty) {
+      print("No dependent cells found for $cellKey or $namedCellKey");
+      return;
+    }
+
+    print(
+        'Updating dependent formulas for cell $cellKey ($namedCellKey): $dependentCells');
+
+    // Create a new formula handler with the current sheet
+    _formulaHandler = FormulaHandler(sheet: currentSheet);
+
+    // Create a mutable copy of the sheet
+    SheetModel updatedSheet = SheetModel(
+      id: currentSheet.id,
+      name: currentSheet.name,
+      columns: currentSheet.columns,
+      kahonId: currentSheet.kahonId,
+      createdAt: currentSheet.createdAt,
+      updatedAt: currentSheet.updatedAt,
+      rows: [...currentSheet.rows],
+    );
+
+    // Track processed cells to avoid circular references
+    Set<String> processedCells = {cellKey, namedCellKey};
+
+    // Process all dependent cells recursively
+    _processDependentCells(dependentCells, processedCells, updatedSheet);
+
+    // Update data source with the modified sheet
+    setState(() {
+      _dataSource = KahonSheetDataSource(
+        sheet: updatedSheet,
+        kahonItems: const [],
+        isEditable: _isEditable,
+        cellSubmitCallback: _handleCellSubmit,
+        addCalculationRowCallback: _addCalculationRow,
+        deleteRowCallback: _deleteRow,
+        formulaHandler: _formulaHandler,
+        onCellSelected: _handleCellSelected,
+      );
+    });
+  }
+
+  // Process dependent cells recursively with clear debugging
+  void _processDependentCells(
+      Set<String> cellsToUpdate, Set<String> processedCells, SheetModel sheet) {
+    List<String> cellsToProcess = cellsToUpdate.toList();
+
+    for (String cellKey in cellsToProcess) {
+      // Skip already processed cells to prevent infinite recursion
+      if (processedCells.contains(cellKey)) {
+        print("Skipping already processed cell: $cellKey");
+        continue;
+      }
+
+      print("Processing dependent cell: $cellKey");
+      processedCells.add(cellKey);
+
+      // Parse the cell key to get row and column indices
+      List<String> parts = cellKey.split('_');
+      if (parts.length == 2) {
+        int depRowIndex = int.parse(parts[0]);
+        int depColumnIndex = int.parse(parts[1]);
+
+        // Find the corresponding row
+        var rowModel = sheet.rows.firstWhereOrNull(
+          (r) => r.rowIndex == depRowIndex,
+        );
+
+        if (rowModel == null) {
+          print("Row not found for index: $depRowIndex");
+          continue;
+        }
+
+        // Find the cell that contains a formula
+        var cellModel = rowModel.cells.firstWhereOrNull(
+          (c) => c.columnIndex == depColumnIndex,
+        );
+
+        if (cellModel == null) {
+          print(
+              "Cell not found at column: $depColumnIndex in row: $depRowIndex");
+          continue;
+        }
+
+        if (cellModel.formula == null || !cellModel.formula!.startsWith('=')) {
+          print("Cell doesn't contain a formula: $cellKey");
+          continue;
+        }
+
+        try {
+          print(
+              "Recalculating formula: ${cellModel.formula} for cell $cellKey");
+
+          // Recalculate formula using updated cell values
+          String newValue = _formulaHandler.evaluateFormula(
+              cellModel.formula!, depRowIndex, depColumnIndex);
+
+          print("Formula result: $newValue (old value: ${cellModel.value})");
+
+          // Add to pending changes if the value has changed
+          if (newValue != cellModel.value) {
+            String changeKey = '${depRowIndex}_${depColumnIndex}';
+            _pendingChanges[changeKey] = CellChange(
+              isUpdate: true,
+              cellId: cellModel.id,
+              rowId: rowModel.id,
+              columnIndex: depColumnIndex,
+              displayValue: newValue,
+              formula: cellModel.formula,
+              color: cellModel.color,
+            );
+
+            print("Added formula update to pending changes: $changeKey");
+
+            // Find the row and cell index in our working sheet
+            int rowIdx = sheet.rows.indexWhere((r) => r.id == rowModel.id);
+            if (rowIdx >= 0) {
+              int cellIdx = sheet.rows[rowIdx].cells
+                  .indexWhere((c) => c.id == cellModel.id);
+
+              if (cellIdx >= 0) {
+                // Update the cell in our working copy
+                sheet.rows[rowIdx].cells[cellIdx] = CellModel(
+                  id: cellModel.id,
+                  rowId: cellModel.rowId,
+                  columnIndex: cellModel.columnIndex,
+                  value: newValue,
+                  formula: cellModel.formula,
+                  color: cellModel.color,
+                  isCalculated: true,
+                  createdAt: cellModel.createdAt,
+                  updatedAt: DateTime.now(),
+                );
+
+                print("Updated cell in working copy: $changeKey");
+              }
+            }
+
+            // Now, we need to find cells that depend on this updated cell
+            Set<String> nextLevelDependents = {};
+
+            // Cell keys for dependency lookup
+            String updatedCellKey = '${depRowIndex}_${depColumnIndex}';
+            String updatedNamedKey =
+                '${_getColumnLetter(depColumnIndex)}${depRowIndex}';
+
+            // Find cells that depend on this cell
+            if (_formulaDependencies.containsKey(updatedCellKey)) {
+              nextLevelDependents.addAll(_formulaDependencies[updatedCellKey]!);
+              print(
+                  "Found ${_formulaDependencies[updatedCellKey]!.length} dependencies for $updatedCellKey");
+            }
+
+            if (_formulaDependencies.containsKey(updatedNamedKey)) {
+              nextLevelDependents
+                  .addAll(_formulaDependencies[updatedNamedKey]!);
+              print(
+                  "Found ${_formulaDependencies[updatedNamedKey]!.length} dependencies for $updatedNamedKey");
+            }
+
+            // Remove already processed cells to avoid circular references
+            nextLevelDependents.removeAll(processedCells);
+
+            // Process next level of dependencies
+            if (nextLevelDependents.isNotEmpty) {
+              print("Processing next level dependencies: $nextLevelDependents");
+              _processDependentCells(
+                  nextLevelDependents, processedCells, sheet);
+            }
+          }
+        } catch (e) {
+          print("Error recalculating formula: $e");
+        }
+      }
     }
   }
 
@@ -574,6 +832,15 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           formulaHandler: _formulaHandler,
           onCellSelected: _handleCellSelected,
         );
+
+        // Important - rebuild formula dependency map BEFORE updating dependents
+        _buildFormulaDependencyMap();
+
+        // Update cells that depend on this one if cell value changed or it's a formula
+        if (value.startsWith('=') ||
+            (existingCell != null && existingCell.value != displayValue)) {
+          _updateDependentFormulas(rowIndex, columnIndex, updatedSheet);
+        }
       });
     } catch (e) {
       print('Error handling cell submission: $e');
@@ -618,7 +885,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
   }
 
   // Add calculation row
-  Future<void> _addCalculationRow(int afterRowIndex) async {
+  Future<void> _addCalculationRow(int afterRowIdx) async {
     try {
       // First save any pending changes
       if (_pendingChanges.isNotEmpty) {
@@ -628,13 +895,14 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
       // Add the calculation row
       await ref
           .read(sheetNotifierProvider.notifier)
-          .createCalculationRow(widget.sheet.id, afterRowIndex + 1);
+          .createCalculationRow(widget.sheet.id, afterRowIdx + 1);
 
       // Ensure we stay in edit mode
       if (!_isEditable) {
         setState(() {
           _isEditable = true;
           _initializeDataSource();
+          _buildFormulaDependencyMap();
         });
       }
     } catch (e) {
@@ -720,6 +988,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           setState(() {
             _isEditable = true;
             _initializeDataSource();
+            _buildFormulaDependencyMap();
           });
         }
       } catch (e) {
@@ -818,7 +1087,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 _buildFormulaOption(
                   context,
                   'Add Vertical Cells',
-                  Icons.arrow_upward,
+                  Icons.add,
                   () {
                     if (rowIndex >= 2) {
                       String formula =
@@ -872,7 +1141,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 _buildFormulaOption(
                   context,
                   'Apply Multiply to All Rows',
-                  Icons.all_inclusive,
+                  Icons.clear,
                   () {
                     if (columnIndex >= 2) {
                       String formula =
@@ -922,7 +1191,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 _buildFormulaOption(
                   context,
                   'Apply Addition to Row',
-                  Icons.functions,
+                  Icons.add,
                   () {
                     if (columnIndex >= 1) {
                       String formula = '=';
@@ -1007,7 +1276,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                 _buildFormulaOption(
                   context,
                   'Add All Vertical Cells',
-                  Icons.functions,
+                  Icons.add,
                   () {
                     String formula = '=';
                     bool hasValues = false;
@@ -1016,6 +1285,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                       ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
                     for (var row in sortedRows) {
+                      // Don't skip the cell immediately above the current one
                       if (row.rowIndex == rowIndex) continue;
 
                       final cellInColumn = row.cells
@@ -1078,296 +1348,314 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  widget.sheet.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: AppColors.primary),
-                      tooltip: 'Refresh Data',
-                      onPressed: () {
-                        ref
-                            .read(sheetNotifierProvider.notifier)
-                            .getSheetByDate(null, null);
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(_isEditable ? Icons.lock : Icons.edit),
-                      onPressed: _toggleEditMode,
-                      tooltip: _isEditable ? 'View Mode' : 'Edit Mode',
-                      color: AppColors.primary,
-                    ),
-                    if (_isEditable)
-                      IconButton(
-                        icon: const Icon(Icons.add, color: AppColors.primary),
-                        tooltip: 'Add Calculation Rows',
-                        onPressed: () {
-                          // Get currently selected row index or default to last row
-                          int rowIndex = _dataGridController.selectedIndex != -1
-                              ? _dataGridController.selectedIndex
-                              : widget.sheet.rows.length - 1;
-
-                          // Find the actual row index from the model
-                          if (rowIndex >= 0 &&
-                              rowIndex < widget.sheet.rows.length) {
-                            _addMultipleCalculationRows(
-                                widget.sheet.rows[rowIndex].rowIndex);
-                          } else {
-                            // Default to adding at the end
-                            _addMultipleCalculationRows(
-                                widget.sheet.rows.isNotEmpty
-                                    ? widget.sheet.rows.last.rowIndex
-                                    : 0);
-                          }
-                        },
-                      ),
-                    if (_isEditable)
-                      IconButton(
-                        icon: const Icon(Icons.help_outline,
-                            color: AppColors.primary),
-                        tooltip: 'Formula Help',
-                        onPressed: () {
-                          _showFormulaHelpDialog();
-                        },
-                      ),
-                    if (_isEditable)
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete Selected Row',
-                        onPressed: () {
-                          // Get currently selected row
-                          if (_dataGridController.selectedIndex != -1) {
-                            int selectedIndex =
-                                _dataGridController.selectedIndex;
-                            if (selectedIndex >= 0 &&
-                                selectedIndex < widget.sheet.rows.length) {
-                              // Confirm before deleting
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: const Text('Confirm Delete'),
-                                    content: const Text(
-                                        'Are you sure you want to delete this row? This action cannot be undone.'),
-                                    actions: [
-                                      TextButton(
-                                        child: const Text('Cancel'),
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                      ),
-                                      TextButton(
-                                        child: const Text('Delete',
-                                            style:
-                                                TextStyle(color: Colors.red)),
-                                        onPressed: () {
-                                          _deleteRow(widget
-                                              .sheet.rows[selectedIndex].id);
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('Please select a row to delete')),
-                            );
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ],
+    return GestureDetector(
+      // Enable edit mode with double-click anywhere on the sheet
+      onDoubleTap: !_isEditable ? _toggleEditMode : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const Divider(height: 1, color: AppColors.primaryLight),
-          Expanded(
-            child: SfDataGrid(
-              source: _dataSource,
-              controller: _dataGridController,
-              gridLinesVisibility: GridLinesVisibility.both,
-              headerGridLinesVisibility: GridLinesVisibility.both,
-              columnWidthMode: ColumnWidthMode.auto,
-              allowEditing: _isEditable,
-              selectionMode: SelectionMode.multiple,
-              navigationMode: GridNavigationMode.cell,
-              frozenColumnsCount: 1, // Freeze the first column (item names)
-              columns: _buildColumns(),
-              // Add onCellTap callback to track cell selection
-              onCellTap: (details) {
-                if (details.rowColumnIndex.rowIndex > 0 && // Skip header
-                    details.column.columnName != 'itemName') {
-                  // Get the actual data grid row
-                  final rowData = _dataSource.rows.isNotEmpty &&
-                          details.rowColumnIndex.rowIndex - 1 <
-                              _dataSource.rows.length
-                      ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
-                      : null;
-
-                  if (rowData != null) {
-                    // Extract row cell data from the first column
-                    final firstCell = rowData.getCells().first;
-                    if (firstCell.value is RowCellData) {
-                      final rowCellData = firstCell.value as RowCellData;
-                      final rowIndex = rowCellData.rowIndex;
-                      final columnIndex = int.parse(
-                          details.column.columnName.replaceAll('column', ''));
-
-                      // Find the cell in the data model
-                      final rowModel = widget.sheet.rows.firstWhereOrNull(
-                        (r) => r.rowIndex == rowIndex,
-                      );
-
-                      CellModel? cell;
-                      if (rowModel != null) {
-                        cell = rowModel.cells.firstWhereOrNull(
-                          (c) => c.columnIndex == columnIndex,
-                        );
-                      }
-
-                      setState(() {
-                        _selectedRowIndex = rowIndex;
-                        _selectedColumnIndex = columnIndex;
-                        _selectedCellValue = cell?.value ?? '';
-                        _selectedCellColorHex = cell?.color;
-                        _cellValueController.text = cell?.value ?? '';
-                      });
-                    }
-                  }
-                }
-              },
-            ),
-          ),
-          // Add save button at the bottom when in edit mode
-          if (_isEditable)
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      if (_pendingChanges.isNotEmpty)
-                        Text(
-                          '${_pendingChanges.length} unsaved changes',
-                          style: const TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ],
+                  Text(
+                    widget.sheet.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                   Row(
                     children: [
-                      // Show cell manipulation buttons only when a cell is selected
-                      if (_selectedRowIndex != null &&
-                          _selectedColumnIndex != null)
-                        Row(
-                          children: [
-                            // Add Quick Formulas button
-                            ElevatedButton.icon(
-                              icon: const Icon(
-                                Icons.functions,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              label: const Text('Quick Formulas',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Colors.white)),
-                              onPressed: _showQuickFormulasMenu,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                              ),
+                      if (!_isEditable)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            'Double-click to edit',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontStyle: FontStyle.italic,
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: 8),
-                            // Erase button with eraser icon instead of trash
-                            ElevatedButton.icon(
-                              icon: Icon(
-                                Icons.close,
-                                color: Colors.red,
-                                size: 16,
-                              ),
-                              label: const Text('Erase Cell Value',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Colors.red)),
-                              onPressed: _eraseSelectedCell,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 8,
-                            ),
-                            // Color selector button with label
-                            ElevatedButton.icon(
-                              icon: Icon(
-                                Icons.color_lens,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              label: const Text('Change Color',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Colors.white)),
-                              onPressed: _showColorPickerForSelectedCell,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                          ],
+                          ),
                         ),
-                      ElevatedButton.icon(
-                        onPressed: _saveChanges,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save Changes'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
+                      IconButton(
+                        icon:
+                            const Icon(Icons.refresh, color: AppColors.primary),
+                        tooltip: 'Refresh Data',
+                        onPressed: () {
+                          ref
+                              .read(sheetNotifierProvider.notifier)
+                              .getSheetByDate(null, null);
+                        },
                       ),
+                      IconButton(
+                        icon: Icon(_isEditable ? Icons.lock : Icons.edit),
+                        onPressed: _toggleEditMode,
+                        tooltip: _isEditable ? 'View Mode' : 'Edit Mode',
+                        color: AppColors.primary,
+                      ),
+                      if (_isEditable)
+                        IconButton(
+                          icon: const Icon(Icons.add, color: AppColors.primary),
+                          tooltip: 'Add Calculation Rows',
+                          onPressed: () {
+                            // Get currently selected row index or default to last row
+                            int rowIndex =
+                                _dataGridController.selectedIndex != -1
+                                    ? _dataGridController.selectedIndex
+                                    : widget.sheet.rows.length - 1;
+
+                            // Find the actual row index from the model
+                            if (rowIndex >= 0 &&
+                                rowIndex < widget.sheet.rows.length) {
+                              _addMultipleCalculationRows(
+                                  widget.sheet.rows[rowIndex].rowIndex);
+                            } else {
+                              // Default to adding at the end
+                              _addMultipleCalculationRows(
+                                  widget.sheet.rows.isNotEmpty
+                                      ? widget.sheet.rows.last.rowIndex
+                                      : 0);
+                            }
+                          },
+                        ),
+                      if (_isEditable)
+                        IconButton(
+                          icon: const Icon(Icons.help_outline,
+                              color: AppColors.primary),
+                          tooltip: 'Formula Help',
+                          onPressed: () {
+                            _showFormulaHelpDialog();
+                          },
+                        ),
+                      if (_isEditable)
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Delete Selected Row',
+                          onPressed: () {
+                            // Get currently selected row
+                            if (_dataGridController.selectedIndex != -1) {
+                              int selectedIndex =
+                                  _dataGridController.selectedIndex;
+                              if (selectedIndex >= 0 &&
+                                  selectedIndex < widget.sheet.rows.length) {
+                                // Confirm before deleting
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text('Confirm Delete'),
+                                      content: const Text(
+                                          'Are you sure you want to delete this row? This action cannot be undone.'),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Cancel'),
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                        ),
+                                        TextButton(
+                                          child: const Text('Delete',
+                                              style:
+                                                  TextStyle(color: Colors.red)),
+                                          onPressed: () {
+                                            _deleteRow(widget
+                                                .sheet.rows[selectedIndex].id);
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Please select a row to delete')),
+                              );
+                            }
+                          },
+                        ),
                     ],
                   ),
                 ],
               ),
             ),
-        ],
+            const Divider(height: 1, color: AppColors.primaryLight),
+            Expanded(
+              child: SfDataGrid(
+                source: _dataSource,
+                controller: _dataGridController,
+                gridLinesVisibility: GridLinesVisibility.both,
+                headerGridLinesVisibility: GridLinesVisibility.both,
+                columnWidthMode: ColumnWidthMode.auto,
+                allowEditing: _isEditable,
+                selectionMode: SelectionMode.multiple,
+                navigationMode: GridNavigationMode.cell,
+                frozenColumnsCount: 1, // Freeze the first column (item names)
+                columns: _buildColumns(),
+                // Add onCellTap callback to track cell selection
+                onCellTap: (details) {
+                  if (details.rowColumnIndex.rowIndex > 0 && // Skip header
+                      details.column.columnName != 'itemName') {
+                    // Get the actual data grid row
+                    final rowData = _dataSource.rows.isNotEmpty &&
+                            details.rowColumnIndex.rowIndex - 1 <
+                                _dataSource.rows.length
+                        ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
+                        : null;
+
+                    if (rowData != null) {
+                      // Extract row cell data from the first column
+                      final firstCell = rowData.getCells().first;
+                      if (firstCell.value is RowCellData) {
+                        final rowCellData = firstCell.value as RowCellData;
+                        final rowIndex = rowCellData.rowIndex;
+                        final columnIndex = int.parse(
+                            details.column.columnName.replaceAll('column', ''));
+
+                        // Find the cell in the data model
+                        final rowModel = widget.sheet.rows.firstWhereOrNull(
+                          (r) => r.rowIndex == rowIndex,
+                        );
+
+                        CellModel? cell;
+                        if (rowModel != null) {
+                          cell = rowModel.cells.firstWhereOrNull(
+                            (c) => c.columnIndex == columnIndex,
+                          );
+                        }
+
+                        setState(() {
+                          _selectedRowIndex = rowIndex;
+                          _selectedColumnIndex = columnIndex;
+                          _selectedCellValue = cell?.value ?? '';
+                          _selectedCellColorHex = cell?.color;
+                          _cellValueController.text = cell?.value ?? '';
+                        });
+                      }
+                    }
+                  }
+                },
+              ),
+            ),
+            // Add save button at the bottom when in edit mode
+            if (_isEditable)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        if (_pendingChanges.isNotEmpty)
+                          Text(
+                            '${_pendingChanges.length} unsaved changes',
+                            style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        // Show cell manipulation buttons only when a cell is selected
+                        if (_selectedRowIndex != null &&
+                            _selectedColumnIndex != null)
+                          Row(
+                            children: [
+                              // Add Quick Formulas button
+                              ElevatedButton.icon(
+                                icon: const Icon(
+                                  Icons.functions,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                label: const Text('Quick Formulas',
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.white)),
+                                onPressed: _showQuickFormulasMenu,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Erase button with eraser icon instead of trash
+                              ElevatedButton.icon(
+                                icon: Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                  size: 16,
+                                ),
+                                label: const Text('Erase Cell Value',
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.red)),
+                                onPressed: _eraseSelectedCell,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 8,
+                              ),
+                              // Color selector button with label
+                              ElevatedButton.icon(
+                                icon: Icon(
+                                  Icons.color_lens,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                label: const Text('Change Color',
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.white)),
+                                onPressed: _showColorPickerForSelectedCell,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
+                          ),
+                        ElevatedButton.icon(
+                          onPressed: _saveChanges,
+                          icon: const Icon(Icons.save),
+                          label: const Text('Save Changes'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1386,7 +1674,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
           color: AppColors.primary.withAlpha(25),
           alignment: Alignment.center,
           child: const Text(
-            'Items',
+            'Row Number',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,

@@ -20,8 +20,10 @@ class InventorySheetDataSource extends DataGridSource {
   final Function(String rowId) deleteRowCallback;
   final InventoryFormulaHandler formulaHandler;
   final Function(int rowIndex, int columnIndex)? eraseCellCallback;
+  final Function()? onDoubleTabHandler;
 
-  BuildContext? currentContext;
+  // Static context for accessing from static methods
+  static BuildContext? currentContext;
 
   InventorySheetModel get currentSheet => sheet;
 
@@ -36,6 +38,7 @@ class InventorySheetDataSource extends DataGridSource {
     required this.formulaHandler,
     this.eraseCellCallback,
     this.addMultipleCalculationRowsCallback,
+    this.onDoubleTabHandler,
   }) {
     _rows = _generateRows();
   }
@@ -149,23 +152,44 @@ class InventorySheetDataSource extends DataGridSource {
             backgroundColor = AppColors.primaryLight.withAlpha(25);
           }
 
-          return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
-            color: backgroundColor,
-            child: Text(
-              cellModel.value ?? '',
-              style: TextStyle(
-                color:
-                    cellModel.isCalculated ? AppColors.primary : Colors.black87,
+          return GestureDetector(
+            // Add double-tap handler for cells to toggle edit mode
+            onDoubleTap: isEditable
+                ? null
+                : () {
+                    if (onDoubleTabHandler != null) {
+                      onDoubleTabHandler!();
+                    }
+                  },
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8.0),
+              color: backgroundColor,
+              child: Text(
+                cellModel.value ?? '',
+                style: TextStyle(
+                  color: cellModel.isCalculated
+                      ? AppColors.primary
+                      : Colors.black87,
+                ),
               ),
             ),
           );
         } else {
-          return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
-            child: const Text(''),
+          return GestureDetector(
+            // Add double-tap handler for empty cells too
+            onDoubleTap: isEditable
+                ? null
+                : () {
+                    if (onDoubleTabHandler != null) {
+                      onDoubleTabHandler!();
+                    }
+                  },
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8.0),
+              child: const Text(''),
+            ),
           );
         }
       }).toList(),
