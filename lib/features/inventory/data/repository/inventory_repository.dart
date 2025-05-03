@@ -7,6 +7,30 @@ import 'package:falsisters_pos_android/features/inventory/data/models/inventory_
 class InventoryRepository {
   final DioClient _dio = DioClient();
 
+  Future<InventorySheetModel> getExpensesByDate(
+      DateTime? startDate, DateTime? endDate) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) {
+        queryParams['startDate'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        queryParams['endDate'] = endDate.toIso8601String();
+      }
+
+      final response = await _dio.instance.get('/inventory/expenses/date',
+          queryParameters: queryParams.isNotEmpty ? queryParams : null);
+
+      return InventorySheetModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
   Future<InventorySheetModel> getInventoryByDate(
       DateTime? startDate, DateTime? endDate) async {
     try {

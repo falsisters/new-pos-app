@@ -18,7 +18,7 @@ mixin _$InventoryCellModel {
   String get id;
   int get columnIndex;
   String get inventoryRowId;
-  String? get color;
+  String? get color; // Add color field as a hex string
   String? get value;
   String? get formula;
   bool get isCalculated;
@@ -174,6 +174,7 @@ class _InventoryCellModel implements InventoryCellModel {
   final String inventoryRowId;
   @override
   final String? color;
+// Add color field as a hex string
   @override
   final String? value;
   @override

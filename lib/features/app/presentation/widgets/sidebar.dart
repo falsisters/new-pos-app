@@ -114,13 +114,26 @@ class Sidebar extends ConsumerWidget {
               const SizedBox(
                 height: 4,
               ),
+              if (permissions.contains('KAHON'))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SidebarItem(
+                      title: 'Kahon',
+                      icon: Icons.inventory,
+                      isSelected: drawerIndex == 4,
+                      onTap: () =>
+                          {ref.read(drawerIndexProvider.notifier).setIndex(3)}),
+                ),
+              const SizedBox(
+                height: 4,
+              ),
               if (permissions.contains('PROFITS'))
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: SidebarItem(
                       title: 'Profits',
                       icon: Icons.attach_money,
-                      isSelected: drawerIndex == 4,
+                      isSelected: drawerIndex == 5,
                       onTap: () =>
                           {ref.read(drawerIndexProvider.notifier).setIndex(4)}),
                 ),
@@ -133,7 +146,7 @@ class Sidebar extends ConsumerWidget {
                   child: SidebarItem(
                       title: 'Attachments',
                       icon: Icons.attach_file,
-                      isSelected: drawerIndex == 5,
+                      isSelected: drawerIndex == 6,
                       onTap: () =>
                           {ref.read(drawerIndexProvider.notifier).setIndex(5)}),
                 ),
@@ -146,7 +159,7 @@ class Sidebar extends ConsumerWidget {
                   child: SidebarItem(
                       title: 'Sales History',
                       icon: Icons.history,
-                      isSelected: drawerIndex == 6,
+                      isSelected: drawerIndex == 7,
                       onTap: () =>
                           {ref.read(drawerIndexProvider.notifier).setIndex(6)}),
                 ),
@@ -172,7 +185,7 @@ class Sidebar extends ConsumerWidget {
                 child: SidebarItem(
                   title: 'Profile',
                   icon: Icons.person,
-                  isSelected: drawerIndex == 7,
+                  isSelected: drawerIndex == 8,
                   onTap: () =>
                       ref.read(drawerIndexProvider.notifier).setIndex(7),
                 ),
