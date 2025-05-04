@@ -68,7 +68,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
           SizedBox(
             width: 90,
             child: Text(
-              widget.type.name,
+              billTypeToString(widget.type.name),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,

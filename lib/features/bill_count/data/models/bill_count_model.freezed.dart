@@ -21,7 +21,7 @@ mixin _$BillCountModel {
   bool get showExpenses;
   double get beginningBalance;
   bool get showBeginningBalance;
-  Map<String, int> get billsByType;
+  Map<String, dynamic> get billsByType;
   DateTime? get date;
   double get billsTotal;
   double get totalWithExpenses;
@@ -99,7 +99,7 @@ abstract mixin class $BillCountModelCopyWith<$Res> {
       bool showExpenses,
       double beginningBalance,
       bool showBeginningBalance,
-      Map<String, int> billsByType,
+      Map<String, dynamic> billsByType,
       DateTime? date,
       double billsTotal,
       double totalWithExpenses,
@@ -159,7 +159,7 @@ class _$BillCountModelCopyWithImpl<$Res>
       billsByType: null == billsByType
           ? _self.billsByType
           : billsByType // ignore: cast_nullable_to_non_nullable
-              as Map<String, int>,
+              as Map<String, dynamic>,
       date: freezed == date
           ? _self.date
           : date // ignore: cast_nullable_to_non_nullable
@@ -190,7 +190,7 @@ class _BillCountModel implements BillCountModel {
       this.showExpenses = false,
       this.beginningBalance = 0,
       this.showBeginningBalance = false,
-      final Map<String, int> billsByType = const {},
+      final Map<String, dynamic> billsByType = const {},
       this.date,
       this.billsTotal = 0,
       this.totalWithExpenses = 0,
@@ -223,10 +223,10 @@ class _BillCountModel implements BillCountModel {
   @override
   @JsonKey()
   final bool showBeginningBalance;
-  final Map<String, int> _billsByType;
+  final Map<String, dynamic> _billsByType;
   @override
   @JsonKey()
-  Map<String, int> get billsByType {
+  Map<String, dynamic> get billsByType {
     if (_billsByType is EqualUnmodifiableMapView) return _billsByType;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableMapView(_billsByType);
@@ -322,7 +322,7 @@ abstract mixin class _$BillCountModelCopyWith<$Res>
       bool showExpenses,
       double beginningBalance,
       bool showBeginningBalance,
-      Map<String, int> billsByType,
+      Map<String, dynamic> billsByType,
       DateTime? date,
       double billsTotal,
       double totalWithExpenses,
@@ -382,7 +382,7 @@ class __$BillCountModelCopyWithImpl<$Res>
       billsByType: null == billsByType
           ? _self._billsByType
           : billsByType // ignore: cast_nullable_to_non_nullable
-              as Map<String, int>,
+              as Map<String, dynamic>,
       date: freezed == date
           ? _self.date
           : date // ignore: cast_nullable_to_non_nullable

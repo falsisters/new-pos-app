@@ -10,7 +10,7 @@ _BillModel _$BillModelFromJson(Map<String, dynamic> json) => _BillModel(
       id: json['id'] as String?,
       type: $enumDecode(_$BillTypeEnumMap, json['type']),
       amount: (json['amount'] as num).toInt(),
-      value: (json['value'] as num?)?.toInt(),
+      value: (json['value'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$BillModelToJson(_BillModel instance) =>

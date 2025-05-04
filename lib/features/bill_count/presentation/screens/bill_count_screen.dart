@@ -33,6 +33,21 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         );
   }
 
+  // Create a new bill count for the selected date
+  void _createNewBillCount() {
+    ref.read(billCountProvider.notifier).createNewBillCount(
+          date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+        );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("New bill count created - enter your values and save"),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _toggleCalendar() {
     setState(() {
       _isCalendarVisible = !_isCalendarVisible;
@@ -57,9 +72,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         initialValue: billCountState.billCount!.expenses,
         onSave: (double value) {
           ref.read(billCountProvider.notifier).updateExpenses(value);
-          ref.read(billCountProvider.notifier).saveBillCount(
-                date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-              );
+          // Do not auto-save, let the user decide when to save
         },
       ),
     );
@@ -75,9 +88,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         initialValue: billCountState.billCount!.beginningBalance,
         onSave: (double value) {
           ref.read(billCountProvider.notifier).updateBeginningBalance(value);
-          ref.read(billCountProvider.notifier).saveBillCount(
-                date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-              );
+          // Do not auto-save, let the user decide when to save
         },
       ),
     );
@@ -85,16 +96,123 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
 
   void _toggleExpenses() {
     ref.read(billCountProvider.notifier).toggleExpensesVisibility();
-    ref.read(billCountProvider.notifier).saveBillCount(
-          date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-        );
+    // Do not auto-save, let the user decide when to save
   }
 
   void _toggleBeginningBalance() {
     ref.read(billCountProvider.notifier).toggleBeginningBalanceVisibility();
+    // Do not auto-save, let the user decide when to save
+  }
+
+  void _saveBillCount() {
     ref.read(billCountProvider.notifier).saveBillCount(
           date: DateFormat('yyyy-MM-dd').format(_selectedDate),
         );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Bill count saved successfully"),
+        backgroundColor: Colors.lightGreen,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // Helper method to get bill amount from billsByType
+  int _getBillAmount(Map<String, dynamic> billsByType, String typeName) {
+    final value = billsByType[typeName];
+    if (value == null) return 0;
+
+    if (value is int) {
+      return value;
+    } else if (value is String) {
+      return int.tryParse(value) ?? 0;
+    } else if (value is double) {
+      return value.toInt();
+    }
+
+    return 0;
+  }
+
+  Widget _buildNoDataView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.post_add_rounded,
+            size: 80,
+            color: AppColors.primaryLight,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "No bill count data for this date",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "You can create a new bill count for this date",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _createNewBillCount,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              "CREATE NEW BILL COUNT",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: ElevatedButton(
+        onPressed: _saveBillCount,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.lightGreen,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.save, size: 24),
+            SizedBox(width: 8),
+            Text(
+              "SAVE BILL COUNT",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -107,26 +225,15 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              ref.read(billCountProvider.notifier).saveBillCount(
-                    date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-                  );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Bill count saved")),
-              );
-            },
-          ),
-        ],
       ),
       body: billCountAsync.when(
         data: (billCountState) {
           final billCount = billCountState.billCount;
           if (billCount == null) {
-            return const Center(child: Text("No bill count data available"));
+            return _buildNoDataView();
           }
+
+          print("Rendering with billsByType: ${billCount.billsByType}");
 
           return Column(
             children: [
@@ -239,6 +346,52 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
+                        // Message for new bill count
+                        if (billCount.id == null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Creating New Bill Count",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Enter the bill counts for ${DateFormat('MMMM dd, yyyy').format(_selectedDate)} and press SAVE when done.",
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
                         // Beginning Balance Display
                         Container(
                           width: double.infinity,
@@ -306,11 +459,8 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                             children: [
                               BillEntryWidget(
                                 type: BillType.THOUSAND,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[BillType.THOUSAND.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "THOUSAND"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
@@ -318,22 +468,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                         BillType.THOUSAND,
                                         value,
                                       );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
-                                      );
                                 },
                               ),
                               BillEntryWidget(
                                 type: BillType.FIVE_HUNDRED,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[
-                                                BillType.FIVE_HUNDRED.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "FIVE_HUNDRED"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
@@ -341,21 +481,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                         BillType.FIVE_HUNDRED,
                                         value,
                                       );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
-                                      );
                                 },
                               ),
                               BillEntryWidget(
                                 type: BillType.HUNDRED,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[BillType.HUNDRED.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "HUNDRED"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
@@ -363,21 +494,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                         BillType.HUNDRED,
                                         value,
                                       );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
-                                      );
                                 },
                               ),
                               BillEntryWidget(
                                 type: BillType.FIFTY,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[BillType.FIFTY.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "FIFTY"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
@@ -385,21 +507,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                         BillType.FIFTY,
                                         value,
                                       );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
-                                      );
                                 },
                               ),
                               BillEntryWidget(
                                 type: BillType.TWENTY,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[BillType.TWENTY.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "TWENTY"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
@@ -407,33 +520,18 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                         BillType.TWENTY,
                                         value,
                                       );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
-                                      );
                                 },
                               ),
                               BillEntryWidget(
                                 type: BillType.COINS,
-                                initialAmount: int.tryParse(billCount
-                                            .billsByType[BillType.COINS.name]
-                                            ?.toString() ??
-                                        "0") ??
-                                    0,
+                                initialAmount: _getBillAmount(
+                                    billCount.billsByType, "COINS"),
                                 onChanged: (int value) {
                                   ref
                                       .read(billCountProvider.notifier)
                                       .updateBillAmount(
                                         BillType.COINS,
                                         value,
-                                      );
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .saveBillCount(
-                                        date: DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate),
                                       );
                                 },
                               ),
@@ -639,6 +737,9 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                             ],
                           ),
                         ),
+
+                        // Prominent save button
+                        _buildSaveButton(),
                       ],
                     ),
                   ),
@@ -648,7 +749,29 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text("Error: $error")),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 60,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Error: $error",
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadBillCount,
+                child: const Text("Retry"),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

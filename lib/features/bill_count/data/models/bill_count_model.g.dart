@@ -17,10 +17,7 @@ _BillCountModel _$BillCountModelFromJson(Map<String, dynamic> json) =>
       showExpenses: json['showExpenses'] as bool? ?? false,
       beginningBalance: (json['beginningBalance'] as num?)?.toDouble() ?? 0,
       showBeginningBalance: json['showBeginningBalance'] as bool? ?? false,
-      billsByType: (json['billsByType'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, (e as num).toInt()),
-          ) ??
-          const {},
+      billsByType: json['billsByType'] as Map<String, dynamic>? ?? const {},
       date:
           json['date'] == null ? null : DateTime.parse(json['date'] as String),
       billsTotal: (json['billsTotal'] as num?)?.toDouble() ?? 0,

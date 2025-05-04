@@ -13,7 +13,7 @@ sealed class BillCountModel with _$BillCountModel {
     @Default(false) bool showExpenses,
     @Default(0) double beginningBalance,
     @Default(false) bool showBeginningBalance,
-    @Default({}) Map<String, int> billsByType,
+    @Default({}) Map<String, dynamic> billsByType,
     DateTime? date,
     @Default(0) double billsTotal,
     @Default(0) double totalWithExpenses,

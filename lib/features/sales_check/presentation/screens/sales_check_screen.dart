@@ -21,9 +21,9 @@ class SalesCheckScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Integrate the date filter widget
+          // Integrate the collapsible filter widget
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+            padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
             child: SalesCheckDateFilter(),
           ),
           // Add a divider for better visual separation
@@ -95,9 +95,63 @@ class SalesCheckScreen extends ConsumerWidget {
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
                                       ),
                                     ),
                                     const SizedBox(height: 10),
+                                    // Column headers - updated with consistent spacing
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8.0),
+                                      child: Row(
+                                        children: [
+                                          // Qty column aligned with values
+                                          SizedBox(
+                                            width:
+                                                100, // Reduced to match the sales data width
+                                            child: Text(
+                                              'Qty',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          // Product & Type column adjusted
+                                          Expanded(
+                                            flex: 3,
+                                            child: Text(
+                                              'Product & Type',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                            ),
+                                          ),
+                                          // Amount column
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text(
+                                              'Amount',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          ),
+                                          const Spacer(flex: 2),
+                                        ],
+                                      ),
+                                    ),
+                                    const Divider(height: 1, thickness: 1),
+                                    const SizedBox(height: 8),
+                                    // Sales rows
                                     ...group.items
                                         .map((item) => _FormattedSaleRow(
                                               formattedSale: item.formattedSale,
@@ -156,6 +210,55 @@ class SalesCheckScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Column headers - updated with consistent spacing
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: Row(
+                                      children: [
+                                        // Time column
+                                        SizedBox(
+                                          width: 50,
+                                          child: Text(
+                                            'Time',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                        // Product & Details column
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            'Product & Details',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                        // Sales column
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            'Sales',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.grey[700],
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                        const Spacer(flex: 2),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider(height: 1, thickness: 1),
+                                  const SizedBox(height: 8),
+                                  // Sales items
                                   ...totalData.items
                                       .map((item) => _FormattedSaleRow(
                                             formattedSale: item.formattedSale,
@@ -173,7 +276,7 @@ class SalesCheckScreen extends ConsumerWidget {
                                           .summary.summaryPaymentTotals.check >
                                       0)
                                     _TotalsRow(
-                                      label: 'CHECKS',
+                                      label: 'CHECK',
                                       amount: totalData
                                           .summary.summaryPaymentTotals.check,
                                       numberFormat: numberFormat,
@@ -314,14 +417,56 @@ class _FormattedSaleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract quantity part from the formattedSale if possible
+    final parts = formattedSale.split(' ');
+    String quantity = '';
+    String remainingText = formattedSale;
+
+    // Try to extract quantity if it's a number at the beginning
+    if (parts.isNotEmpty) {
+      if (RegExp(r'^\d+$').hasMatch(parts[0])) {
+        quantity = parts[0];
+        remainingText = parts.sublist(1).join(' ');
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
+          // Display time if provided (for chronological view)
           if (time != null)
-            Text('$time ', style: const TextStyle(fontSize: 12)),
+            SizedBox(
+              width: 50,
+              child: Text(
+                time!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ),
+
+          // If we have a quantity (extracted from formattedSale)
+          if (quantity.isNotEmpty)
+            SizedBox(
+              width: 50,
+              child: Text(
+                quantity,
+                style: const TextStyle(fontSize: 14),
+                textAlign: TextAlign.right,
+              ),
+            ),
+
+          // Add spacing between quantity and description
+          if (quantity.isNotEmpty) const SizedBox(width: 10),
+
+          // Show the remaining text (without quantity if extracted)
           Expanded(
-            child: Text(formattedSale),
+            child: Text(
+              quantity.isEmpty ? formattedSale : remainingText,
+              style: const TextStyle(fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -348,15 +493,29 @@ class _TotalsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
-          SizedBox(width: 40, child: Text(label, textAlign: TextAlign.right)),
+          // Align with the quantity column
+          SizedBox(
+              width: 100,
+              child: Text(
+                label,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                  color: isBold ? AppColors.primary : Colors.grey[800],
+                ),
+              )),
           const SizedBox(width: 10),
           const Spacer(flex: 3),
+          // Amount value
           Expanded(
             flex: 2,
             child: Text(
               numberFormat.format(amount),
               textAlign: TextAlign.right,
-              style: TextStyle(fontWeight: isBold ? FontWeight.bold : null),
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : null,
+                color: isBold ? AppColors.primary : null,
+              ),
             ),
           ),
           const Spacer(flex: 2),

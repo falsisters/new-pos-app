@@ -10,7 +10,7 @@ sealed class BillModel with _$BillModel {
     String? id,
     required BillType type,
     required int amount,
-    int? value,
+    required double value,
   }) = _BillModel;
 
   factory BillModel.fromJson(Map<String, dynamic> json) =>

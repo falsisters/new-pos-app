@@ -18,7 +18,7 @@ mixin _$BillModel {
   String? get id;
   BillType get type;
   int get amount;
-  int? get value;
+  double get value;
 
   /// Create a copy of BillModel
   /// with the given fields replaced by the non-null parameter values.
@@ -56,7 +56,7 @@ abstract mixin class $BillModelCopyWith<$Res> {
   factory $BillModelCopyWith(BillModel value, $Res Function(BillModel) _then) =
       _$BillModelCopyWithImpl;
   @useResult
-  $Res call({String? id, BillType type, int amount, int? value});
+  $Res call({String? id, BillType type, int amount, double value});
 }
 
 /// @nodoc
@@ -74,7 +74,7 @@ class _$BillModelCopyWithImpl<$Res> implements $BillModelCopyWith<$Res> {
     Object? id = freezed,
     Object? type = null,
     Object? amount = null,
-    Object? value = freezed,
+    Object? value = null,
   }) {
     return _then(_self.copyWith(
       id: freezed == id
@@ -89,10 +89,10 @@ class _$BillModelCopyWithImpl<$Res> implements $BillModelCopyWith<$Res> {
           ? _self.amount
           : amount // ignore: cast_nullable_to_non_nullable
               as int,
-      value: freezed == value
+      value: null == value
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double,
     ));
   }
 }
@@ -101,7 +101,7 @@ class _$BillModelCopyWithImpl<$Res> implements $BillModelCopyWith<$Res> {
 @JsonSerializable()
 class _BillModel implements BillModel {
   const _BillModel(
-      {this.id, required this.type, required this.amount, this.value});
+      {this.id, required this.type, required this.amount, required this.value});
   factory _BillModel.fromJson(Map<String, dynamic> json) =>
       _$BillModelFromJson(json);
 
@@ -112,7 +112,7 @@ class _BillModel implements BillModel {
   @override
   final int amount;
   @override
-  final int? value;
+  final double value;
 
   /// Create a copy of BillModel
   /// with the given fields replaced by the non-null parameter values.
@@ -158,7 +158,7 @@ abstract mixin class _$BillModelCopyWith<$Res>
       __$BillModelCopyWithImpl;
   @override
   @useResult
-  $Res call({String? id, BillType type, int amount, int? value});
+  $Res call({String? id, BillType type, int amount, double value});
 }
 
 /// @nodoc
@@ -176,7 +176,7 @@ class __$BillModelCopyWithImpl<$Res> implements _$BillModelCopyWith<$Res> {
     Object? id = freezed,
     Object? type = null,
     Object? amount = null,
-    Object? value = freezed,
+    Object? value = null,
   }) {
     return _then(_BillModel(
       id: freezed == id
@@ -191,10 +191,10 @@ class __$BillModelCopyWithImpl<$Res> implements _$BillModelCopyWith<$Res> {
           ? _self.amount
           : amount // ignore: cast_nullable_to_non_nullable
               as int,
-      value: freezed == value
+      value: null == value
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double,
     ));
   }
 }
