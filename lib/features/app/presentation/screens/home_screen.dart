@@ -1,9 +1,12 @@
 import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
 import 'package:falsisters_pos_android/features/app/presentation/widgets/sidebar.dart';
+import 'package:falsisters_pos_android/features/attachments/presentation/screens/attachments_screen.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/delivery_screen.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/screens/expenses_screen.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/screens/kahon_screen.dart';
+import 'package:falsisters_pos_android/features/profits/presentation/screens/profits_screen.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/screens/sales_screen.dart';
+import 'package:falsisters_pos_android/features/sales_check/presentation/screens/sales_check_screen.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/current_shift_state.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
@@ -119,7 +122,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (drawerIndex == 2) Expanded(child: StocksScreen()),
                 if (drawerIndex == 3) Expanded(child: KahonScreen()),
                 if (drawerIndex == 4) Expanded(child: ExpensesScreen()),
-                if (drawerIndex == 8) Expanded(child: ShiftScreen()),
+                if (drawerIndex == 5) Expanded(child: ProfitsScreen()),
+                if (drawerIndex == 6) Expanded(child: AttachmentsScreen()),
+                if (drawerIndex == 7) Expanded(child: SalesCheckScreen()),
+                if (drawerIndex == 9) Expanded(child: ShiftScreen()),
               ],
             );
           },

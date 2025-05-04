@@ -118,11 +118,11 @@ class Sidebar extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: SidebarItem(
-                      title: 'Kahon',
-                      icon: Icons.inventory,
+                      title: 'Expenses',
+                      icon: Icons.bookmark_add_rounded,
                       isSelected: drawerIndex == 4,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(3)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(4)}),
                 ),
               const SizedBox(
                 height: 4,
@@ -135,7 +135,7 @@ class Sidebar extends ConsumerWidget {
                       icon: Icons.attach_money,
                       isSelected: drawerIndex == 5,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(4)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(5)}),
                 ),
               const SizedBox(
                 height: 4,
@@ -148,7 +148,7 @@ class Sidebar extends ConsumerWidget {
                       icon: Icons.attach_file,
                       isSelected: drawerIndex == 6,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(5)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(6)}),
                 ),
               const SizedBox(
                 height: 4,
@@ -161,40 +161,46 @@ class Sidebar extends ConsumerWidget {
                       icon: Icons.history,
                       isSelected: drawerIndex == 7,
                       onTap: () =>
-                          {ref.read(drawerIndexProvider.notifier).setIndex(6)}),
+                          {ref.read(drawerIndexProvider.notifier).setIndex(7)}),
                 ),
-
-              // Create a footer
+              const SizedBox(
+                height: 4,
+              ),
+              if (permissions.contains('PROFITS'))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SidebarItem(
+                      title: 'Bills',
+                      icon: Icons.blinds_closed,
+                      isSelected: drawerIndex == 8,
+                      onTap: () =>
+                          {ref.read(drawerIndexProvider.notifier).setIndex(8)}),
+                ),
               const SizedBox(
                 height: 16,
               ),
-
               const Divider(
                 indent: 16,
                 endIndent: 16,
                 thickness: 4,
                 color: Colors.white,
               ),
-
               const SizedBox(
                 height: 16,
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: SidebarItem(
                   title: 'Profile',
                   icon: Icons.person,
-                  isSelected: drawerIndex == 8,
+                  isSelected: drawerIndex == 9,
                   onTap: () =>
-                      ref.read(drawerIndexProvider.notifier).setIndex(7),
+                      ref.read(drawerIndexProvider.notifier).setIndex(9),
                 ),
               ),
-
               const SizedBox(
                 height: 16,
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: SidebarItem(
