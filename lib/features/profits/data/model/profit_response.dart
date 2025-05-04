@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:falsisters_pos_android/features/profits/data/model/profit_category.dart';
 import 'package:falsisters_pos_android/features/profits/data/model/profit_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
