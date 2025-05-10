@@ -75,6 +75,20 @@ class Sidebar extends ConsumerWidget {
               const SizedBox(
                 height: 4,
               ),
+              if (permissions.contains('SALES'))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SidebarItem(
+                      title: 'Orders',
+                      icon: Icons.time_to_leave,
+                      isSelected: drawerIndex == 10,
+                      onTap: () => {
+                            ref.read(drawerIndexProvider.notifier).setIndex(10)
+                          }),
+                ),
+              const SizedBox(
+                height: 4,
+              ),
               if (permissions.contains('DELIVERIES'))
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -177,7 +191,7 @@ class Sidebar extends ConsumerWidget {
                           {ref.read(drawerIndexProvider.notifier).setIndex(8)}),
                 ),
               const SizedBox(
-                height: 16,
+                height: 8,
               ),
               const Divider(
                 indent: 16,
@@ -186,7 +200,7 @@ class Sidebar extends ConsumerWidget {
                 color: Colors.white,
               ),
               const SizedBox(
-                height: 16,
+                height: 8,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -199,7 +213,7 @@ class Sidebar extends ConsumerWidget {
                 ),
               ),
               const SizedBox(
-                height: 16,
+                height: 8,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),

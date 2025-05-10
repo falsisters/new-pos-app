@@ -5,6 +5,7 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/screens/
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/delivery_screen.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/screens/expenses_screen.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/screens/kahon_screen.dart';
+import 'package:falsisters_pos_android/features/orders/presentation/screens/order_screen.dart';
 import 'package:falsisters_pos_android/features/profits/presentation/screens/profits_screen.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/screens/sales_screen.dart';
 import 'package:falsisters_pos_android/features/sales_check/presentation/screens/sales_check_screen.dart';
@@ -115,6 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             return Row(
               children: [
                 Sidebar(),
+                if (drawerIndex == 10) Expanded(child: OrderScreen()),
                 if (drawerIndex == 0)
                   Expanded(
                     child: SalesScreen(),
