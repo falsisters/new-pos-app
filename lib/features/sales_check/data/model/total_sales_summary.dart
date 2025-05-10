@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:falsisters_pos_android/features/sales_check/data/model/payment_totals.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
