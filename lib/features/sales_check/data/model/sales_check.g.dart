@@ -13,6 +13,7 @@ _SalesCheck _$SalesCheckFromJson(Map<String, dynamic> json) => _SalesCheck(
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      orderId: json['orderId'] as String?,
       saleItems: (json['SaleItem'] as List<dynamic>)
           .map((e) => SaleItemCheck.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -26,6 +27,7 @@ Map<String, dynamic> _$SalesCheckToJson(_SalesCheck instance) =>
       'paymentMethod': _$PaymentMethodEnumMap[instance.paymentMethod]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'orderId': instance.orderId,
       'SaleItem': instance.saleItems,
     };
 

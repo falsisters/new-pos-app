@@ -20,6 +20,10 @@ mixin _$SaleItemCheck {
   String
       get productId; // Consider adding ProductDto product if the backend endpoint includes it
 // required ProductDto product,
+  String? get sackPriceId; // Added to align with SaleItem schema
+  String? get perKiloPriceId; // Added to align with SaleItem schema
+  String?
+      get sackType; // Added to align with SaleItem schema (e.g., "FIFTY_KG", "TWENTY_FIVE_KG", "FIVE_KG")
   String get saleId;
   bool get isGantang;
   bool get isSpecialPrice;
@@ -47,6 +51,12 @@ mixin _$SaleItemCheck {
                 other.quantity == quantity) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
+            (identical(other.sackPriceId, sackPriceId) ||
+                other.sackPriceId == sackPriceId) &&
+            (identical(other.perKiloPriceId, perKiloPriceId) ||
+                other.perKiloPriceId == perKiloPriceId) &&
+            (identical(other.sackType, sackType) ||
+                other.sackType == sackType) &&
             (identical(other.saleId, saleId) || other.saleId == saleId) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
@@ -60,12 +70,23 @@ mixin _$SaleItemCheck {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity, productId, saleId,
-      isGantang, isSpecialPrice, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      quantity,
+      productId,
+      sackPriceId,
+      perKiloPriceId,
+      sackType,
+      saleId,
+      isGantang,
+      isSpecialPrice,
+      createdAt,
+      updatedAt);
 
   @override
   String toString() {
-    return 'SaleItemCheck(id: $id, quantity: $quantity, productId: $productId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleItemCheck(id: $id, quantity: $quantity, productId: $productId, sackPriceId: $sackPriceId, perKiloPriceId: $perKiloPriceId, sackType: $sackType, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -79,6 +100,9 @@ abstract mixin class $SaleItemCheckCopyWith<$Res> {
       {String id,
       double quantity,
       String productId,
+      String? sackPriceId,
+      String? perKiloPriceId,
+      String? sackType,
       String saleId,
       bool isGantang,
       bool isSpecialPrice,
@@ -102,6 +126,9 @@ class _$SaleItemCheckCopyWithImpl<$Res>
     Object? id = null,
     Object? quantity = null,
     Object? productId = null,
+    Object? sackPriceId = freezed,
+    Object? perKiloPriceId = freezed,
+    Object? sackType = freezed,
     Object? saleId = null,
     Object? isGantang = null,
     Object? isSpecialPrice = null,
@@ -121,6 +148,18 @@ class _$SaleItemCheckCopyWithImpl<$Res>
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
               as String,
+      sackPriceId: freezed == sackPriceId
+          ? _self.sackPriceId
+          : sackPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      perKiloPriceId: freezed == perKiloPriceId
+          ? _self.perKiloPriceId
+          : perKiloPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sackType: freezed == sackType
+          ? _self.sackType
+          : sackType // ignore: cast_nullable_to_non_nullable
+              as String?,
       saleId: null == saleId
           ? _self.saleId
           : saleId // ignore: cast_nullable_to_non_nullable
@@ -152,6 +191,9 @@ class _SaleItemCheck implements SaleItemCheck {
       {required this.id,
       required this.quantity,
       required this.productId,
+      this.sackPriceId,
+      this.perKiloPriceId,
+      this.sackType,
       required this.saleId,
       this.isGantang = false,
       this.isSpecialPrice = false,
@@ -168,6 +210,15 @@ class _SaleItemCheck implements SaleItemCheck {
   final String productId;
 // Consider adding ProductDto product if the backend endpoint includes it
 // required ProductDto product,
+  @override
+  final String? sackPriceId;
+// Added to align with SaleItem schema
+  @override
+  final String? perKiloPriceId;
+// Added to align with SaleItem schema
+  @override
+  final String? sackType;
+// Added to align with SaleItem schema (e.g., "FIFTY_KG", "TWENTY_FIVE_KG", "FIVE_KG")
   @override
   final String saleId;
   @override
@@ -206,6 +257,12 @@ class _SaleItemCheck implements SaleItemCheck {
                 other.quantity == quantity) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
+            (identical(other.sackPriceId, sackPriceId) ||
+                other.sackPriceId == sackPriceId) &&
+            (identical(other.perKiloPriceId, perKiloPriceId) ||
+                other.perKiloPriceId == perKiloPriceId) &&
+            (identical(other.sackType, sackType) ||
+                other.sackType == sackType) &&
             (identical(other.saleId, saleId) || other.saleId == saleId) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
@@ -219,12 +276,23 @@ class _SaleItemCheck implements SaleItemCheck {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, quantity, productId, saleId,
-      isGantang, isSpecialPrice, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      quantity,
+      productId,
+      sackPriceId,
+      perKiloPriceId,
+      sackType,
+      saleId,
+      isGantang,
+      isSpecialPrice,
+      createdAt,
+      updatedAt);
 
   @override
   String toString() {
-    return 'SaleItemCheck(id: $id, quantity: $quantity, productId: $productId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleItemCheck(id: $id, quantity: $quantity, productId: $productId, sackPriceId: $sackPriceId, perKiloPriceId: $perKiloPriceId, sackType: $sackType, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -240,6 +308,9 @@ abstract mixin class _$SaleItemCheckCopyWith<$Res>
       {String id,
       double quantity,
       String productId,
+      String? sackPriceId,
+      String? perKiloPriceId,
+      String? sackType,
       String saleId,
       bool isGantang,
       bool isSpecialPrice,
@@ -263,6 +334,9 @@ class __$SaleItemCheckCopyWithImpl<$Res>
     Object? id = null,
     Object? quantity = null,
     Object? productId = null,
+    Object? sackPriceId = freezed,
+    Object? perKiloPriceId = freezed,
+    Object? sackType = freezed,
     Object? saleId = null,
     Object? isGantang = null,
     Object? isSpecialPrice = null,
@@ -282,6 +356,18 @@ class __$SaleItemCheckCopyWithImpl<$Res>
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
               as String,
+      sackPriceId: freezed == sackPriceId
+          ? _self.sackPriceId
+          : sackPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      perKiloPriceId: freezed == perKiloPriceId
+          ? _self.perKiloPriceId
+          : perKiloPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sackType: freezed == sackType
+          ? _self.sackType
+          : sackType // ignore: cast_nullable_to_non_nullable
+              as String?,
       saleId: null == saleId
           ? _self.saleId
           : saleId // ignore: cast_nullable_to_non_nullable

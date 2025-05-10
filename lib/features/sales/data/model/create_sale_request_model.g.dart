@@ -9,6 +9,7 @@ part of 'create_sale_request_model.dart';
 _CreateSaleRequestModel _$CreateSaleRequestModelFromJson(
         Map<String, dynamic> json) =>
     _CreateSaleRequestModel(
+      orderId: json['orderId'] as String?,
       totalAmount: (json['totalAmount'] as num).toDouble(),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       saleItems: (json['saleItem'] as List<dynamic>)
@@ -19,6 +20,7 @@ _CreateSaleRequestModel _$CreateSaleRequestModelFromJson(
 Map<String, dynamic> _$CreateSaleRequestModelToJson(
         _CreateSaleRequestModel instance) =>
     <String, dynamic>{
+      'orderId': instance.orderId,
       'totalAmount': instance.totalAmount,
       'paymentMethod': _$PaymentMethodEnumMap[instance.paymentMethod]!,
       'saleItem': instance.saleItems,

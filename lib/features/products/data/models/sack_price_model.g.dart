@@ -17,6 +17,7 @@ _SackPrice _$SackPriceFromJson(Map<String, dynamic> json) => _SackPrice(
       specialPrice: json['specialPrice'] == null
           ? null
           : SpecialPrice.fromJson(json['specialPrice'] as Map<String, dynamic>),
+      specialPriceId: json['specialPriceId'] as String?,
     );
 
 Map<String, dynamic> _$SackPriceToJson(_SackPrice instance) =>
@@ -29,6 +30,7 @@ Map<String, dynamic> _$SackPriceToJson(_SackPrice instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'specialPrice': instance.specialPrice,
+      'specialPriceId': instance.specialPriceId,
     };
 
 const _$SackTypeEnumMap = {

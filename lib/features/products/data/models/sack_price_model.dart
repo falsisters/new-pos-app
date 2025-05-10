@@ -28,6 +28,7 @@ sealed class SackPrice with _$SackPrice {
     required DateTime createdAt,
     required DateTime updatedAt,
     SpecialPrice? specialPrice,
+    String? specialPriceId,
   }) = _SackPrice;
 
   factory SackPrice.fromJson(Map<String, dynamic> json) =>

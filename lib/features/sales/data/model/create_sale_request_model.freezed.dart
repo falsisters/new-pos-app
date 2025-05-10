@@ -15,6 +15,7 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$CreateSaleRequestModel {
+  String? get orderId;
   double get totalAmount;
   PaymentMethod get paymentMethod;
   @JsonKey(name: 'saleItem')
@@ -36,6 +37,7 @@ mixin _$CreateSaleRequestModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is CreateSaleRequestModel &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.totalAmount, totalAmount) ||
                 other.totalAmount == totalAmount) &&
             (identical(other.paymentMethod, paymentMethod) ||
@@ -45,12 +47,12 @@ mixin _$CreateSaleRequestModel {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, totalAmount, paymentMethod,
-      const DeepCollectionEquality().hash(saleItems));
+  int get hashCode => Object.hash(runtimeType, orderId, totalAmount,
+      paymentMethod, const DeepCollectionEquality().hash(saleItems));
 
   @override
   String toString() {
-    return 'CreateSaleRequestModel(totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
+    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
   }
 }
 
@@ -61,7 +63,8 @@ abstract mixin class $CreateSaleRequestModelCopyWith<$Res> {
       _$CreateSaleRequestModelCopyWithImpl;
   @useResult
   $Res call(
-      {double totalAmount,
+      {String? orderId,
+      double totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'saleItem') List<ProductDto> saleItems});
 }
@@ -79,11 +82,16 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? orderId = freezed,
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? saleItems = null,
   }) {
     return _then(_self.copyWith(
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
@@ -104,13 +112,16 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
 @JsonSerializable()
 class _CreateSaleRequestModel implements CreateSaleRequestModel {
   const _CreateSaleRequestModel(
-      {required this.totalAmount,
+      {this.orderId,
+      required this.totalAmount,
       required this.paymentMethod,
       @JsonKey(name: 'saleItem') required final List<ProductDto> saleItems})
       : _saleItems = saleItems;
   factory _CreateSaleRequestModel.fromJson(Map<String, dynamic> json) =>
       _$CreateSaleRequestModelFromJson(json);
 
+  @override
+  final String? orderId;
   @override
   final double totalAmount;
   @override
@@ -145,6 +156,7 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _CreateSaleRequestModel &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.totalAmount, totalAmount) ||
                 other.totalAmount == totalAmount) &&
             (identical(other.paymentMethod, paymentMethod) ||
@@ -155,12 +167,12 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, totalAmount, paymentMethod,
-      const DeepCollectionEquality().hash(_saleItems));
+  int get hashCode => Object.hash(runtimeType, orderId, totalAmount,
+      paymentMethod, const DeepCollectionEquality().hash(_saleItems));
 
   @override
   String toString() {
-    return 'CreateSaleRequestModel(totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
+    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
   }
 }
 
@@ -173,7 +185,8 @@ abstract mixin class _$CreateSaleRequestModelCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {double totalAmount,
+      {String? orderId,
+      double totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'saleItem') List<ProductDto> saleItems});
 }
@@ -191,11 +204,16 @@ class __$CreateSaleRequestModelCopyWithImpl<$Res>
   @override
   @pragma('vm:prefer-inline')
   $Res call({
+    Object? orderId = freezed,
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? saleItems = null,
   }) {
     return _then(_CreateSaleRequestModel(
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable

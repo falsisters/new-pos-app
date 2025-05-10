@@ -15,11 +15,14 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
   DateTime? _selectedDate;
   String? _selectedPriceType;
   String? _selectedSackType;
+  late TextEditingController _productSearchController;
   bool _isExpanded = true;
 
   @override
   void initState() {
     super.initState();
+    _productSearchController = TextEditingController();
+
     // Initialize with the current date from the notifier state if available
     final profitsState = ref.read(profitsStateNotifierProvider).valueOrNull;
     final initialFilters = profitsState?.filters;
@@ -36,6 +39,13 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
 
     _selectedPriceType = initialFilters?.priceType;
     _selectedSackType = initialFilters?.sackType;
+    _productSearchController.text = initialFilters?.productSearch ?? '';
+  }
+
+  @override
+  void dispose() {
+    _productSearchController.dispose();
+    super.dispose();
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -56,11 +66,13 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
   void _applyFilters() {
     if (_selectedDate != null) {
       final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      final productSearchText = _productSearchController.text.trim();
 
       final filters = ProfitFilterDto(
         date: formattedDate,
         priceType: _selectedPriceType,
         sackType: _selectedSackType,
+        productSearch: productSearchText.isEmpty ? null : productSearchText,
       );
 
       // Call the notifier method to update filters and refetch data
@@ -86,6 +98,9 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
     final List<String> activeFilters = [];
     if (_selectedDate != null) {
       activeFilters.add("Date: $displayDate");
+    }
+    if (_productSearchController.text.trim().isNotEmpty) {
+      activeFilters.add("Search: ${_productSearchController.text.trim()}");
     }
     if (_selectedPriceType != null) {
       activeFilters
@@ -149,6 +164,7 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
               // Full filter controls when expanded
               if (_isExpanded) ...[
                 const SizedBox(height: 8),
+                // Date Selection
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -161,6 +177,23 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                // Product Search TextField
+                TextField(
+                  controller: _productSearchController,
+                  decoration: InputDecoration(
+                    labelText: 'Product Name',
+                    hintText: 'Search by product name',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  onSubmitted: (_) => _applyFilters(),
+                ),
+                const SizedBox(height: 8),
+                // Price Type and Sack Type Dropdowns
                 Row(
                   children: [
                     Expanded(

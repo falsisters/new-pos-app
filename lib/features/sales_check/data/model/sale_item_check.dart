@@ -12,6 +12,10 @@ sealed class SaleItemCheck with _$SaleItemCheck {
     required String productId,
     // Consider adding ProductDto product if the backend endpoint includes it
     // required ProductDto product,
+    String? sackPriceId, // Added to align with SaleItem schema
+    String? perKiloPriceId, // Added to align with SaleItem schema
+    String?
+        sackType, // Added to align with SaleItem schema (e.g., "FIFTY_KG", "TWENTY_FIVE_KG", "FIVE_KG")
     required String saleId,
     @Default(false) bool isGantang,
     @Default(false) bool isSpecialPrice,

@@ -17,6 +17,7 @@ enum SackType {
 @freezed
 sealed class CreateSaleRequestModel with _$CreateSaleRequestModel {
   const factory CreateSaleRequestModel({
+    String? orderId,
     required double totalAmount,
     required PaymentMethod paymentMethod,
     @JsonKey(name: 'saleItem') required List<ProductDto> saleItems,

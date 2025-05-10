@@ -22,6 +22,8 @@ mixin _$SalesCheck {
   PaymentMethod get paymentMethod;
   DateTime get createdAt;
   DateTime get updatedAt;
+  String?
+      get orderId; // Added to align with Sale schema's optional link to Order
   @JsonKey(name: 'SaleItem')
   List<SaleItemCheck> get saleItems;
 
@@ -51,6 +53,7 @@ mixin _$SalesCheck {
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             const DeepCollectionEquality().equals(other.saleItems, saleItems));
   }
 
@@ -64,11 +67,12 @@ mixin _$SalesCheck {
       paymentMethod,
       createdAt,
       updatedAt,
+      orderId,
       const DeepCollectionEquality().hash(saleItems));
 
   @override
   String toString() {
-    return 'SalesCheck(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, createdAt: $createdAt, updatedAt: $updatedAt, saleItems: $saleItems)';
+    return 'SalesCheck(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, createdAt: $createdAt, updatedAt: $updatedAt, orderId: $orderId, saleItems: $saleItems)';
   }
 }
 
@@ -85,6 +89,7 @@ abstract mixin class $SalesCheckCopyWith<$Res> {
       PaymentMethod paymentMethod,
       DateTime createdAt,
       DateTime updatedAt,
+      String? orderId,
       @JsonKey(name: 'SaleItem') List<SaleItemCheck> saleItems});
 }
 
@@ -106,6 +111,7 @@ class _$SalesCheckCopyWithImpl<$Res> implements $SalesCheckCopyWith<$Res> {
     Object? paymentMethod = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? orderId = freezed,
     Object? saleItems = null,
   }) {
     return _then(_self.copyWith(
@@ -133,6 +139,10 @@ class _$SalesCheckCopyWithImpl<$Res> implements $SalesCheckCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       saleItems: null == saleItems
           ? _self.saleItems
           : saleItems // ignore: cast_nullable_to_non_nullable
@@ -151,6 +161,7 @@ class _SalesCheck implements SalesCheck {
       required this.paymentMethod,
       required this.createdAt,
       required this.updatedAt,
+      this.orderId,
       @JsonKey(name: 'SaleItem') required final List<SaleItemCheck> saleItems})
       : _saleItems = saleItems;
   factory _SalesCheck.fromJson(Map<String, dynamic> json) =>
@@ -169,7 +180,11 @@ class _SalesCheck implements SalesCheck {
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
+  @override
+  final String? orderId;
+// Added to align with Sale schema's optional link to Order
   final List<SaleItemCheck> _saleItems;
+// Added to align with Sale schema's optional link to Order
   @override
   @JsonKey(name: 'SaleItem')
   List<SaleItemCheck> get saleItems {
@@ -209,6 +224,7 @@ class _SalesCheck implements SalesCheck {
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             const DeepCollectionEquality()
                 .equals(other._saleItems, _saleItems));
   }
@@ -223,11 +239,12 @@ class _SalesCheck implements SalesCheck {
       paymentMethod,
       createdAt,
       updatedAt,
+      orderId,
       const DeepCollectionEquality().hash(_saleItems));
 
   @override
   String toString() {
-    return 'SalesCheck(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, createdAt: $createdAt, updatedAt: $updatedAt, saleItems: $saleItems)';
+    return 'SalesCheck(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, createdAt: $createdAt, updatedAt: $updatedAt, orderId: $orderId, saleItems: $saleItems)';
   }
 }
 
@@ -246,6 +263,7 @@ abstract mixin class _$SalesCheckCopyWith<$Res>
       PaymentMethod paymentMethod,
       DateTime createdAt,
       DateTime updatedAt,
+      String? orderId,
       @JsonKey(name: 'SaleItem') List<SaleItemCheck> saleItems});
 }
 
@@ -267,6 +285,7 @@ class __$SalesCheckCopyWithImpl<$Res> implements _$SalesCheckCopyWith<$Res> {
     Object? paymentMethod = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? orderId = freezed,
     Object? saleItems = null,
   }) {
     return _then(_SalesCheck(
@@ -294,6 +313,10 @@ class __$SalesCheckCopyWithImpl<$Res> implements _$SalesCheckCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       saleItems: null == saleItems
           ? _self._saleItems
           : saleItems // ignore: cast_nullable_to_non_nullable

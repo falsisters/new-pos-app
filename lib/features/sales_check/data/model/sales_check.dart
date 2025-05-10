@@ -17,6 +17,7 @@ sealed class SalesCheck with _$SalesCheck {
     required PaymentMethod paymentMethod,
     required DateTime createdAt,
     required DateTime updatedAt,
+    String? orderId, // Added to align with Sale schema's optional link to Order
     @JsonKey(name: 'SaleItem') // Match Prisma relation name if needed
     required List<SaleItemCheck> saleItems,
   }) = _SalesCheck;

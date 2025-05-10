@@ -27,31 +27,34 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter> {
   void initState() {
     super.initState();
     // Initialize with values from provider state
-    final currentState = ref.read(salesCheckProvider).value;
-    final initialDateStr = currentState?.groupedSalesFilters?.date;
+    final salesStateValue = ref.read(salesCheckProvider).value;
+    final gFilters = salesStateValue?.groupedSalesFilters;
+    final tFilters = salesStateValue?.totalSalesFilters;
 
+    // Initialize Date: Try to parse from either filter DTO, default to now.
+    final initialDateStr = gFilters?.date ?? tFilters?.date;
     if (initialDateStr != null) {
-      try {
-        _selectedDate = DateFormat('yyyy-MM-dd').parse(initialDateStr);
-      } catch (_) {
-        _selectedDate = DateTime.now(); // Fallback
-      }
+      _selectedDate =
+          DateFormat('yyyy-MM-dd').tryParse(initialDateStr) ?? DateTime.now();
     } else {
       _selectedDate = DateTime.now();
     }
 
-    // Initialize other filter values if available
-    if (currentState?.totalSalesFilters != null) {
-      final filters = currentState!.totalSalesFilters!;
-      if (filters.productName != null) {
-        _productNameController.text = filters.productName!;
-      }
-      if (filters.priceType != null) {
-        _priceType = filters.priceType!;
-      }
-      if (filters.sackType != null) {
-        _sackType = filters.sackType!;
-      }
+    // Initialize Product Name Controller:
+    // Uses productName from totalSalesFilters or productSearch from groupedSalesFilters.
+    // These should be consistent as they originate from the same UI input.
+    _productNameController.text =
+        tFilters?.productName ?? gFilters?.productSearch ?? '';
+
+    // Initialize Price Type: Common field, take from either.
+    _priceType = tFilters?.priceType ?? gFilters?.priceType ?? '';
+
+    // Initialize Sack Type: Common field, take from either.
+    _sackType = tFilters?.sackType ?? gFilters?.sackType ?? '';
+
+    // Ensure sackType is cleared if priceType is not SACK initially
+    if (_priceType != 'SACK') {
+      _sackType = '';
     }
   }
 

@@ -23,6 +23,7 @@ mixin _$SackPrice {
   DateTime get createdAt;
   DateTime get updatedAt;
   SpecialPrice? get specialPrice;
+  String? get specialPriceId;
 
   /// Create a copy of SackPrice
   /// with the given fields replaced by the non-null parameter values.
@@ -50,17 +51,19 @@ mixin _$SackPrice {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.specialPrice, specialPrice) ||
-                other.specialPrice == specialPrice));
+                other.specialPrice == specialPrice) &&
+            (identical(other.specialPriceId, specialPriceId) ||
+                other.specialPriceId == specialPriceId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, price, stock, type,
-      productId, createdAt, updatedAt, specialPrice);
+      productId, createdAt, updatedAt, specialPrice, specialPriceId);
 
   @override
   String toString() {
-    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice)';
+    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
   }
 }
 
@@ -77,7 +80,8 @@ abstract mixin class $SackPriceCopyWith<$Res> {
       String productId,
       DateTime createdAt,
       DateTime updatedAt,
-      SpecialPrice? specialPrice});
+      SpecialPrice? specialPrice,
+      String? specialPriceId});
 
   $SpecialPriceCopyWith<$Res>? get specialPrice;
 }
@@ -102,6 +106,7 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? specialPrice = freezed,
+    Object? specialPriceId = freezed,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -136,6 +141,10 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable
               as SpecialPrice?,
+      specialPriceId: freezed == specialPriceId
+          ? _self.specialPriceId
+          : specialPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 
@@ -165,7 +174,8 @@ class _SackPrice implements SackPrice {
       required this.productId,
       required this.createdAt,
       required this.updatedAt,
-      this.specialPrice});
+      this.specialPrice,
+      this.specialPriceId});
   factory _SackPrice.fromJson(Map<String, dynamic> json) =>
       _$SackPriceFromJson(json);
 
@@ -185,6 +195,8 @@ class _SackPrice implements SackPrice {
   final DateTime updatedAt;
   @override
   final SpecialPrice? specialPrice;
+  @override
+  final String? specialPriceId;
 
   /// Create a copy of SackPrice
   /// with the given fields replaced by the non-null parameter values.
@@ -217,17 +229,19 @@ class _SackPrice implements SackPrice {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.specialPrice, specialPrice) ||
-                other.specialPrice == specialPrice));
+                other.specialPrice == specialPrice) &&
+            (identical(other.specialPriceId, specialPriceId) ||
+                other.specialPriceId == specialPriceId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, price, stock, type,
-      productId, createdAt, updatedAt, specialPrice);
+      productId, createdAt, updatedAt, specialPrice, specialPriceId);
 
   @override
   String toString() {
-    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice)';
+    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
   }
 }
 
@@ -247,7 +261,8 @@ abstract mixin class _$SackPriceCopyWith<$Res>
       String productId,
       DateTime createdAt,
       DateTime updatedAt,
-      SpecialPrice? specialPrice});
+      SpecialPrice? specialPrice,
+      String? specialPriceId});
 
   @override
   $SpecialPriceCopyWith<$Res>? get specialPrice;
@@ -273,6 +288,7 @@ class __$SackPriceCopyWithImpl<$Res> implements _$SackPriceCopyWith<$Res> {
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? specialPrice = freezed,
+    Object? specialPriceId = freezed,
   }) {
     return _then(_SackPrice(
       id: null == id
@@ -307,6 +323,10 @@ class __$SackPriceCopyWithImpl<$Res> implements _$SackPriceCopyWith<$Res> {
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable
               as SpecialPrice?,
+      specialPriceId: freezed == specialPriceId
+          ? _self.specialPriceId
+          : specialPriceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 
