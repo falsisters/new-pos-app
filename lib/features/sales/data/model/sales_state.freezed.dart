@@ -16,6 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SalesState {
   CartModel get cart;
+  String? get orderId;
   String? get error;
 
   /// Create a copy of SalesState
@@ -34,16 +35,17 @@ mixin _$SalesState {
         (other.runtimeType == runtimeType &&
             other is SalesState &&
             (identical(other.cart, cart) || other.cart == cart) &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cart, error);
+  int get hashCode => Object.hash(runtimeType, cart, orderId, error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, error: $error)';
+    return 'SalesState(cart: $cart, orderId: $orderId, error: $error)';
   }
 }
 
@@ -53,7 +55,7 @@ abstract mixin class $SalesStateCopyWith<$Res> {
           SalesState value, $Res Function(SalesState) _then) =
       _$SalesStateCopyWithImpl;
   @useResult
-  $Res call({CartModel cart, String? error});
+  $Res call({CartModel cart, String? orderId, String? error});
 
   $CartModelCopyWith<$Res> get cart;
 }
@@ -71,6 +73,7 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
   @override
   $Res call({
     Object? cart = null,
+    Object? orderId = freezed,
     Object? error = freezed,
   }) {
     return _then(_self.copyWith(
@@ -78,6 +81,10 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
           ? _self.cart
           : cart // ignore: cast_nullable_to_non_nullable
               as CartModel,
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       error: freezed == error
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
@@ -99,12 +106,14 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
 /// @nodoc
 @JsonSerializable()
 class _SalesState implements SalesState {
-  const _SalesState({required this.cart, this.error});
+  const _SalesState({required this.cart, this.orderId, this.error});
   factory _SalesState.fromJson(Map<String, dynamic> json) =>
       _$SalesStateFromJson(json);
 
   @override
   final CartModel cart;
+  @override
+  final String? orderId;
   @override
   final String? error;
 
@@ -129,16 +138,17 @@ class _SalesState implements SalesState {
         (other.runtimeType == runtimeType &&
             other is _SalesState &&
             (identical(other.cart, cart) || other.cart == cart) &&
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cart, error);
+  int get hashCode => Object.hash(runtimeType, cart, orderId, error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, error: $error)';
+    return 'SalesState(cart: $cart, orderId: $orderId, error: $error)';
   }
 }
 
@@ -150,7 +160,7 @@ abstract mixin class _$SalesStateCopyWith<$Res>
       __$SalesStateCopyWithImpl;
   @override
   @useResult
-  $Res call({CartModel cart, String? error});
+  $Res call({CartModel cart, String? orderId, String? error});
 
   @override
   $CartModelCopyWith<$Res> get cart;
@@ -169,6 +179,7 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   $Res call({
     Object? cart = null,
+    Object? orderId = freezed,
     Object? error = freezed,
   }) {
     return _then(_SalesState(
@@ -176,6 +187,10 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
           ? _self.cart
           : cart // ignore: cast_nullable_to_non_nullable
               as CartModel,
+      orderId: freezed == orderId
+          ? _self.orderId
+          : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
       error: freezed == error
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable

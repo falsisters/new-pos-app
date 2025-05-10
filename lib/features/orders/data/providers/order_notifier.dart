@@ -25,6 +25,29 @@ class OrderNotifier extends AsyncNotifier<OrderState> {
     }
   }
 
+  Future<void> rejectOrder(String orderId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      try {
+        final order = await _orderRepository.rejectOrder(orderId);
+        if (kDebugMode) {
+          print('OrderNotifier.rejectOrder: Order rejected: $order');
+        }
+        return OrderState(
+          orders: state.value?.orders ?? [],
+          selectedOrder: null,
+          error: null,
+        );
+      } catch (e) {
+        return OrderState(
+          orders: state.value?.orders ?? [],
+          selectedOrder: null,
+          error: e.toString(),
+        );
+      }
+    });
+  }
+
   // Renamed from getOrders for clarity when used as a refresh/retry action
   Future<void> refreshOrders() async {
     if (kDebugMode) {

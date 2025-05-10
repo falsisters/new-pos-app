@@ -8,6 +8,7 @@ part 'sales_state.g.dart';
 sealed class SalesState with _$SalesState {
   const factory SalesState({
     required CartModel cart,
+    String? orderId,
     String? error,
   }) = _SalesState;
 

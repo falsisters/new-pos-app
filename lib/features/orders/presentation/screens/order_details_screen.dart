@@ -1,9 +1,18 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
 import 'package:falsisters_pos_android/features/orders/data/models/order_item_model.dart';
+import 'package:falsisters_pos_android/features/orders/data/models/order_model.dart';
 import 'package:falsisters_pos_android/features/orders/data/providers/order_provider.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart'; // For SackType
+import 'package:falsisters_pos_android/features/sales/data/model/per_kilo_price_dto.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/sack_price_dto.dart';
+import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+const int SALES_SCREEN_INDEX = 0; // Assuming Sales screen is at index 1
 
 class OrderDetailsScreen extends ConsumerStatefulWidget {
   final String orderId;
@@ -26,7 +35,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final orderState = ref.watch(orderProvider);
-    final order = orderState.value?.selectedOrder;
+    final OrderModel? order = orderState.value?.selectedOrder;
 
     if (orderState.isLoading && order == null) {
       return _buildScaffold(
@@ -114,7 +123,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             const SizedBox(height: 24),
             _buildOrderItemsSection(order),
             const SizedBox(height: 32),
-            _buildAcceptOrderButton(),
+            _buildActionButtons(order),
           ],
         ),
       ),
@@ -137,7 +146,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildOrderSummaryCard(dynamic order) {
+  Widget _buildOrderSummaryCard(OrderModel order) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -218,7 +227,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildCustomerInfoCard(dynamic order) {
+  Widget _buildCustomerInfoCard(OrderModel order) {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -286,7 +295,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildOrderItemsSection(dynamic order) {
+  Widget _buildOrderItemsSection(OrderModel order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -457,58 +466,109 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     return colors[index % colors.length];
   }
 
-  Widget _buildAcceptOrderButton() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 54,
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.secondary.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            // TODO: Implement accept order functionality
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Accept Order functionality pending.'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+  Widget _buildActionButtons(OrderModel order) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 54,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Reject Order'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                  shadowColor: Colors.redAccent.withOpacity(0.3),
                 ),
+                onPressed: () async {
+                  await ref.read(orderProvider.notifier).rejectOrder(order.id);
+                  ref.read(orderProvider.notifier).refreshOrders();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
-            );
-          },
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Accept Order',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: SizedBox(
+              height: 54,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle, size: 20),
+                label: const Text(
+                  'Accept Order',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                  shadowColor: AppColors.secondary.withOpacity(0.3),
+                ),
+                onPressed: () {
+                  final productDtos = order.orderItems.map((item) {
+                    PerKiloPriceDto? perKiloPriceDto;
+                    SackPriceDto? sackPriceDto;
+
+                    if (item.perKiloPrice != null &&
+                        item.perKiloPriceId != null) {
+                      perKiloPriceDto = PerKiloPriceDto(
+                        id: item.perKiloPriceId!,
+                        quantity: item.quantity,
+                        price: item.perKiloPrice!.price,
+                      );
+                    }
+
+                    if (item.sackPrice != null && item.sackPriceId != null) {
+                      sackPriceDto = SackPriceDto(
+                        id: item.sackPriceId!,
+                        quantity: item.quantity,
+                        price: item.sackPrice!.price,
+                        type: item.sackPrice!.type,
+                      );
+                    }
+
+                    final bool isGantang =
+                        item.sackPrice?.type == SackType.FIVE_KG;
+
+                    return ProductDto(
+                      id: item.productId,
+                      name: item.product.name,
+                      isGantang: isGantang,
+                      isSpecialPrice: item.isSpecialPrice,
+                      perKiloPrice: perKiloPriceDto,
+                      sackPrice: sackPriceDto,
+                    );
+                  }).toList();
+
+                  ref
+                      .read(salesProvider.notifier)
+                      .setCartItems(productDtos, order.id);
+                  ref
+                      .read(drawerIndexProvider.notifier)
+                      .setIndex(SALES_SCREEN_INDEX);
+
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

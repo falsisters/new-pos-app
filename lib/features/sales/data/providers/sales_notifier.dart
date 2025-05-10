@@ -14,6 +14,13 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     return SalesState(cart: CartModel());
   }
 
+  Future<void> setCartItems(List<ProductDto> items, orderId) async {
+    state = await AsyncValue.guard(() async {
+      final updatedCart = CartModel(products: items);
+      return SalesState(cart: updatedCart, error: null, orderId: orderId);
+    });
+  }
+
   Future<void> addProductToCart(ProductDto product) async {
     state = await AsyncValue.guard(() async {
       final currentState = state.value!;
@@ -54,6 +61,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         final currentCart = state.value!.cart;
         // Create a properly formatted request
         final createSaleRequest = CreateSaleRequestModel(
+          orderId: state.value!.orderId,
           saleItems: currentCart.products,
           paymentMethod: paymentMethod,
           totalAmount: totalAmount,

@@ -27,6 +27,24 @@ class OrderRepository {
     }
   }
 
+  Future<OrderModel> rejectOrder(String orderId) async {
+    try {
+      final response = await _dio.instance.patch('/order/cancel/$orderId');
+
+      if (response.data == null) {
+        throw Exception('Failed to reject order');
+      }
+
+      return OrderModel.fromJson(response.data);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
   Future<OrderModel> getOrderById(String id) async {
     try {
       final response = await _dio.instance.get('/order/cashier/$id');

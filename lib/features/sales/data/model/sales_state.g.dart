@@ -8,11 +8,13 @@ part of 'sales_state.dart';
 
 _SalesState _$SalesStateFromJson(Map<String, dynamic> json) => _SalesState(
       cart: CartModel.fromJson(json['cart'] as Map<String, dynamic>),
+      orderId: json['orderId'] as String?,
       error: json['error'] as String?,
     );
 
 Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
     <String, dynamic>{
       'cart': instance.cart,
+      'orderId': instance.orderId,
       'error': instance.error,
     };
