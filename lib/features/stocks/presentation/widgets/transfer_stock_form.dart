@@ -1,6 +1,7 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
+import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_per_kilo_price_dto.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_product_dto.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_product_request.dart';
@@ -343,7 +344,7 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                sack.type.name,
+                                parseSackType(sack.type),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color:
