@@ -17,6 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$ProductDto {
   String get id;
   String get name;
+  double? get discountedPrice;
+  bool? get isDiscounted;
   bool? get isGantang;
   bool? get isSpecialPrice;
   PerKiloPriceDto? get perKiloPrice;
@@ -39,6 +41,10 @@ mixin _$ProductDto {
             other is ProductDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
@@ -51,12 +57,12 @@ mixin _$ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, isGantang,
-      isSpecialPrice, perKiloPrice, sackPrice);
+  int get hashCode => Object.hash(runtimeType, id, name, discountedPrice,
+      isDiscounted, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, name: $name, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -69,6 +75,8 @@ abstract mixin class $ProductDtoCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
+      double? discountedPrice,
+      bool? isDiscounted,
       bool? isGantang,
       bool? isSpecialPrice,
       PerKiloPriceDto? perKiloPrice,
@@ -92,6 +100,8 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? discountedPrice = freezed,
+    Object? isDiscounted = freezed,
     Object? isGantang = freezed,
     Object? isSpecialPrice = freezed,
     Object? perKiloPrice = freezed,
@@ -106,6 +116,14 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
+      isDiscounted: freezed == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool?,
       isGantang: freezed == isGantang
           ? _self.isGantang
           : isGantang // ignore: cast_nullable_to_non_nullable
@@ -160,6 +178,8 @@ class _ProductDto implements ProductDto {
   const _ProductDto(
       {required this.id,
       required this.name,
+      this.discountedPrice,
+      this.isDiscounted,
       this.isGantang,
       this.isSpecialPrice,
       this.perKiloPrice,
@@ -171,6 +191,10 @@ class _ProductDto implements ProductDto {
   final String id;
   @override
   final String name;
+  @override
+  final double? discountedPrice;
+  @override
+  final bool? isDiscounted;
   @override
   final bool? isGantang;
   @override
@@ -202,6 +226,10 @@ class _ProductDto implements ProductDto {
             other is _ProductDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
             (identical(other.isGantang, isGantang) ||
                 other.isGantang == isGantang) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
@@ -214,12 +242,12 @@ class _ProductDto implements ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, isGantang,
-      isSpecialPrice, perKiloPrice, sackPrice);
+  int get hashCode => Object.hash(runtimeType, id, name, discountedPrice,
+      isDiscounted, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, name: $name, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -234,6 +262,8 @@ abstract mixin class _$ProductDtoCopyWith<$Res>
   $Res call(
       {String id,
       String name,
+      double? discountedPrice,
+      bool? isDiscounted,
       bool? isGantang,
       bool? isSpecialPrice,
       PerKiloPriceDto? perKiloPrice,
@@ -259,6 +289,8 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? discountedPrice = freezed,
+    Object? isDiscounted = freezed,
     Object? isGantang = freezed,
     Object? isSpecialPrice = freezed,
     Object? perKiloPrice = freezed,
@@ -273,6 +305,14 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
+      isDiscounted: freezed == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool?,
       isGantang: freezed == isGantang
           ? _self.isGantang
           : isGantang // ignore: cast_nullable_to_non_nullable

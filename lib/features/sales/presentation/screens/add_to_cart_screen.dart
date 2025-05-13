@@ -25,19 +25,82 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   // State management variables
   bool _isSpecialPrice = false;
-  dynamic _quantity = 1;
   String? _selectedSackPriceId;
   String? _selectedSpecialPriceId;
   bool _isPerKiloSelected = false;
 
+  // New state variables
+  bool _isDiscounted = false;
+  late TextEditingController _discountedPriceController;
+  late TextEditingController _sackQuantityController;
+  late TextEditingController _perKiloQuantityController;
+  late TextEditingController _perKiloTotalPriceController;
+  bool _isUpdatingPriceAndQuantityInternally = false;
+
   @override
   void initState() {
     super.initState();
+    _discountedPriceController = TextEditingController();
+    _sackQuantityController = TextEditingController(text: '1');
+    _perKiloQuantityController = TextEditingController(text: '1.0');
+    _perKiloTotalPriceController = TextEditingController();
+
     // Default to per kilo if available and no sack prices
     if (widget.product.sackPrice.isEmpty &&
         widget.product.perKiloPrice != null) {
       _isPerKiloSelected = true;
     }
+    _updatePerKiloTotalPriceFromQuantity(); // Initial calculation
+
+    _perKiloQuantityController
+        .addListener(_updatePerKiloTotalPriceFromQuantity);
+    _perKiloTotalPriceController
+        .addListener(_updatePerKiloQuantityFromTotalPrice);
+  }
+
+  @override
+  void dispose() {
+    _discountedPriceController.dispose();
+    _sackQuantityController.dispose();
+    _perKiloQuantityController
+        .removeListener(_updatePerKiloTotalPriceFromQuantity);
+    _perKiloTotalPriceController
+        .removeListener(_updatePerKiloQuantityFromTotalPrice);
+    _perKiloQuantityController.dispose();
+    _perKiloTotalPriceController.dispose();
+    super.dispose();
+  }
+
+  void _updatePerKiloTotalPriceFromQuantity() {
+    if (_isUpdatingPriceAndQuantityInternally ||
+        !_isPerKiloSelected ||
+        widget.product.perKiloPrice == null) return;
+
+    _isUpdatingPriceAndQuantityInternally = true;
+    final quantity = double.tryParse(_perKiloQuantityController.text);
+    if (quantity != null && quantity > 0) {
+      final unitPrice = widget.product.perKiloPrice!.price;
+      _perKiloTotalPriceController.text =
+          (quantity * unitPrice).toStringAsFixed(2);
+    }
+    _isUpdatingPriceAndQuantityInternally = false;
+  }
+
+  void _updatePerKiloQuantityFromTotalPrice() {
+    if (_isUpdatingPriceAndQuantityInternally ||
+        !_isPerKiloSelected ||
+        widget.product.perKiloPrice == null) return;
+
+    _isUpdatingPriceAndQuantityInternally = true;
+    final totalPrice = double.tryParse(_perKiloTotalPriceController.text);
+    if (totalPrice != null && totalPrice >= 0) {
+      final unitPrice = widget.product.perKiloPrice!.price;
+      if (unitPrice > 0) {
+        _perKiloQuantityController.text =
+            (totalPrice / unitPrice).toStringAsFixed(2);
+      }
+    }
+    _isUpdatingPriceAndQuantityInternally = false;
   }
 
   void _selectSackPrice(String id, {bool isSpecial = false, int? minimumQty}) {
@@ -45,16 +108,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _selectedSackPriceId = id;
       _isSpecialPrice = isSpecial;
       _isPerKiloSelected = false;
-
+      _sackQuantityController.text =
+          (isSpecial && minimumQty != null) ? minimumQty.toString() : '1';
       if (isSpecial && minimumQty != null) {
         _selectedSpecialPriceId = widget.product.sackPrice
             .firstWhere((sp) => sp.id == id)
             .specialPrice!
             .id;
-        _quantity = minimumQty;
       } else {
         _selectedSpecialPriceId = null;
-        _quantity = 1;
       }
     });
   }
@@ -65,37 +127,46 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _selectedSpecialPriceId = null;
       _isSpecialPrice = false;
       _isPerKiloSelected = true;
-      _quantity = 1.0;
+      _perKiloQuantityController.text = '1.0';
+      _updatePerKiloTotalPriceFromQuantity();
     });
   }
 
   void _increaseQuantity() {
     setState(() {
       if (_selectedSackPriceId != null) {
-        _quantity = (_quantity as int) + 1;
-      } else {
-        // Per kilo price, allow decimal
-        _quantity = ((_quantity as double) * 10 + 1) / 10;
+        int currentQuantity = int.tryParse(_sackQuantityController.text) ?? 1;
+        currentQuantity++;
+        _sackQuantityController.text = currentQuantity.toString();
+      } else if (_isPerKiloSelected) {
+        double currentQuantity =
+            double.tryParse(_perKiloQuantityController.text) ?? 1.0;
+        currentQuantity = ((currentQuantity * 10) + 1) / 10;
+        _perKiloQuantityController.text = currentQuantity.toStringAsFixed(1);
       }
     });
   }
 
   void _decreaseQuantity() {
     setState(() {
-      if (_isSpecialPrice && _selectedSackPriceId != null) {
-        final sackPrice = widget.product.sackPrice
-            .firstWhere((sp) => sp.id == _selectedSackPriceId);
-        if (_quantity > (sackPrice.specialPrice?.minimumQty ?? 1)) {
-          _quantity = (_quantity as int) - 1;
+      if (_selectedSackPriceId != null) {
+        int currentQuantity = int.tryParse(_sackQuantityController.text) ?? 1;
+        int minQty = 1;
+        if (_isSpecialPrice) {
+          final sackPrice = widget.product.sackPrice
+              .firstWhere((sp) => sp.id == _selectedSackPriceId);
+          minQty = sackPrice.specialPrice?.minimumQty ?? 1;
         }
-      } else if (_selectedSackPriceId != null) {
-        if (_quantity > 1) {
-          _quantity = (_quantity as int) - 1;
+        if (currentQuantity > minQty) {
+          currentQuantity--;
+          _sackQuantityController.text = currentQuantity.toString();
         }
-      } else {
-        // Per kilo price, allow decimal
-        if (_quantity > 0.1) {
-          _quantity = ((_quantity as double) * 10 - 1) / 10;
+      } else if (_isPerKiloSelected) {
+        double currentQuantity =
+            double.tryParse(_perKiloQuantityController.text) ?? 1.0;
+        if (currentQuantity > 0.1) {
+          currentQuantity = ((currentQuantity * 10) - 1) / 10;
+          _perKiloQuantityController.text = currentQuantity.toStringAsFixed(1);
         }
       }
     });
@@ -105,13 +176,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final salesNotifier = ref.read(salesProvider.notifier);
+    ProductDto productDto;
 
     if (_selectedSackPriceId != null) {
-      // Using a sack price
       final sackPrice = widget.product.sackPrice
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
+      final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
 
-      final productDto = ProductDto(
+      productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
         isGantang: false,
@@ -120,18 +192,19 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           id: sackPrice.id,
           price:
               _isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price,
-          // Convert int quantity to double for consistency
-          quantity: _quantity.toDouble(),
+          quantity: quantity,
           type: sackPrice.type,
         ),
+        isDiscounted: _isDiscounted,
+        discountedPrice: _isDiscounted
+            ? double.tryParse(_discountedPriceController.text)
+            : null,
       );
-
-      salesNotifier.addProductToCart(productDto);
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-      // Using per kilo price
       final perKiloPrice = widget.product.perKiloPrice!;
+      final quantity = double.tryParse(_perKiloQuantityController.text) ?? 1.0;
 
-      final productDto = ProductDto(
+      productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
         isGantang: false,
@@ -139,14 +212,22 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
           price: perKiloPrice.price,
-          quantity: _quantity,
+          quantity: quantity,
         ),
+        isDiscounted: _isDiscounted,
+        discountedPrice: _isDiscounted
+            ? double.tryParse(_discountedPriceController.text)
+            : null,
       );
-
-      salesNotifier.addProductToCart(productDto);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a pricing option.')),
+      );
+      return;
     }
 
-    // Show success message
+    salesNotifier.addProductToCart(productDto);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -196,7 +277,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name and Image
                 Card(
                   elevation: 4,
                   shadowColor: AppColors.primary.withOpacity(0.2),
@@ -265,10 +345,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
-                // Pricing Options Title
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Row(
@@ -286,8 +363,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ],
                   ),
                 ),
-
-                // Combined Pricing Options Section
                 Card(
                   elevation: 3,
                   shadowColor: AppColors.primary.withOpacity(0.3),
@@ -299,7 +374,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Per Kilo Price option (if available)
                         if (widget.product.perKiloPrice != null) ...[
                           Row(
                             children: [
@@ -382,8 +456,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                           if (widget.product.sackPrice.isNotEmpty)
                             const Divider(height: 24),
                         ],
-
-                        // Sack Prices Section (if available)
                         if (widget.product.sackPrice.isNotEmpty) ...[
                           Text(
                             'Sack Prices',
@@ -400,7 +472,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                             children: widget.product.sackPrice.map((sackPrice) {
                               return Column(
                                 children: [
-                                  // Regular Sack Price
                                   GestureDetector(
                                     onTap: () => _selectSackPrice(sackPrice.id),
                                     child: Container(
@@ -490,8 +561,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                       ),
                                     ),
                                   ),
-
-                                  // Special Price - if available
                                   if (sackPrice.specialPrice != null) ...[
                                     const SizedBox(height: 8),
                                     GestureDetector(
@@ -617,10 +686,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
-                // Quantity Input
                 Container(
                   margin: const EdgeInsets.only(left: 8, bottom: 8),
                   child: Row(
@@ -648,77 +714,33 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextFormField(
-                          key: ValueKey(
-                              _quantity), // Force rebuild when quantity model changes
-                          initialValue: _quantity.toString(),
-                          keyboardType: _selectedSackPriceId != null
-                              ? TextInputType.number
-                              : const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          inputFormatters: _selectedSackPriceId != null
-                              ? [FilteringTextInputFormatter.digitsOnly]
-                              : [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d+\.?\d{0,2}')),
-                                ],
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primary),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: AppColors.primary, width: 2),
-                            ),
-                            hintText: 'Enter quantity',
-                            labelText: 'Quantity',
-                            labelStyle: TextStyle(color: AppColors.primary),
-                            suffixIcon: Container(
-                              width: 120,
-                              margin: const EdgeInsets.only(right: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    height: 40,
-                                    width: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(Icons.remove,
-                                          color: AppColors.primary),
-                                      onPressed: _decreaseQuantity,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    height: 40,
-                                    width: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(Icons.add,
-                                          color: AppColors.primary),
-                                      onPressed: _increaseQuantity,
-                                    ),
-                                  ),
-                                ],
+                        if (_selectedSackPriceId != null)
+                          TextFormField(
+                            controller: _sackQuantityController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: AppColors.primary),
                               ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: AppColors.primary, width: 2),
+                              ),
+                              hintText: 'Enter quantity',
+                              labelText: 'Sack Quantity',
+                              labelStyle: TextStyle(color: AppColors.primary),
+                              suffixIcon: _buildQuantityControls(),
                             ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a quantity';
-                            }
-
-                            if (_selectedSackPriceId != null) {
-                              // Validate for sack price (integers only)
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a quantity';
+                              }
                               final qty = int.tryParse(value);
                               if (qty == null || qty <= 0) {
                                 return 'Please enter a valid quantity';
@@ -732,40 +754,79 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                   return 'Minimum quantity is ${sackPrice.specialPrice?.minimumQty}';
                                 }
                               }
-                            } else {
-                              // Validate for per kilo price (decimals allowed)
+                              return null;
+                            },
+                          ),
+                        if (_isPerKiloSelected) ...[
+                          TextFormField(
+                            controller: _perKiloQuantityController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}')),
+                            ],
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: AppColors.primary, width: 2),
+                              ),
+                              hintText: 'Enter quantity (kg)',
+                              labelText: 'Quantity (kg)',
+                              labelStyle: TextStyle(color: AppColors.primary),
+                              suffixIcon: _buildQuantityControls(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty)
+                                return 'Enter quantity';
                               final qty = double.tryParse(value);
-                              if (qty == null || qty <= 0) {
-                                return 'Please enter a valid quantity';
-                              }
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            if (_selectedSackPriceId != null) {
-                              // For sack price, use integer
-                              final qty = int.tryParse(value);
-                              if (qty != null && qty > 0) {
-                                setState(() {
-                                  _quantity = qty;
-                                });
-                              }
-                            } else {
-                              // For per kilo price, use double
-                              final qty = double.tryParse(value);
-                              if (qty != null && qty > 0) {
-                                setState(() {
-                                  _quantity = qty;
-                                });
-                              }
-                            }
-                          },
-                        ),
+                              if (qty == null || qty <= 0)
+                                return 'Valid quantity > 0';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _perKiloTotalPriceController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}')),
+                            ],
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: AppColors.primary, width: 2),
+                              ),
+                              hintText: 'Enter total price (₱)',
+                              labelText: 'Total Price (₱)',
+                              labelStyle: TextStyle(color: AppColors.primary),
+                              prefixText: '₱ ',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty)
+                                return 'Enter total price';
+                              final price = double.tryParse(value);
+                              if (price == null || price < 0)
+                                return 'Valid price >= 0';
+                              return null;
+                            },
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Text(
                           _selectedSackPriceId != null
-                              ? 'Enter whole numbers only'
-                              : 'Decimal numbers allowed (e.g., 1.5 kg)',
+                              ? 'Enter whole numbers only for sacks.'
+                              : 'Enter quantity in kilograms (e.g., 1.5) or total price. The other will be calculated.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -776,10 +837,94 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ),
                   ),
                 ),
-
+                const SizedBox(height: 24),
+                Container(
+                  margin: const EdgeInsets.only(left: 8, bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_offer_outlined,
+                          color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Discount',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  elevation: 3,
+                  shadowColor: AppColors.primary.withOpacity(0.3),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                    child: Column(
+                      children: [
+                        CheckboxListTile(
+                          title: const Text('Apply Discounted Price'),
+                          value: _isDiscounted,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _isDiscounted = value ?? false;
+                              if (!_isDiscounted) {
+                                _discountedPriceController.clear();
+                              }
+                            });
+                          },
+                          activeColor: AppColors.primary,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                        if (_isDiscounted)
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: TextFormField(
+                              controller: _discountedPriceController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d+\.?\d{0,2}')),
+                              ],
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                      color: AppColors.primary, width: 2),
+                                ),
+                                hintText: 'Enter total discounted price',
+                                labelText: 'Discounted Price (Total)',
+                                labelStyle: TextStyle(color: AppColors.primary),
+                                prefixText: '₱ ',
+                              ),
+                              validator: (value) {
+                                if (_isDiscounted) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter a discounted price';
+                                  }
+                                  final price = double.tryParse(value);
+                                  if (price == null || price <= 0) {
+                                    return 'Please enter a valid price > 0';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 32),
-
-                // Add to Cart Button
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -813,6 +958,45 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityControls() {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.remove, color: AppColors.primary, size: 20),
+              onPressed: _decreaseQuantity,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.add, color: AppColors.primary, size: 20),
+              onPressed: _increaseQuantity,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -115,14 +115,31 @@ class CheckoutScreen extends ConsumerWidget {
                             const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final product = products[index];
-                          final price = product.sackPrice != null
-                              ? product.sackPrice!.price *
-                                  product.sackPrice!.quantity
-                              : product.perKiloPrice!.price *
-                                  product.perKiloPrice!.quantity;
-                          final quantity = product.sackPrice != null
-                              ? '${product.sackPrice!.quantity} sack${product.sackPrice!.quantity > 1 ? "s" : ""}'
-                              : '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg';
+                          final bool isDiscountApplied =
+                              product.isDiscounted == true &&
+                                  product.discountedPrice != null;
+
+                          double itemDisplayPrice;
+                          String priceDetails;
+
+                          if (product.sackPrice != null) {
+                            itemDisplayPrice = isDiscountApplied
+                                ? product.discountedPrice!
+                                : product.sackPrice!.price *
+                                    product.sackPrice!.quantity;
+                            priceDetails =
+                                '${product.sackPrice!.quantity.toInt()} sack${product.sackPrice!.quantity > 1 ? "s" : ""} • ₱${product.sackPrice!.price.toStringAsFixed(2)} /sack';
+                          } else if (product.perKiloPrice != null) {
+                            itemDisplayPrice = isDiscountApplied
+                                ? product.discountedPrice!
+                                : product.perKiloPrice!.price *
+                                    product.perKiloPrice!.quantity;
+                            priceDetails =
+                                '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg • ₱${product.perKiloPrice!.price.toStringAsFixed(2)} /kg';
+                          } else {
+                            itemDisplayPrice = 0; // Should not happen
+                            priceDetails = "N/A";
+                          }
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -136,15 +153,32 @@ class CheckoutScreen extends ConsumerWidget {
                             ),
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                '$quantity • ₱${product.sackPrice?.price.toStringAsFixed(2) ?? product.perKiloPrice!.price.toStringAsFixed(2)} ${product.sackPrice != null ? "/sack" : "/kg"}',
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    priceDetails,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      decoration: isDiscountApplied
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                  ),
+                                  if (isDiscountApplied)
+                                    Text(
+                                      'Discounted Price',
+                                      style: TextStyle(
+                                        color: AppColors.secondary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             trailing: Text(
-                              '₱${price.toStringAsFixed(2)}',
+                              '₱${itemDisplayPrice.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -178,6 +212,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
+                                  // Total is already calculated considering discounts by CartList
                                   '₱${total.toStringAsFixed(2)}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
@@ -200,6 +235,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
+                                  // Total is already calculated considering discounts by CartList
                                   '₱${total.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontSize: 20,

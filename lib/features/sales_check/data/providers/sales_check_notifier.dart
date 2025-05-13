@@ -14,8 +14,10 @@ class SalesCheckNotifier extends AsyncNotifier<SalesCheckState> {
   Future<SalesCheckState> build() async {
     // Initial fetch with default filters (e.g., today's date)
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final initialGroupedFilters = SalesCheckFilterDto(date: today);
-    final initialTotalFilters = TotalSalesFilterDto(date: today);
+    final initialGroupedFilters = SalesCheckFilterDto(
+        date: today, isDiscounted: null); // isDiscounted defaults to null
+    final initialTotalFilters = TotalSalesFilterDto(
+        date: today, isDiscounted: null); // isDiscounted defaults to null
     return _fetchData(initialGroupedFilters, initialTotalFilters);
   }
 
@@ -57,18 +59,22 @@ class SalesCheckNotifier extends AsyncNotifier<SalesCheckState> {
   Future<void> updateFiltersAndRefetch({
     SalesCheckFilterDto? groupedFilters,
     TotalSalesFilterDto? totalFilters,
+    // No need to add isDiscounted directly here, as it's part of the DTOs
   }) async {
     state = const AsyncValue.loading(); // Indicate loading
 
     // Use existing filters if new ones aren't provided
+    // The DTOs passed will now potentially include the isDiscounted field
     final currentGroupedFilters = groupedFilters ??
         state.value?.groupedSalesFilters ??
         SalesCheckFilterDto(
-            date: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            isDiscounted: null);
     final currentTotalFilters = totalFilters ??
         state.value?.totalSalesFilters ??
         TotalSalesFilterDto(
-            date: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            isDiscounted: null);
 
     // Use AsyncValue.guard to handle potential errors during fetch
     state = await AsyncValue.guard(() async {
@@ -81,10 +87,12 @@ class SalesCheckNotifier extends AsyncNotifier<SalesCheckState> {
     state = const AsyncValue.loading();
     final currentGroupedFilters = state.value?.groupedSalesFilters ??
         SalesCheckFilterDto(
-            date: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            isDiscounted: null);
     final currentTotalFilters = state.value?.totalSalesFilters ??
         TotalSalesFilterDto(
-            date: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            isDiscounted: null);
     state = await AsyncValue.guard(() async {
       return _fetchData(currentGroupedFilters, currentTotalFilters);
     });

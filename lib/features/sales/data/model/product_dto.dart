@@ -10,6 +10,8 @@ sealed class ProductDto with _$ProductDto {
   const factory ProductDto({
     required String id,
     required String name,
+    double? discountedPrice,
+    bool? isDiscounted,
     bool? isGantang,
     bool? isSpecialPrice,
     PerKiloPriceDto? perKiloPrice,

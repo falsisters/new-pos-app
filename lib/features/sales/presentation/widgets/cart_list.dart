@@ -156,6 +156,18 @@ class CartList extends ConsumerWidget {
                             _buildPriceInfo(product),
                             const SizedBox(height: 2),
                             _buildQuantityInfo(product),
+                            if (product.isDiscounted == true &&
+                                product.discountedPrice != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Discounted Total: ₱${product.discountedPrice!.toInt()}',
+                                style: TextStyle(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ]
                           ],
                         ),
                         trailing: Row(
@@ -320,17 +332,35 @@ class CartList extends ConsumerWidget {
 
   Widget _buildPriceInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
+      String priceText =
+          'Price: ₱${product.perKiloPrice!.price.toStringAsFixed(2)}/kg';
+      if (product.isDiscounted == true && product.discountedPrice != null) {
+        priceText += ' (Original)';
+      }
       return Text(
-        'Price: ₱${product.perKiloPrice!.price.toStringAsFixed(2)}/kg',
+        priceText,
         style: TextStyle(
           color: Colors.grey[700],
+          decoration:
+              (product.isDiscounted == true && product.discountedPrice != null)
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
         ),
       );
     } else if (product.sackPrice != null) {
+      String priceText =
+          'Price: ₱${product.sackPrice!.price.toStringAsFixed(2)}/sack';
+      if (product.isDiscounted == true && product.discountedPrice != null) {
+        priceText += ' (Original)';
+      }
       return Text(
-        'Price: ₱${product.sackPrice!.price.toStringAsFixed(2)}/sack',
+        priceText,
         style: TextStyle(
           color: Colors.grey[700],
+          decoration:
+              (product.isDiscounted == true && product.discountedPrice != null)
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
         ),
       );
     } else {
@@ -365,6 +395,9 @@ class CartList extends ConsumerWidget {
   }
 
   String _calculateItemTotal(ProductDto product) {
+    if (product.isDiscounted == true && product.discountedPrice != null) {
+      return product.discountedPrice!.toInt().toString();
+    }
     double total = 0.0;
     if (product.perKiloPrice != null) {
       total = product.perKiloPrice!.price * product.perKiloPrice!.quantity;
@@ -377,12 +410,14 @@ class CartList extends ConsumerWidget {
 
   String _calculateTotal(AsyncValue<SalesState> salesState) {
     if (salesState.valueOrNull == null) {
-      return '0.00';
+      return '0'; // Return 0 instead of 0.00 to match toInt()
     }
 
     double total = 0.0;
     for (final product in salesState.valueOrNull!.cart.products) {
-      if (product.perKiloPrice != null) {
+      if (product.isDiscounted == true && product.discountedPrice != null) {
+        total += product.discountedPrice!;
+      } else if (product.perKiloPrice != null) {
         total += product.perKiloPrice!.price * product.perKiloPrice!.quantity;
       } else if (product.sackPrice != null) {
         total += product.sackPrice!.price * product.sackPrice!.quantity;

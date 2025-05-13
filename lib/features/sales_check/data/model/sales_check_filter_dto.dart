@@ -7,6 +7,7 @@ class SalesCheckFilterDto {
   final String? productSearch;
   final String? priceType; // 'SACK' | 'KILO'
   final String? sackType; // SackType enum as String
+  final bool? isDiscounted; // Added field
 
   SalesCheckFilterDto({
     this.date,
@@ -14,6 +15,7 @@ class SalesCheckFilterDto {
     this.productSearch,
     this.priceType,
     this.sackType,
+    this.isDiscounted, // Added to constructor
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +25,8 @@ class SalesCheckFilterDto {
     if (productSearch != null) json['productSearch'] = productSearch;
     if (priceType != null) json['priceType'] = priceType;
     if (sackType != null) json['sackType'] = sackType;
+    if (isDiscounted != null)
+      json['isDiscounted'] = isDiscounted; // Added to toJson
     return json;
   }
 }
