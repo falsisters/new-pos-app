@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/dio_client.dart';
+import 'package:falsisters_pos_android/core/utils/api_response_handler.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 
@@ -29,16 +30,16 @@ class SalesRepository {
 
   Future<List<SaleModel>> getSales() async {
     try {
-      final response = await _dio.instance.get('/sale/recent');
+      final response = await _dio.instance.get('/sale/recent/cashier');
 
-      if (response.data == null) {
-        return [];
-      }
+      print('Response Type: ${response.data.runtimeType}');
+      print('Response Text:');
+      print(response.data);
 
-      return (response.data as List)
-          .map((sale) => SaleModel.fromJson(sale))
-          .toList();
+      // Use our utility function to handle the response consistently
+      return ApiResponseHandler.parseList(response.data, SaleModel.fromJson);
     } catch (e) {
+      print('Error fetching sales: $e');
       if (e is DioException) {
         throw Exception(e.error);
       } else {
@@ -47,20 +48,24 @@ class SalesRepository {
     }
   }
 
-  Future<List<SaleModel>> editSale(
-      String id, CreateSaleRequestModel sale) async {
+  Future<SaleModel> deleteSale(String id) async {
     try {
-      final saleData = jsonEncode(sale.toJson());
-      final response = await _dio.instance.put('/sale/$id', data: saleData);
+      final response = await _dio.instance.delete('/sale/$id');
 
-      if (response.data == null) {
-        return [];
+      print('Delete Sale Response: ${response.data.runtimeType}');
+      print('Delete Sale Response data: ${response.data}');
+
+      // Use our utility function to handle the response consistently
+      // Assuming delete returns the deleted item or a success message,
+      // but the original code expected a list. If API returns single object:
+      if (response.data is Map<String, dynamic>) {
+        return SaleModel.fromJson(response.data);
       }
-
-      return (response.data as List)
-          .map((sale) => SaleModel.fromJson(sale))
-          .toList();
+      // If API returns a list (even if one item), keep original:
+      return ApiResponseHandler.parseList(response.data, SaleModel.fromJson)
+          .first;
     } catch (e) {
+      print('Error deleting sale: $e');
       if (e is DioException) {
         throw Exception(e.error);
       } else {

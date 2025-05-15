@@ -7,10 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 class SalesListWidget extends ConsumerWidget {
-  final VoidCallback
-      onEditSale; // Callback to potentially inform parent (e.g., switch tab)
-
-  const SalesListWidget({super.key, required this.onEditSale});
+  const SalesListWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +67,9 @@ class SalesListWidget extends ConsumerWidget {
           Expanded(
             child: salesStateAsync.when(
               data: (salesState) {
-                if (salesState.sales.isEmpty) {
+                // Make sure sales is not null and is a list
+                final sales = salesState.sales;
+                if (sales == null || sales.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -125,20 +124,55 @@ class SalesListWidget extends ConsumerWidget {
                         ],
                       ),
                       trailing: ElevatedButton.icon(
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit'),
+                        icon: const Icon(Icons.delete_forever, size: 16),
+                        label: const Text('Void'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
+                          backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           textStyle: const TextStyle(fontSize: 12),
                         ),
                         onPressed: () async {
-                          await ref
-                              .read(salesProvider.notifier)
-                              .prepareSaleForEditing(sale);
-                          onEditSale(); // Call callback to ensure tab switch if not handled by listener
+                          // Show confirmation dialog
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext dialogContext) {
+                              return AlertDialog(
+                                title: const Text('Confirm Void'),
+                                content: Text(
+                                    'Are you sure you want to void Sale ID: ${sale.id.substring(0, 8)}...? This action cannot be undone.'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext)
+                                          .pop(); // Dismiss dialog
+                                    },
+                                  ),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red),
+                                    child: const Text('Void Sale'),
+                                    onPressed: () async {
+                                      Navigator.of(dialogContext)
+                                          .pop(); // Dismiss dialog
+                                      // ignore: unused_result
+                                      await ref
+                                          .read(salesProvider.notifier)
+                                          .deleteSale(sale.id);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                'Sale ${sale.id.substring(0, 8)} voided successfully.')),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         },
                       ),
                     );

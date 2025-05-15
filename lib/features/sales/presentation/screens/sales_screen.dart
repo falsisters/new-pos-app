@@ -31,25 +31,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Listen to editingSaleId to switch tabs
-    ref.listen<String?>(
-      salesProvider.select((state) => state.value?.editingSaleId),
-      (previous, next) {
-        if (next != null && previous == null) {
-          // If editingSaleId becomes non-null (edit started)
-          if (_tabController.index != 0) {
-            _tabController.animateTo(0); // Switch to Products/Cart tab
-          }
-        }
-      },
-    );
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Point of Sale'),
+        // Removed title
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
-        bottom: TabBar(
+        // Using just the TabBar as the primary component in the AppBar
+        // This maximizes the space for content
+        title: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.secondary,
           labelColor: AppColors.white,
@@ -58,6 +47,9 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
             Tab(icon: Icon(Icons.storefront), text: 'Products & Cart'),
             Tab(icon: Icon(Icons.receipt_long), text: 'Recent Sales'),
           ],
+          // Make tabs more prominent since they're the main navigation now
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          indicatorWeight: 3.0,
         ),
       ),
       body: Padding(
@@ -80,15 +72,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
               ],
             ),
             // Sales List View
-            SalesListWidget(
-              onEditSale: () {
-                // This callback could be used if SalesListWidget needs to directly trigger tab switch,
-                // but the ref.listen above handles it more globally.
-                if (_tabController.index != 0) {
-                  _tabController.animateTo(0);
-                }
-              },
-            ),
+            const SalesListWidget(),
           ],
         ),
       ),

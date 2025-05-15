@@ -11,7 +11,6 @@ sealed class SalesState with _$SalesState {
     required CartModel cart,
     required List<SaleModel> sales,
     String? orderId,
-    String? editingSaleId, // Added for tracking sale being edited
     String? error,
   }) = _SalesState;
 

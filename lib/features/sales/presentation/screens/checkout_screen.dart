@@ -20,7 +20,9 @@ class CheckoutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final salesNotifier = ref.watch(salesProvider.notifier);
     final formKey = GlobalKey<FormState>();
-    final paymentMethodController = TextEditingController();
+    final paymentMethodController = TextEditingController(
+      text: PaymentMethod.CASH.toString(), // Initialize with CASH
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -302,6 +304,8 @@ class CheckoutScreen extends ConsumerWidget {
                                   const BorderSide(color: AppColors.primary),
                             ),
                           ),
+                          value:
+                              PaymentMethod.CASH, // Set initial value to CASH
                           items: PaymentMethod.values
                               .map((e) => DropdownMenuItem(
                                     value: e,

@@ -45,7 +45,7 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kahon Management'),
+        // Removed title
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -94,11 +94,15 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
             tooltip: 'Select Date Range',
           ),
         ],
-        bottom: TabBar(
+        // Using TabBar as the main content in AppBar title area
+        title: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
+          // Making tabs more prominent
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          indicatorWeight: 3.0,
           tabs: const [
             Tab(text: 'KAHON SHEET', icon: Icon(Icons.table_chart)),
             Tab(text: 'INVENTORY', icon: Icon(Icons.inventory)),
