@@ -169,8 +169,15 @@ class InventoryFormulaHandler {
       ContextModel cm = ContextModel();
       double result = exp.evaluate(EvaluationType.REAL, cm);
 
-      // Round down the result to a whole number
-      return result.floor().toString();
+      // Format the result: if it's an integer equivalent (e.g. 15.0), show as "15".
+      // Otherwise, show with two decimal places (e.g. "15.25").
+      if (result == result.truncateToDouble()) {
+        // Check if the number has no fractional part
+        return result.toInt().toString();
+      } else {
+        return result
+            .toStringAsFixed(2); // Preserve two decimal places for non-integers
+      }
     } catch (e) {
       print('Formula evaluation error: $e');
       return '#ERROR';

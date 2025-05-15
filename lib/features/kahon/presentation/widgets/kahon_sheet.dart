@@ -1233,24 +1233,24 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                     }
                   },
                 ),
-                _buildFormulaOption(
-                  context,
-                  'Multiply Vertical Cells',
-                  Icons.clear,
-                  () {
-                    if (rowIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Not enough rows above')),
-                      );
-                    }
-                  },
-                ),
+                // _buildFormulaOption(
+                //   context,
+                //   'Multiply Vertical Cells',
+                //   Icons.clear,
+                //   () {
+                //     if (rowIndex >= 2) {
+                //       String formula =
+                //           '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                //       _handleCellSubmit(
+                //           rowIndex, columnIndex, formula, colorHex);
+                //       Navigator.of(context).pop();
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(content: Text('Not enough rows above')),
+                //       );
+                //     }
+                //   },
+                // ),
                 _buildFormulaOption(
                   context,
                   'Apply Multiply to All Rows',
@@ -1301,91 +1301,91 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                     }
                   },
                 ),
-                _buildFormulaOption(
-                  context,
-                  'Apply Addition to Row',
-                  Icons.add,
-                  () {
-                    if (columnIndex >= 1) {
-                      String formula = '=';
-                      bool hasValues = false;
+                // _buildFormulaOption(
+                //   context,
+                //   'Apply Addition to Row',
+                //   Icons.add,
+                //   () {
+                //     if (columnIndex >= 1) {
+                //       String formula = '=';
+                //       bool hasValues = false;
 
-                      // Loop through all columns to the left of current column
-                      for (int leftColIndex = 0;
-                          leftColIndex < columnIndex;
-                          leftColIndex++) {
-                        final String colName = _getColumnLetter(leftColIndex);
+                //       // Loop through all columns to the left of current column
+                //       for (int leftColIndex = 0;
+                //           leftColIndex < columnIndex;
+                //           leftColIndex++) {
+                //         final String colName = _getColumnLetter(leftColIndex);
 
-                        // Add this cell reference to the formula
-                        if (hasValues) {
-                          formula += ' + ';
-                        }
-                        formula += '$colName$rowIndex';
-                        hasValues = true;
-                      }
+                //         // Add this cell reference to the formula
+                //         if (hasValues) {
+                //           formula += ' + ';
+                //         }
+                //         formula += '$colName$rowIndex';
+                //         hasValues = true;
+                //       }
 
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
+                //       _handleCellSubmit(
+                //           rowIndex, columnIndex, formula, colorHex);
 
-                      // Apply the same formula to all other rows
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final sortedRows = List<RowModel>.from(
-                            widget.sheet.rows)
-                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+                //       // Apply the same formula to all other rows
+                //       WidgetsBinding.instance.addPostFrameCallback((_) {
+                //         final sortedRows = List<RowModel>.from(
+                //             widget.sheet.rows)
+                //           ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
-                        for (var row in sortedRows) {
-                          if (row.rowIndex == rowIndex) continue;
+                //         for (var row in sortedRows) {
+                //           if (row.rowIndex == rowIndex) continue;
 
-                          // Check if this row has any values in the left columns
-                          bool rowHasValues = false;
-                          for (int leftColIndex = 0;
-                              leftColIndex < columnIndex;
-                              leftColIndex++) {
-                            final leftCell = row.cells
-                                .where((c) => c.columnIndex == leftColIndex)
-                                .firstOrNull;
-                            if (leftCell != null &&
-                                leftCell.value != null &&
-                                leftCell.value!.isNotEmpty) {
-                              rowHasValues = true;
-                              break;
-                            }
-                          }
+                //           // Check if this row has any values in the left columns
+                //           bool rowHasValues = false;
+                //           for (int leftColIndex = 0;
+                //               leftColIndex < columnIndex;
+                //               leftColIndex++) {
+                //             final leftCell = row.cells
+                //                 .where((c) => c.columnIndex == leftColIndex)
+                //                 .firstOrNull;
+                //             if (leftCell != null &&
+                //                 leftCell.value != null &&
+                //                 leftCell.value!.isNotEmpty) {
+                //               rowHasValues = true;
+                //               break;
+                //             }
+                //           }
 
-                          // Skip rows with no values in left columns
-                          if (!rowHasValues) continue;
+                //           // Skip rows with no values in left columns
+                //           if (!rowHasValues) continue;
 
-                          // Create the same formula but for this row
-                          String targetFormula = '=';
-                          bool targetHasValues = false;
+                //           // Create the same formula but for this row
+                //           String targetFormula = '=';
+                //           bool targetHasValues = false;
 
-                          for (int leftColIndex = 0;
-                              leftColIndex < columnIndex;
-                              leftColIndex++) {
-                            final String colName =
-                                _getColumnLetter(leftColIndex);
+                //           for (int leftColIndex = 0;
+                //               leftColIndex < columnIndex;
+                //               leftColIndex++) {
+                //             final String colName =
+                //                 _getColumnLetter(leftColIndex);
 
-                            if (targetHasValues) {
-                              targetFormula += ' + ';
-                            }
-                            targetFormula += '$colName${row.rowIndex}';
-                            targetHasValues = true;
-                          }
+                //             if (targetHasValues) {
+                //               targetFormula += ' + ';
+                //             }
+                //             targetFormula += '$colName${row.rowIndex}';
+                //             targetHasValues = true;
+                //           }
 
-                          _handleCellSubmit(
-                              row.rowIndex, columnIndex, targetFormula, null);
-                        }
-                      });
+                //           _handleCellSubmit(
+                //               row.rowIndex, columnIndex, targetFormula, null);
+                //         }
+                //       });
 
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Not enough columns to the left')),
-                      );
-                    }
-                  },
-                ),
+                //       Navigator.of(context).pop();
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(
+                //             content: Text('Not enough columns to the left')),
+                //       );
+                //     }
+                //   },
+                // ),
                 _buildFormulaOption(
                   context,
                   'Add All Vertical Cells',

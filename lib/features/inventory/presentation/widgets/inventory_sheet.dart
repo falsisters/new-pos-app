@@ -1239,43 +1239,43 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildFormulaOption(
-                  context,
-                  'Add Vertical Cells',
-                  Icons.add,
-                  () {
-                    if (rowIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} + ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Not enough rows above')),
-                      );
-                    }
-                  },
-                ),
-                _buildFormulaOption(
-                  context,
-                  'Add Left Cells',
-                  Icons.add,
-                  () {
-                    if (columnIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex - 2)}$rowIndex + ${_getColumnLetter(columnIndex - 1)}$rowIndex';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Not enough columns to the left')),
-                      );
-                    }
-                  },
-                ),
+                // _buildFormulaOption(
+                //   context,
+                //   'Add Vertical Cells',
+                //   Icons.add,
+                //   () {
+                //     if (rowIndex >= 2) {
+                //       String formula =
+                //           '=${_getColumnLetter(columnIndex)}${rowIndex - 2} + ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                //       _handleCellSubmit(
+                //           rowIndex, columnIndex, formula, colorHex);
+                //       Navigator.of(context).pop();
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(content: Text('Not enough rows above')),
+                //       );
+                //     }
+                //   },
+                // ),
+                // _buildFormulaOption(
+                //   context,
+                //   'Add Left Cells',
+                //   Icons.add,
+                //   () {
+                //     if (columnIndex >= 2) {
+                //       String formula =
+                //           '=${_getColumnLetter(columnIndex - 2)}$rowIndex + ${_getColumnLetter(columnIndex - 1)}$rowIndex';
+                //       _handleCellSubmit(
+                //           rowIndex, columnIndex, formula, colorHex);
+                //       Navigator.of(context).pop();
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(
+                //             content: Text('Not enough columns to the left')),
+                //       );
+                //     }
+                //   },
+                // ),
                 _buildFormulaOption(
                   context,
                   'Subtract Vertical Cells',
@@ -1294,24 +1294,24 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                     }
                   },
                 ),
-                _buildFormulaOption(
-                  context,
-                  'Multiply Vertical Cells',
-                  Icons.clear,
-                  () {
-                    if (rowIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Not enough rows above')),
-                      );
-                    }
-                  },
-                ),
+                // _buildFormulaOption(
+                //   context,
+                //   'Multiply Vertical Cells',
+                //   Icons.clear,
+                //   () {
+                //     if (rowIndex >= 2) {
+                //       String formula =
+                //           '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
+                //       _handleCellSubmit(
+                //           rowIndex, columnIndex, formula, colorHex);
+                //       Navigator.of(context).pop();
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(content: Text('Not enough rows above')),
+                //       );
+                //     }
+                //   },
+                // ),
                 _buildFormulaOption(
                   context,
                   'Multiply Left Cells',
