@@ -360,8 +360,10 @@ class CheckoutScreen extends ConsumerWidget {
                                 onPressed: () {
                                   Navigator.pop(context);
                                   // Process the sale
-                                  salesNotifier.createSale(
-                                      total, paymentMethod);
+                                  salesNotifier.submitSale(
+                                      // Changed from createSale
+                                      total,
+                                      paymentMethod);
 
                                   // Show success and return
                                   ScaffoldMessenger.of(context).showSnackBar(

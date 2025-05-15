@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SalesState {
   CartModel get cart;
+  List<SaleModel> get sales;
   String? get orderId;
+  String? get editingSaleId; // Added for tracking sale being edited
   String? get error;
 
   /// Create a copy of SalesState
@@ -35,17 +37,26 @@ mixin _$SalesState {
         (other.runtimeType == runtimeType &&
             other is SalesState &&
             (identical(other.cart, cart) || other.cart == cart) &&
+            const DeepCollectionEquality().equals(other.sales, sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
+            (identical(other.editingSaleId, editingSaleId) ||
+                other.editingSaleId == editingSaleId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cart, orderId, error);
+  int get hashCode => Object.hash(
+      runtimeType,
+      cart,
+      const DeepCollectionEquality().hash(sales),
+      orderId,
+      editingSaleId,
+      error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, orderId: $orderId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, editingSaleId: $editingSaleId, error: $error)';
   }
 }
 
@@ -55,7 +66,12 @@ abstract mixin class $SalesStateCopyWith<$Res> {
           SalesState value, $Res Function(SalesState) _then) =
       _$SalesStateCopyWithImpl;
   @useResult
-  $Res call({CartModel cart, String? orderId, String? error});
+  $Res call(
+      {CartModel cart,
+      List<SaleModel> sales,
+      String? orderId,
+      String? editingSaleId,
+      String? error});
 
   $CartModelCopyWith<$Res> get cart;
 }
@@ -73,7 +89,9 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
   @override
   $Res call({
     Object? cart = null,
+    Object? sales = null,
     Object? orderId = freezed,
+    Object? editingSaleId = freezed,
     Object? error = freezed,
   }) {
     return _then(_self.copyWith(
@@ -81,9 +99,17 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
           ? _self.cart
           : cart // ignore: cast_nullable_to_non_nullable
               as CartModel,
+      sales: null == sales
+          ? _self.sales
+          : sales // ignore: cast_nullable_to_non_nullable
+              as List<SaleModel>,
       orderId: freezed == orderId
           ? _self.orderId
           : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      editingSaleId: freezed == editingSaleId
+          ? _self.editingSaleId
+          : editingSaleId // ignore: cast_nullable_to_non_nullable
               as String?,
       error: freezed == error
           ? _self.error
@@ -106,14 +132,31 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
 /// @nodoc
 @JsonSerializable()
 class _SalesState implements SalesState {
-  const _SalesState({required this.cart, this.orderId, this.error});
+  const _SalesState(
+      {required this.cart,
+      required final List<SaleModel> sales,
+      this.orderId,
+      this.editingSaleId,
+      this.error})
+      : _sales = sales;
   factory _SalesState.fromJson(Map<String, dynamic> json) =>
       _$SalesStateFromJson(json);
 
   @override
   final CartModel cart;
+  final List<SaleModel> _sales;
+  @override
+  List<SaleModel> get sales {
+    if (_sales is EqualUnmodifiableListView) return _sales;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_sales);
+  }
+
   @override
   final String? orderId;
+  @override
+  final String? editingSaleId;
+// Added for tracking sale being edited
   @override
   final String? error;
 
@@ -138,17 +181,26 @@ class _SalesState implements SalesState {
         (other.runtimeType == runtimeType &&
             other is _SalesState &&
             (identical(other.cart, cart) || other.cart == cart) &&
+            const DeepCollectionEquality().equals(other._sales, _sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
+            (identical(other.editingSaleId, editingSaleId) ||
+                other.editingSaleId == editingSaleId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cart, orderId, error);
+  int get hashCode => Object.hash(
+      runtimeType,
+      cart,
+      const DeepCollectionEquality().hash(_sales),
+      orderId,
+      editingSaleId,
+      error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, orderId: $orderId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, editingSaleId: $editingSaleId, error: $error)';
   }
 }
 
@@ -160,7 +212,12 @@ abstract mixin class _$SalesStateCopyWith<$Res>
       __$SalesStateCopyWithImpl;
   @override
   @useResult
-  $Res call({CartModel cart, String? orderId, String? error});
+  $Res call(
+      {CartModel cart,
+      List<SaleModel> sales,
+      String? orderId,
+      String? editingSaleId,
+      String? error});
 
   @override
   $CartModelCopyWith<$Res> get cart;
@@ -179,7 +236,9 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   $Res call({
     Object? cart = null,
+    Object? sales = null,
     Object? orderId = freezed,
+    Object? editingSaleId = freezed,
     Object? error = freezed,
   }) {
     return _then(_SalesState(
@@ -187,9 +246,17 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
           ? _self.cart
           : cart // ignore: cast_nullable_to_non_nullable
               as CartModel,
+      sales: null == sales
+          ? _self._sales
+          : sales // ignore: cast_nullable_to_non_nullable
+              as List<SaleModel>,
       orderId: freezed == orderId
           ? _self.orderId
           : orderId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      editingSaleId: freezed == editingSaleId
+          ? _self.editingSaleId
+          : editingSaleId // ignore: cast_nullable_to_non_nullable
               as String?,
       error: freezed == error
           ? _self.error
