@@ -3,7 +3,7 @@ import 'package:falsisters_pos_android/features/app/presentation/widgets/sidebar
 import 'package:falsisters_pos_android/features/attachments/presentation/screens/attachments_screen.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/screens/bill_count_screen.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/delivery_screen.dart';
-import 'package:falsisters_pos_android/features/inventory/presentation/screens/expenses_screen.dart';
+import 'package:falsisters_pos_android/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/screens/kahon_screen.dart';
 import 'package:falsisters_pos_android/features/orders/presentation/screens/order_screen.dart';
 import 'package:falsisters_pos_android/features/profits/presentation/screens/profits_screen.dart';
