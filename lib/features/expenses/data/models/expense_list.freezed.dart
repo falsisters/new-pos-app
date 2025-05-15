@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$ExpenseList {
-  int get id;
+  String get id;
   String get userId;
   @JsonKey(name: 'ExpenseItems')
   List<ExpenseItems> get expenseItems;
@@ -65,7 +65,7 @@ abstract mixin class $ExpenseListCopyWith<$Res> {
       _$ExpenseListCopyWithImpl;
   @useResult
   $Res call(
-      {int id,
+      {String id,
       String userId,
       @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
@@ -94,7 +94,7 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       userId: null == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
@@ -131,7 +131,7 @@ class _ExpenseList extends ExpenseList {
       _$ExpenseListFromJson(json);
 
   @override
-  final int id;
+  final String id;
   @override
   final String userId;
   final List<ExpenseItems> _expenseItems;
@@ -198,7 +198,7 @@ abstract mixin class _$ExpenseListCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int id,
+      {String id,
       String userId,
       @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
@@ -227,7 +227,7 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       userId: null == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable

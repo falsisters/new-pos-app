@@ -7,7 +7,7 @@ part of 'expense_list.dart';
 // **************************************************************************
 
 _ExpenseList _$ExpenseListFromJson(Map<String, dynamic> json) => _ExpenseList(
-      id: (json['id'] as num).toInt(),
+      id: json['id'] as String,
       userId: json['userId'] as String,
       expenseItems: (json['ExpenseItems'] as List<dynamic>)
           .map((e) => ExpenseItems.fromJson(e as Map<String, dynamic>))

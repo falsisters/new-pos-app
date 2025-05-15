@@ -16,95 +16,102 @@ class ExpenseListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("ExpenseListWidget build with ${items.length} items");
     final double totalAmount =
         items.fold(0.0, (sum, item) => sum + item.amount);
     final currencyFormatter =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ');
+        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ');
 
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with item count
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+            const Text(
+              'Expense Items',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              '${items.length} items',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+        const Divider(),
+
+        // Empty state
+        if (items.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Center(
               child: Text(
-                'Expense Items',
+                'No expense items added yet',
                 style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
                 ),
               ),
             ),
-            if (items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-                child: Center(
-                  child: Text(
-                    'No expense items added yet.',
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return ExpenseItemWidget(
-                    name: item.name,
-                    amount: item.amount,
-                    onRemove: onItemRemove != null
-                        ? () => onItemRemove!(index)
-                        : null,
-                  );
-                },
-              ),
-            const Divider(thickness: 1.5),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          )
+        // Items list
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              debugPrint("Building item $index: ${item.name}");
+              return ExpenseItemWidget(
+                name: item.name,
+                amount: item.amount,
+                onRemove:
+                    onItemRemove != null ? () => onItemRemove!(index) : null,
+              );
+            },
+          ),
+
+        // Total section if there are items
+        if (items.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.primaryLight.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.primaryLight.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              margin:
-                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Total:',
+                  const Text(
+                    'TOTAL',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     currencyFormatter.format(totalAmount),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 16,
                       color: AppColors.secondary,
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

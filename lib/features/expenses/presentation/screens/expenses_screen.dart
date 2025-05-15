@@ -1,6 +1,7 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/expenses/data/models/create_expense_list.dart';
 import 'package:falsisters_pos_android/features/expenses/data/models/expense_item_dto.dart';
+import 'package:falsisters_pos_android/features/expenses/data/models/expense_state.dart';
 import 'package:falsisters_pos_android/features/expenses/data/providers/expense_provider.dart';
 import 'package:falsisters_pos_android/features/expenses/presentation/widgets/expense_list.dart';
 import 'package:flutter/material.dart';
@@ -19,18 +20,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   final _expenseNameController = TextEditingController();
   final _expenseAmountController = TextEditingController();
   List<ExpenseItemDto> _itemsForSubmission = [];
-  String? _loadedExpenseListId; // Store ID of loaded list for updates
+  String? _loadedExpenseListId;
 
   @override
   void initState() {
     super.initState();
-    // Fetch today's expenses initially
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchExpensesForSelectedDate();
     });
   }
 
   Future<void> _fetchExpensesForSelectedDate() async {
+    final formattedDate =
+        '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+    debugPrint("Fetching expenses for date: $formattedDate");
+
     final notifier = ref.read(expenseProvider.notifier);
     await notifier.getExpenseListByDate(_selectedDate);
   }
@@ -43,19 +47,28 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       lastDate: DateTime(2101),
     );
     if (picked != null && picked != _selectedDate) {
+      final formattedDate =
+          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      debugPrint("Date selected: $formattedDate");
+
       setState(() {
         _selectedDate = picked;
-        // Clear previous items when date changes, new data will populate via listener
         _itemsForSubmission = [];
         _loadedExpenseListId = null;
       });
-      _fetchExpensesForSelectedDate();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Loading expenses for $formattedDate...')),
+      );
+
+      await _fetchExpensesForSelectedDate();
     }
   }
 
   void _addItem() {
-    final name = _expenseNameController.text;
-    final amount = double.tryParse(_expenseAmountController.text);
+    final name = _expenseNameController.text.trim();
+    final amount =
+        double.tryParse(_expenseAmountController.text.replaceAll(',', '.'));
 
     if (name.isNotEmpty && amount != null && amount > 0) {
       setState(() {
@@ -63,7 +76,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       });
       _expenseNameController.clear();
       _expenseAmountController.clear();
-      FocusScope.of(context).unfocus(); // Dismiss keyboard
+      FocusScope.of(context).unfocus();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter valid name and amount.')),
@@ -89,16 +102,31 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final expenseListData =
         CreateExpenseList(expenseItems: _itemsForSubmission);
 
-    if (_loadedExpenseListId != null) {
-      // Update existing list
-      await notifier.updateExpense(_loadedExpenseListId!, expenseListData);
-    } else {
-      // Create new list
-      await notifier.createExpense(expenseListData);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saving expenses...')),
+      );
+
+      if (_loadedExpenseListId != null) {
+        debugPrint("Updating expense list: $_loadedExpenseListId");
+        await notifier.updateExpense(_loadedExpenseListId!, expenseListData);
+      } else {
+        debugPrint("Creating new expense list");
+        await notifier.createExpense(expenseListData);
+      }
+
+      // Instead of trying to update state directly, refresh the data from API
+      await _fetchExpensesForSelectedDate();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Expenses saved successfully')),
+      );
+    } catch (e) {
+      debugPrint("Exception during save: ${e.toString()}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving expenses: ${e.toString()}')),
+      );
     }
-    // After saving, the listener on expenseProvider should update the UI.
-    // Optionally, clear itemsForSubmission if create/update was successful and you want a fresh start
-    // For now, rely on the listener to repopulate from the new state.
   }
 
   @override
@@ -112,44 +140,50 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Widget build(BuildContext context) {
     final expenseState = ref.watch(expenseProvider);
 
-    // Listener to update local state when fetched data changes
-    ref.listen<AsyncValue<dynamic>>(expenseProvider, (_, next) {
+    // Better logging to debug what's happening
+    ref.listen<AsyncValue<ExpenseState>>(expenseProvider, (_, next) {
       next.whenData((data) {
-        if (mounted) {
-          // Ensure widget is still in the tree
-          final fetchedList = data.expenseList;
-          if (fetchedList != null && fetchedList.expenseItems.isNotEmpty) {
+        debugPrint("EXPENSE DATA (raw): ${data.toString()}");
+
+        if (data.expenseList != null) {
+          debugPrint("EXPENSE LIST ID: ${data.expenseList!.id}");
+          debugPrint(
+              "EXPENSE ITEMS COUNT: ${data.expenseList!.expenseItems.length}");
+
+          for (var item in data.expenseList!.expenseItems) {
+            debugPrint("EXPENSE ITEM: ${item.name} - ${item.amount}");
+          }
+
+          if (mounted) {
             setState(() {
-              _itemsForSubmission = fetchedList.expenseItems
+              _itemsForSubmission = data.expenseList!.expenseItems
                   .map((item) =>
                       ExpenseItemDto(name: item.name, amount: item.amount))
                   .toList();
-              _loadedExpenseListId = fetchedList.id.toString();
+              _loadedExpenseListId = data.expenseList!.id;
+              debugPrint(
+                  "UPDATED SUBMISSION ITEMS: ${_itemsForSubmission.length}");
             });
-          } else if (fetchedList == null || fetchedList.expenseItems.isEmpty) {
-            // If the selected date changed and resulted in no list,
-            // _itemsForSubmission is already cleared in _selectDate.
-            // This handles cases where an initially loaded list becomes empty/null.
-            if (_loadedExpenseListId != null) {
-              // Was editing, now it's gone
-              setState(() {
-                _itemsForSubmission = [];
-                _loadedExpenseListId = null;
-              });
-            }
+          }
+        } else {
+          debugPrint("EXPENSE LIST IS NULL");
+          if (_loadedExpenseListId != null && mounted) {
+            setState(() {
+              _itemsForSubmission = [];
+              _loadedExpenseListId = null;
+            });
           }
         }
       });
     });
 
-    final dateFormatter = DateFormat('EEE, dd MMM yyyy');
+    final dateFormatter = DateFormat('MMM dd, yyyy');
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
-        title: const Text('Manage Expenses'),
-        elevation: 2,
+        title: const Text('Expenses'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),
@@ -158,205 +192,153 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryLight),
-              ),
-              child: Row(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Simple date display
+              Row(
                 children: [
-                  Icon(Icons.date_range, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Selected Date',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      Text(
-                        dateFormatter.format(_selectedDate),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
+                  Icon(Icons.calendar_month, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    dateFormatter.format(_selectedDate),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
-                  TextButton.icon(
-                    icon: Icon(Icons.edit_calendar,
-                        size: 18, color: AppColors.accent),
-                    label: Text('Change',
-                        style: TextStyle(color: AppColors.accent)),
+                  TextButton(
                     onPressed: () => _selectDate(context),
+                    child: Text('Change Date',
+                        style: TextStyle(color: AppColors.accent)),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            // Form to add new expense item
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+              const Divider(),
+
+              // Simple form for adding expense items
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Add New Expense',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                    // Expense Name Field
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _expenseNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Expense Name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _expenseNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Expense Name',
-                        labelStyle: TextStyle(color: AppColors.primary),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.primaryLight),
+                    const SizedBox(width: 8),
+                    // Amount Field
+                    Expanded(
+                      child: TextField(
+                        controller: _expenseAmountController,
+                        decoration: InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: '₱ ',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.primary, width: 2),
-                        ),
-                        prefixIcon: Icon(Icons.shopping_cart_outlined,
-                            color: AppColors.primary),
+                        keyboardType:
+                            TextInputType.numberWithOptions(decimal: true),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _expenseAmountController,
-                      decoration: InputDecoration(
-                        labelText: 'Amount',
-                        labelStyle: TextStyle(color: AppColors.primary),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.primaryLight),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.primary, width: 2),
-                        ),
-                        prefixIcon:
-                            Icon(Icons.attach_money, color: AppColors.primary),
-                        prefixText: 'Rp ',
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Item'),
+                    const SizedBox(width: 8),
+                    // Add Button
+                    ElevatedButton(
                       onPressed: _addItem,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.secondary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        minimumSize: const Size(double.infinity, 50),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
+                      child: const Icon(Icons.add),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: _loadedExpenseListId != null
-                    ? AppColors.secondary.withOpacity(0.15)
-                    : AppColors.accent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _loadedExpenseListId != null
-                    ? 'Editing Expense List'
-                    : 'Creating New Expense List',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _loadedExpenseListId != null
-                      ? AppColors.secondary
-                      : AppColors.accent,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            expenseState.when(
-              data: (state) {
-                return ExpenseListWidget(
-                  items: _itemsForSubmission,
-                  onItemRemove: _removeItem,
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (error, stackTrace) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Column(
+
+              const SizedBox(height: 16),
+
+              // Expense list display
+              expenseState.when(
+                data: (state) {
+                  debugPrint(
+                      "BUILDING UI WITH ${_itemsForSubmission.length} ITEMS");
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: 48),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Error loading expenses',
-                        style: TextStyle(
-                            color: Colors.red, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        error.toString(),
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
+                      // Status indicator
+                      if (_loadedExpenseListId != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Text(
+                            'Editing expense list: $_loadedExpenseListId',
+                            style: TextStyle(
+                              color: AppColors.secondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+
+                      // Expense list
+                      ExpenseListWidget(
+                        items: _itemsForSubmission,
+                        onItemRemove: _removeItem,
                       ),
                     ],
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Error: ${error.toString()}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.save),
-              label: const Text('SAVE EXPENSES'),
-              onPressed: _saveExpenses,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+
+              const SizedBox(height: 16),
+
+              // Save button
+              ElevatedButton(
+                onPressed: _saveExpenses,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                child: const Text(
+                  'SAVE EXPENSES',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+            ],
+          ),
         ),
       ),
     );

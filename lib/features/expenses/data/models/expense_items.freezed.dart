@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$ExpenseItems {
-  int get id;
+  String get id;
   String get name;
   double get amount;
   String get expenseListId;
@@ -67,7 +67,7 @@ abstract mixin class $ExpenseItemsCopyWith<$Res> {
       _$ExpenseItemsCopyWithImpl;
   @useResult
   $Res call(
-      {int id,
+      {String id,
       String name,
       double amount,
       String expenseListId,
@@ -98,7 +98,7 @@ class _$ExpenseItemsCopyWithImpl<$Res> implements $ExpenseItemsCopyWith<$Res> {
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -137,7 +137,7 @@ class _ExpenseItems implements ExpenseItems {
       _$ExpenseItemsFromJson(json);
 
   @override
-  final int id;
+  final String id;
   @override
   final String name;
   @override
@@ -200,7 +200,7 @@ abstract mixin class _$ExpenseItemsCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int id,
+      {String id,
       String name,
       double amount,
       String expenseListId,
@@ -232,7 +232,7 @@ class __$ExpenseItemsCopyWithImpl<$Res>
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as String,
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable

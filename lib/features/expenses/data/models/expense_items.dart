@@ -6,7 +6,7 @@ part 'expense_items.g.dart';
 @freezed
 sealed class ExpenseItems with _$ExpenseItems {
   const factory ExpenseItems({
-    required int id,
+    required String id,
     required String name,
     required double amount,
     required String expenseListId,

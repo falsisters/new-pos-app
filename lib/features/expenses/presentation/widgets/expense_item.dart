@@ -17,38 +17,34 @@ class ExpenseItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormatter =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ');
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 2.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        title: Text(
-          name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6.0),
-          child: Text(
-            currencyFormatter.format(amount),
-            style: TextStyle(
-              color: AppColors.secondary,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
+        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 16),
             ),
           ),
-        ),
-        trailing: onRemove != null
-            ? IconButton(
-                icon: Icon(Icons.delete_outline, color: AppColors.accent),
-                onPressed: onRemove,
-              )
-            : null,
+          const SizedBox(width: 16),
+          Text(
+            currencyFormatter.format(amount),
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: AppColors.primary,
+            ),
+          ),
+          if (onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 20),
+              onPressed: onRemove,
+              color: Colors.redAccent,
+              splashRadius: 20,
+            ),
+        ],
       ),
     );
   }

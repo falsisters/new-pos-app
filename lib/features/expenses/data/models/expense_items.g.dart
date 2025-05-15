@@ -8,7 +8,7 @@ part of 'expense_items.dart';
 
 _ExpenseItems _$ExpenseItemsFromJson(Map<String, dynamic> json) =>
     _ExpenseItems(
-      id: (json['id'] as num).toInt(),
+      id: json['id'] as String,
       name: json['name'] as String,
       amount: (json['amount'] as num).toDouble(),
       expenseListId: json['expenseListId'] as String,

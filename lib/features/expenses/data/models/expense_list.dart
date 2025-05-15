@@ -10,7 +10,7 @@ part 'expense_list.g.dart';
 sealed class ExpenseList with _$ExpenseList {
   const ExpenseList._(); // Add this private constructor
   const factory ExpenseList({
-    required int id,
+    required String id,
     required String userId,
     @JsonKey(name: 'ExpenseItems') required List<ExpenseItems> expenseItems,
     required String createdAt,
