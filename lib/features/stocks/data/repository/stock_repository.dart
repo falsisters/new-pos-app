@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/dio_client.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/edit_per_kilo_price_request.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/edit_sack_price_request_model.dart';
+import 'package:falsisters_pos_android/features/stocks/data/models/transfer_model.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_product_request.dart';
 
 class StockRepository {
@@ -54,6 +55,26 @@ class StockRepository {
       }
 
       return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<List<TransferModel>> getTransfers() async {
+    try {
+      final response = await _dio.instance.get('/transfer/cashier');
+
+      if (response.data == null) {
+        return [];
+      }
+
+      return (response.data as List)
+          .map((transfer) => TransferModel.fromJson(transfer))
+          .toList();
     } catch (e) {
       if (e is DioException) {
         throw Exception(e.error);
