@@ -37,6 +37,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   late TextEditingController _perKiloTotalPriceController;
   bool _isUpdatingPriceAndQuantityInternally = false;
 
+  // FocusNodes for per kilo inputs
+  final FocusNode _perKiloQuantityFocusNode = FocusNode();
+  final FocusNode _perKiloTotalPriceFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +56,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       // Default to first sack price if no per kilo or if both exist
       _selectSackPrice(widget.product.sackPrice.first.id);
     }
-    _updatePerKiloTotalPriceFromQuantity();
 
     _perKiloQuantityController
         .addListener(_updatePerKiloTotalPriceFromQuantity);
@@ -70,45 +73,107 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         .removeListener(_updatePerKiloQuantityFromTotalPrice);
     _perKiloQuantityController.dispose();
     _perKiloTotalPriceController.dispose();
+    _perKiloQuantityFocusNode.dispose();
+    _perKiloTotalPriceFocusNode.dispose();
     super.dispose();
   }
 
-  void _updatePerKiloTotalPriceFromQuantity() {
-    if (_isUpdatingPriceAndQuantityInternally ||
-        !_isPerKiloSelected ||
-        widget.product.perKiloPrice == null) return;
-
-    _isUpdatingPriceAndQuantityInternally = true;
-    final quantity = double.tryParse(_perKiloQuantityController.text);
-    if (quantity != null && quantity > 0) {
-      final unitPrice = widget.product.perKiloPrice!.price;
-      _perKiloTotalPriceController.text =
-          (quantity * unitPrice).toStringAsFixed(2);
-    } else {
-      _perKiloTotalPriceController.clear();
+  double _customRoundValue(double value) {
+    double decimalPart = value - value.truncate();
+    if (decimalPart > 0.90) {
+      return value.ceil().toDouble();
     }
-    _isUpdatingPriceAndQuantityInternally = false;
+    return value;
+  }
+
+  void _updatePerKiloTotalPriceFromQuantity() {
+    if (_isUpdatingPriceAndQuantityInternally) return;
+
+    if (_perKiloQuantityFocusNode.hasFocus ||
+        (!_perKiloQuantityFocusNode.hasFocus &&
+            !_perKiloTotalPriceFocusNode.hasFocus)) {
+      _isUpdatingPriceAndQuantityInternally = true;
+      final String currentQuantityText = _perKiloQuantityController.text;
+      final double? quantity = double.tryParse(currentQuantityText);
+
+      if (widget.product.perKiloPrice != null) {
+        final double unitPrice = widget.product.perKiloPrice!.price;
+
+        if (unitPrice <= 0) {
+          // If unit price is invalid, clear the total price field
+          _perKiloTotalPriceController.clear();
+        } else if (quantity != null && quantity > 0) {
+          // unitPrice > 0 here
+          double calculatedTotalPrice = quantity * unitPrice;
+          // Defensive check, though should not be needed if quantity > 0 and unitPrice > 0
+          if (calculatedTotalPrice < 0) calculatedTotalPrice = 0;
+
+          // Apply custom rounding
+          calculatedTotalPrice = _customRoundValue(calculatedTotalPrice);
+
+          _perKiloTotalPriceController.text =
+              calculatedTotalPrice.toStringAsFixed(2);
+        } else {
+          // unitPrice > 0, but quantity is null or <= 0
+          if (currentQuantityText.isEmpty &&
+              (_perKiloQuantityFocusNode.hasFocus ||
+                  (!_perKiloQuantityFocusNode.hasFocus &&
+                      !_perKiloTotalPriceFocusNode.hasFocus))) {
+            // Clear total price if quantity was cleared by user or programmatically when no focus
+            _perKiloTotalPriceController.clear();
+          }
+          // else: quantity is invalid (e.g. "0" or "abc") but not empty,
+          // or focus is not on quantity field during programmatic empty.
+          // Total price field remains unchanged, validators will handle.
+        }
+      }
+      _isUpdatingPriceAndQuantityInternally = false;
+    }
   }
 
   void _updatePerKiloQuantityFromTotalPrice() {
-    if (_isUpdatingPriceAndQuantityInternally ||
-        !_isPerKiloSelected ||
-        widget.product.perKiloPrice == null) return;
+    if (_isUpdatingPriceAndQuantityInternally) return;
 
-    _isUpdatingPriceAndQuantityInternally = true;
-    final totalPrice = double.tryParse(_perKiloTotalPriceController.text);
-    if (totalPrice != null && totalPrice >= 0) {
-      final unitPrice = widget.product.perKiloPrice!.price;
-      if (unitPrice > 0) {
-        _perKiloQuantityController.text =
-            (totalPrice / unitPrice).toStringAsFixed(2);
-      } else {
-        _perKiloQuantityController.clear();
+    if (_perKiloTotalPriceFocusNode.hasFocus ||
+        (!_perKiloQuantityFocusNode.hasFocus &&
+            !_perKiloTotalPriceFocusNode.hasFocus)) {
+      _isUpdatingPriceAndQuantityInternally = true;
+      final String currentTotalPriceText = _perKiloTotalPriceController.text;
+      final double? totalPrice = double.tryParse(currentTotalPriceText);
+
+      if (widget.product.perKiloPrice != null) {
+        final double unitPrice = widget.product.perKiloPrice!.price;
+
+        if (unitPrice <= 0) {
+          // If unit price is invalid, clear the quantity field
+          _perKiloQuantityController.clear();
+        } else if (totalPrice != null && totalPrice >= 0) {
+          // unitPrice > 0 here
+          double calculatedQuantity = totalPrice / unitPrice;
+          // Defensive check
+          if (calculatedQuantity < 0) calculatedQuantity = 0;
+
+          // Apply custom rounding
+          calculatedQuantity = _customRoundValue(calculatedQuantity);
+
+          _perKiloQuantityController.text =
+              calculatedQuantity.toStringAsFixed(2);
+        } else {
+          // unitPrice > 0, but totalPrice is null or negative
+          if (currentTotalPriceText.isEmpty &&
+              (_perKiloTotalPriceFocusNode.hasFocus ||
+                  (!_perKiloQuantityFocusNode.hasFocus &&
+                      !_perKiloTotalPriceFocusNode.hasFocus))) {
+            // Clear quantity if total price was cleared by user or programmatically when no focus
+            _perKiloQuantityController.clear();
+          }
+          // else: total price is invalid (e.g. "-50" or "abc") but not empty,
+          // or focus is not on total price field during programmatic empty.
+          // Quantity field remains unchanged, validators will handle.
+        }
       }
-    } else {
-      _perKiloQuantityController.clear();
+      _isUpdatingPriceAndQuantityInternally = false;
     }
-    _isUpdatingPriceAndQuantityInternally = false;
   }
 
   void _selectSackPrice(String id, {bool isSpecial = false, int? minimumQty}) {
@@ -134,7 +199,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _isSpecialPrice = false;
       _isPerKiloSelected = true;
       _perKiloQuantityController.text = '1.0';
-      _updatePerKiloTotalPriceFromQuantity();
     });
   }
 
@@ -172,7 +236,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
         if (currentQuantity > 0.1) {
-          // Ensure it doesn't go below 0.1
           currentQuantity = ((currentQuantity * 10) - 1) / 10; // Subtract 0.1
           _perKiloQuantityController.text = currentQuantity.toStringAsFixed(1);
           _updatePerKiloTotalPriceFromQuantity();
@@ -272,15 +335,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         title: const Text('Add to Cart', style: TextStyle(fontSize: 18)),
       ),
       body: Padding(
-        // Changed from Container with gradient to simple Padding
-        padding: const EdgeInsets.all(12.0), // Reduced padding
+        padding: const EdgeInsets.all(12.0),
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Info - More compact
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: Row(
@@ -288,11 +349,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       Hero(
                         tag: 'product-${widget.product.id}',
                         child: Container(
-                          width: 70, // Reduced size
-                          height: 70, // Reduced size
+                          width: 70,
+                          height: 70,
                           decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(8), // Reduced radius
+                            borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -308,7 +368,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12), // Reduced spacing
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,25 +376,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                             Text(
                               widget.product.name,
                               style: const TextStyle(
-                                fontSize: 18, // Reduced size
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 2), // Reduced spacing
+                            const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2), // Reduced padding
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
-                                borderRadius:
-                                    BorderRadius.circular(4), // Reduced radius
+                                borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 'Select pricing & quantity',
                                 style: TextStyle(
                                   color: AppColors.primary,
-                                  fontSize: 11, // Reduced size
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -345,23 +403,19 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ],
                   ),
                 ),
-
                 _buildSectionTitle('Pricing Options', Icons.payments_outlined),
                 _buildPricingOptions(),
-                const SizedBox(height: 12), // Reduced spacing
-
+                const SizedBox(height: 12),
                 _buildSectionTitle('Quantity', Icons.scale_outlined),
                 _buildQuantityInput(),
-                const SizedBox(height: 12), // Reduced spacing
-
+                const SizedBox(height: 12),
                 _buildSectionTitle(
                     'Discount (Optional)', Icons.local_offer_outlined),
                 _buildDiscountInput(),
-                const SizedBox(height: 20), // Reduced spacing
-
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  height: 50, // Slightly reduced height
+                  height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -369,27 +423,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       elevation: 3,
                       shadowColor: AppColors.primary.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(10), // Reduced radius
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     onPressed: _addToCart,
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.shopping_cart, size: 22), // Reduced size
+                        Icon(Icons.shopping_cart, size: 22),
                         SizedBox(width: 8),
                         Text(
                           'Add to Cart',
                           style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold), // Reduced size
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12), // Reduced spacing
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -400,15 +452,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _buildSectionTitle(String title, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 6.0), // Reduced padding
+      padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 20), // Reduced size
-          const SizedBox(width: 6), // Reduced spacing
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 6),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 16, // Reduced size
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -419,15 +471,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _buildPricingOptions() {
     return Card(
-      elevation: 2, // Reduced elevation
-      margin: EdgeInsets.zero, // Removed default card margin
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)), // Reduced radius
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(10.0), // Reduced padding
+        padding: const EdgeInsets.all(10.0),
         child: Wrap(
-          spacing: 8, // Reduced spacing
-          runSpacing: 8, // Reduced spacing
+          spacing: 8,
+          runSpacing: 8,
           children: [
             if (widget.product.perKiloPrice != null)
               _buildPriceChip(
@@ -440,7 +491,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               ),
             ...widget.product.sackPrice.expand((sackPrice) {
               List<Widget> sackChips = [];
-              // Regular Price Chip for Sack
               sackChips.add(_buildPriceChip(
                 label: parseSackType(sackPrice.type),
                 price: sackPrice.price,
@@ -450,13 +500,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 onTap: () => _selectSackPrice(sackPrice.id),
                 subLabel: 'Regular',
               ));
-              // Special Price Chip for Sack (if exists)
               if (sackPrice.specialPrice != null) {
                 sackChips.add(_buildPriceChip(
                   label: parseSackType(sackPrice.type),
                   price: sackPrice.specialPrice!.price,
-                  stock:
-                      sackPrice.stock.toDouble(), // Stock is same for special
+                  stock: sackPrice.stock.toDouble(),
                   isSelected:
                       _selectedSackPriceId == sackPrice.id && _isSpecialPrice,
                   onTap: () => _selectSackPrice(
@@ -491,14 +539,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 10, vertical: 8), // Reduced padding
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            width: isSelected ? 1.5 : 1, // Adjusted width
+            width: isSelected ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(8), // Reduced radius
+          borderRadius: BorderRadius.circular(8),
           color: isSelected
               ? AppColors.primaryLight.withOpacity(0.7)
               : Colors.white,
@@ -506,8 +553,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               ? [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.2),
-                    blurRadius: 4, // Reduced blur
-                    offset: const Offset(0, 2), // Reduced offset
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   )
                 ]
               : [],
@@ -522,7 +569,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13, // Reduced size
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: isSelected ? AppColors.primary : Colors.black87,
                   ),
@@ -540,15 +587,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       'SPECIAL',
                       style: TextStyle(
                         color: Colors.red.shade700,
-                        fontSize: 8, // Reduced size
+                        fontSize: 8,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
               ],
             ),
-            if (subLabel != null &&
-                !isSpecial) // Show sublabel like "Regular" only if not special (special has its own badge)
+            if (subLabel != null && !isSpecial)
               Padding(
                 padding: const EdgeInsets.only(top: 1.0),
                 child: Text(subLabel,
@@ -558,20 +604,20 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                             ? AppColors.primary.withOpacity(0.8)
                             : Colors.grey.shade600)),
               ),
-            const SizedBox(height: 2), // Reduced spacing
+            const SizedBox(height: 2),
             Text(
               '₱${price.toStringAsFixed(2)}',
               style: TextStyle(
-                fontSize: 14, // Reduced size
+                fontSize: 14,
                 color: isSelected ? AppColors.primary : Colors.black,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 1), // Reduced spacing
+            const SizedBox(height: 1),
             Text(
               'Stock: ${isPerKilo ? stock.toStringAsFixed(1) + "kg" : stock.toInt()}',
               style: TextStyle(
-                fontSize: 10, // Reduced size
+                fontSize: 10,
                 color: isSelected
                     ? AppColors.primary.withOpacity(0.8)
                     : Colors.grey.shade600,
@@ -581,7 +627,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               Text(
                 'Min: $minimumQty',
                 style: TextStyle(
-                  fontSize: 10, // Reduced size
+                  fontSize: 10,
                   color: isSelected
                       ? AppColors.primary.withOpacity(0.8)
                       : Colors.grey.shade600,
@@ -595,12 +641,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _buildQuantityInput() {
     return Card(
-      elevation: 2, // Reduced elevation
+      elevation: 2,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)), // Reduced radius
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(10.0), // Reduced padding
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           children: [
             if (_selectedSackPriceId != null)
@@ -629,6 +674,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             if (_isPerKiloSelected) ...[
               TextFormField(
                 controller: _perKiloQuantityController,
+                focusNode: _perKiloQuantityFocusNode,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -645,9 +691,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 8), // Reduced spacing
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _perKiloTotalPriceController,
+                focusNode: _perKiloTotalPriceFocusNode,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -667,7 +714,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 },
               ),
             ],
-            const SizedBox(height: 4), // Reduced spacing
+            const SizedBox(height: 4),
             Text(
               _selectedSackPriceId != null
                   ? 'Enter whole numbers for sacks.'
@@ -675,7 +722,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               style: TextStyle(
                   fontSize: 11,
                   color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic), // Reduced size
+                  fontStyle: FontStyle.italic),
             ),
           ],
         ),
@@ -686,33 +733,28 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   InputDecoration _inputDecoration(
       {required String labelText, String? prefixText, Widget? suffixIcon}) {
     return InputDecoration(
-      border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8)), // Reduced radius
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced radius
-        borderSide:
-            BorderSide(color: AppColors.primary, width: 1.5), // Adjusted width
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
       ),
       labelText: labelText,
-      labelStyle:
-          TextStyle(color: AppColors.primary, fontSize: 14), // Reduced size
+      labelStyle: TextStyle(color: AppColors.primary, fontSize: 14),
       prefixText: prefixText,
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12, vertical: 10), // Reduced padding
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       isDense: true,
     );
   }
 
   Widget _buildQuantityControls() {
     return SizedBox(
-      // Wrapped in SizedBox to constrain width
-      width: 80, // Reduced width
+      width: 80,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           _quantityButton(Icons.remove, _decreaseQuantity),
-          const SizedBox(width: 4), // Reduced spacing
+          const SizedBox(width: 4),
           _quantityButton(Icons.add, _increaseQuantity),
         ],
       ),
@@ -721,17 +763,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _quantityButton(IconData icon, VoidCallback onPressed) {
     return Container(
-      height: 30, // Reduced height
-      width: 30, // Reduced width
-      margin:
-          const EdgeInsets.symmetric(vertical: 4), // Added margin for alignment
+      height: 30,
+      width: 30,
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6), // Reduced radius
+        borderRadius: BorderRadius.circular(6),
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(icon, color: AppColors.primary, size: 18), // Reduced size
+        icon: Icon(icon, color: AppColors.primary, size: 18),
         onPressed: onPressed,
       ),
     );
@@ -739,17 +780,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _buildDiscountInput() {
     return Card(
-      elevation: 2, // Reduced elevation
+      elevation: 2,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)), // Reduced radius
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0), // Adjusted padding
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
         child: Column(
           children: [
             CheckboxListTile(
               title: const Text('Apply Discounted Price',
-                  style: TextStyle(fontSize: 14)), // Reduced size
+                  style: TextStyle(fontSize: 14)),
               value: _isDiscounted,
               onChanged: (bool? value) {
                 setState(() {
@@ -759,14 +799,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               },
               activeColor: AppColors.primary,
               controlAffinity: ListTileControlAffinity.leading,
-              dense: true, // Made denser
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 6), // Reduced padding
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 6),
             ),
             if (_isDiscounted)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10.0), // Reduced padding
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: TextFormField(
                   controller: _discountedPriceController,
                   keyboardType:
