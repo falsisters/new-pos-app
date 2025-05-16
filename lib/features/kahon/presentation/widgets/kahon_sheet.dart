@@ -1303,23 +1303,49 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                       return;
                     }
 
-                    String generateProductFormula(int rIdx, int cIdx) {
+                    String generateProductFormula(
+                        int rIdx, int cIdx, List<RowModel> rows) {
                       List<String> terms = [];
+
+                      // Find current row to check cell values
+                      final currentRow = rows.firstWhereOrNull(
+                        (r) => r.rowIndex == rIdx,
+                      );
+
+                      if (currentRow == null) return "=1";
+
                       // Multiply columns from index 2 (e.g., "C" or its custom equivalent "A")
                       // up to the column before the selected one.
                       for (int colToMultiply = 2;
                           colToMultiply < cIdx;
                           colToMultiply++) {
-                        terms.add("${_getColumnLetter(colToMultiply)}$rIdx");
+                        // Check if the cell has a value before including it
+                        final cell = currentRow.cells.firstWhereOrNull(
+                          (c) => c.columnIndex == colToMultiply,
+                        );
+
+                        if (cell != null &&
+                            cell.value != null &&
+                            cell.value!.isNotEmpty) {
+                          try {
+                            // Try to parse as number - only include numeric cells
+                            double.parse(cell.value!.replaceAll(',', ''));
+                            terms
+                                .add("${_getColumnLetter(colToMultiply)}$rIdx");
+                          } catch (_) {
+                            // Skip non-numeric cells
+                          }
+                        }
                       }
+
                       if (terms.isEmpty) {
                         return "=1"; // Product of no terms is 1
                       }
                       return "=" + terms.join(" * ");
                     }
 
-                    final mainFormula =
-                        generateProductFormula(rowIndex, columnIndex);
+                    final mainFormula = generateProductFormula(
+                        rowIndex, columnIndex, currentSheet.rows);
                     _handleCellSubmit(
                         rowIndex, columnIndex, mainFormula, colorHex);
 
@@ -1331,10 +1357,14 @@ class _KahonSheetState extends ConsumerState<KahonSheet> {
                       for (var row in sortedRows) {
                         if (row.rowIndex == rowIndex) continue;
 
-                        final otherFormula =
-                            generateProductFormula(row.rowIndex, columnIndex);
-                        _handleCellSubmit(
-                            row.rowIndex, columnIndex, otherFormula, null);
+                        final otherFormula = generateProductFormula(
+                            row.rowIndex, columnIndex, sortedRows);
+
+                        // Only apply formula if it's not just "=1" (meaning there are values to multiply)
+                        if (otherFormula != "=1") {
+                          _handleCellSubmit(
+                              row.rowIndex, columnIndex, otherFormula, null);
+                        }
                       }
                     });
 

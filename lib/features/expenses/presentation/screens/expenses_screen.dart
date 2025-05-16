@@ -91,12 +91,20 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _saveExpenses() async {
-    if (_itemsForSubmission.isEmpty) {
+    // If it's a new expense list (no _loadedExpenseListId) AND there are no items,
+    // then prevent saving an empty new list.
+    if (_loadedExpenseListId == null && _itemsForSubmission.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one expense item.')),
+        const SnackBar(
+            content: Text(
+                'Please add at least one expense item to create a new list.')),
       );
       return;
     }
+
+    // If _loadedExpenseListId is not null, we are editing an existing list.
+    // Saving with _itemsForSubmission being empty will effectively clear the items for that day.
+    // If _loadedExpenseListId is null and _itemsForSubmission is NOT empty, a new list will be created.
 
     final notifier = ref.read(expenseProvider.notifier);
     final expenseListData =

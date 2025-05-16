@@ -1301,25 +1301,66 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                       return;
                     }
 
-                    String generateProductFormula(int rIdx, int cIdx) {
+                    String generateProductFormula(
+                        int rIdx, int cIdx, InventoryRowModel rowModel) {
                       List<String> terms = [];
+                      bool hasValidValues = false;
+
                       // Multiply columns from C (index 2) up to the column before the selected one
                       for (int colToMultiply = 2;
                           colToMultiply < cIdx;
                           colToMultiply++) {
-                        terms.add("${_getColumnLetter(colToMultiply)}$rIdx");
+                        // Check if this cell has a value
+                        final cell = rowModel.cells.firstWhereOrNull(
+                          (c) => c.columnIndex == colToMultiply,
+                        );
+
+                        if (cell != null &&
+                            cell.value != null &&
+                            cell.value!.isNotEmpty &&
+                            cell.value != '0') {
+                          try {
+                            // Try parsing to see if it's a numeric value
+                            double.parse(cell.value!);
+                            terms
+                                .add("${_getColumnLetter(colToMultiply)}$rIdx");
+                            hasValidValues = true;
+                          } catch (_) {
+                            // If not numeric, only add if it's a formula
+                            if (cell.formula != null &&
+                                cell.formula!.startsWith('=')) {
+                              terms.add(
+                                  "${_getColumnLetter(colToMultiply)}$rIdx");
+                              hasValidValues = true;
+                            }
+                          }
+                        }
                       }
-                      if (terms.isEmpty) {
-                        // If selected column is C, or no columns to multiply, result is 1
-                        return "=1";
+
+                      if (!hasValidValues || terms.isEmpty) {
+                        return ""; // Return empty string when no valid values to multiply
                       }
+
                       return "=" + terms.join(" * ");
                     }
 
-                    final mainFormula =
-                        generateProductFormula(rowIndex, columnIndex);
-                    _handleCellSubmit(
-                        rowIndex, columnIndex, mainFormula, colorHex);
+                    // Find the current row model for the selected cell
+                    final selectedRowModel = currentSheet.rows.firstWhereOrNull(
+                      (r) => r.rowIndex == rowIndex,
+                    );
+
+                    if (selectedRowModel == null) {
+                      Navigator.of(context).pop();
+                      return;
+                    }
+
+                    final mainFormula = generateProductFormula(
+                        rowIndex, columnIndex, selectedRowModel);
+
+                    if (mainFormula.isNotEmpty) {
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, mainFormula, colorHex);
+                    }
 
                     // Apply to all other rows
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1331,11 +1372,14 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                         if (row.rowIndex == rowIndex)
                           continue; // Skip the already processed selected row
 
-                        final otherFormula =
-                            generateProductFormula(row.rowIndex, columnIndex);
-                        // Submit with null color for other rows
-                        _handleCellSubmit(
-                            row.rowIndex, columnIndex, otherFormula, null);
+                        final otherFormula = generateProductFormula(
+                            row.rowIndex, columnIndex, row);
+
+                        // Only apply formula if there are values to multiply
+                        if (otherFormula.isNotEmpty) {
+                          _handleCellSubmit(
+                              row.rowIndex, columnIndex, otherFormula, null);
+                        }
                       }
                     });
 
