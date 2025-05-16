@@ -61,43 +61,45 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0), // Reduced padding
           child: Column(
             children: [
               // Product info card
               Card(
-                elevation: 4,
+                elevation: 3, // Reduced elevation
                 shadowColor: AppColors.primary.withOpacity(0.2),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(12), // Reduced radius
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12.0), // Reduced padding
                   child: Row(
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 60, // Reduced size
+                        height: 60, // Reduced size
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(8), // Reduced radius
                         ),
                         child: widget.product.picture ==
                                 "https://placehold.co/800x800?text=Product"
                             ? Icon(
                                 Icons.inventory_2_outlined,
-                                size: 40,
+                                size: 30, // Reduced icon size
                                 color: AppColors.primary,
                               )
                             : ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius:
+                                    BorderRadius.circular(8), // Reduced radius
                                 child: Image.network(
                                   widget.product.picture,
                                   fit: BoxFit.cover,
                                 ),
                               ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12), // Reduced spacing
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,24 +107,24 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                             Text(
                               widget.product.name,
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize: 18, // Reduced font size
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2), // Reduced spacing
                             Text(
                               'Product ID: ${widget.product.id}',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
-                                fontSize: 14,
+                                fontSize: 12, // Reduced font size
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2), // Reduced spacing
                             Text(
                               'Last Updated: ${widget.product.updatedAt.toLocal().toString().split('.')[0]}',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
-                                fontSize: 12,
+                                fontSize: 10, // Reduced font size
                               ),
                             ),
                           ],
@@ -133,14 +135,14 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16), // Reduced spacing
 
               // Tab controller section
               Expanded(
                 child: Card(
-                  elevation: 3,
+                  elevation: 2, // Reduced elevation
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12), // Reduced radius
                   ),
                   child: Column(
                     children: [
@@ -149,14 +151,21 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                         labelColor: AppColors.primary,
                         unselectedLabelColor: Colors.grey.shade600,
                         indicatorColor: AppColors.accent,
-                        indicatorWeight: 3,
+                        indicatorWeight: 2.5, // Slightly reduced weight
+                        labelStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500), // Reduced font size
+                        unselectedLabelStyle:
+                            const TextStyle(fontSize: 13), // Reduced font size
                         tabs: const [
                           Tab(
-                            icon: Icon(Icons.attach_money),
+                            icon: Icon(Icons.attach_money,
+                                size: 20), // Reduced icon size
                             text: "Edit Price",
                           ),
                           Tab(
-                            icon: Icon(Icons.swap_horiz),
+                            icon: Icon(Icons.swap_horiz,
+                                size: 20), // Reduced icon size
                             text: "Transfer Stock",
                           ),
                         ],

@@ -35,6 +35,10 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
     if (widget.product.sackPrice.isEmpty &&
         widget.product.perKiloPrice != null) {
       _isPerKiloSelected = true;
+    } else if (widget.product.sackPrice.isNotEmpty) {
+      // Default to the first sack price if available
+      _selectedSackPriceId = widget.product.sackPrice.first.id;
+      _isPerKiloSelected = false;
     }
   }
 
@@ -82,6 +86,28 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
 
   void _addToTruck() {
     if (!_formKey.currentState!.validate()) return;
+
+    // Ensure a pricing option is selected
+    if (_selectedSackPriceId == null && !_isPerKiloSelected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Please select a loading option.'),
+            ],
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     final deliveryNotifier = ref.read(deliveryProvider.notifier);
 
@@ -161,7 +187,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Form(
             key: _formKey,
             child: Column(
@@ -169,32 +195,32 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
               children: [
                 // Product Name and Image
                 Card(
-                  elevation: 4,
+                  elevation: 3,
                   shadowColor: AppColors.primary.withOpacity(0.2),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(12.0),
                     child: Row(
                       children: [
                         Hero(
                           tag: 'product-${widget.product.id}',
                           child: Container(
-                            width: 80,
-                            height: 80,
+                            width: 60,
+                            height: 60,
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.local_shipping_outlined,
-                              size: 40,
+                              size: 30,
                               color: AppColors.primary,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,16 +228,16 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                               Text(
                                 widget.product.name,
                                 style: const TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
                                 'Product ID: ${widget.product.id}',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
-                                  fontSize: 14,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -222,43 +248,47 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Pricing Options Title
                 Container(
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.local_shipping, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Loading Options',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.yellow.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'NOTE: Per Kilogram Options will automatically be transferred to the Kahon',
+                      Icon(Icons.local_shipping,
+                          color: AppColors.primary, size: 20),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Loading Options',
                               style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.4,
                               ),
                             ),
-                          ),
-                        ],
+                            if (widget.product.perKiloPrice != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.yellow.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Text(
+                                  'NOTE: Per Kilogram will be loaded into Kahon.',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -266,35 +296,40 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
 
                 // Combined Pricing Options Section
                 Card(
-                  elevation: 3,
-                  shadowColor: AppColors.primary.withOpacity(0.3),
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withOpacity(0.2),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Wrap options in a horizontal grid
                         Wrap(
-                          spacing: 10, // horizontal spacing
-                          runSpacing: 10, // vertical spacing
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             // Per Kilo Price option (if available)
                             if (widget.product.perKiloPrice != null)
                               SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.4,
+                                width: (MediaQuery.of(context).size.width -
+                                        24 -
+                                        24 -
+                                        8) /
+                                    2,
                                 child: InkWell(
                                   onTap: _selectPerKilo,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                   child: Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: _isPerKiloSelected
                                           ? AppColors.primary.withOpacity(0.15)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
                                         color: _isPerKiloSelected
                                             ? AppColors.primary
@@ -314,7 +349,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                               'Per Kilogram',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 16,
+                                                fontSize: 14,
                                               ),
                                             ),
                                             Radio(
@@ -323,6 +358,11 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                               onChanged: (_) =>
                                                   _selectPerKilo(),
                                               activeColor: AppColors.primary,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
                                             ),
                                           ],
                                         ),
@@ -330,7 +370,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                           'Custom weight',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
-                                            fontSize: 12,
+                                            fontSize: 10,
                                           ),
                                         ),
                                       ],
@@ -344,17 +384,22 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                               final isSelected =
                                   _selectedSackPriceId == sackPrice.id;
                               return SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.4,
+                                width: (MediaQuery.of(context).size.width -
+                                        24 -
+                                        24 -
+                                        8) /
+                                    2,
                                 child: InkWell(
                                   onTap: () => _selectSackPrice(sackPrice.id),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                   child: Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? AppColors.primary.withOpacity(0.15)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
                                         color: isSelected
                                             ? AppColors.primary
@@ -375,7 +420,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                                 parseSackType(sackPrice.type),
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
+                                                  fontSize: 14,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -387,6 +432,11 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                                   _selectSackPrice(
                                                       sackPrice.id),
                                               activeColor: AppColors.primary,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
                                             ),
                                           ],
                                         ),
@@ -394,7 +444,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                           'Sack Type',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
-                                            fontSize: 12,
+                                            fontSize: 10,
                                           ),
                                         ),
                                       ],
@@ -410,20 +460,20 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Quantity Input
                 Container(
-                  margin: const EdgeInsets.only(left: 8, bottom: 8),
+                  margin: const EdgeInsets.only(left: 4, bottom: 6),
                   child: Row(
                     children: [
-                      Icon(Icons.scale, color: AppColors.primary),
-                      const SizedBox(width: 8),
+                      Icon(Icons.scale, color: AppColors.primary, size: 18),
+                      const SizedBox(width: 6),
                       Text(
                         'Quantity',
                         style: TextStyle(
                           color: Colors.grey.shade800,
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -431,18 +481,18 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                   ),
                 ),
                 Card(
-                  elevation: 3,
-                  shadowColor: AppColors.primary.withOpacity(0.3),
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withOpacity(0.2),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(12)),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         TextFormField(
                           key: ValueKey(
-                              _quantity), // Force rebuild when quantity model changes
+                              '${_selectedSackPriceId ?? 'kilo'}_$_quantity'),
                           initialValue: _quantity.toString(),
                           keyboardType: _selectedSackPriceId != null
                               ? TextInputType.number
@@ -456,48 +506,55 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                                 ],
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primary),
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                  color: AppColors.primary.withOpacity(0.7)),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(
-                                  color: AppColors.primary, width: 2),
+                                  color: AppColors.primary, width: 1.5),
                             ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 10.0),
                             hintText: 'Enter quantity',
                             labelText: 'Quantity',
-                            labelStyle: TextStyle(color: AppColors.primary),
+                            labelStyle: TextStyle(
+                                color: AppColors.primary, fontSize: 14),
                             suffixIcon: Container(
-                              width: 120,
-                              margin: const EdgeInsets.only(right: 8),
+                              margin: const EdgeInsets.only(right: 6),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    height: 40,
-                                    width: 40,
+                                    height: 36,
+                                    width: 36,
                                     decoration: BoxDecoration(
                                       color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: IconButton(
                                       icon: Icon(Icons.remove,
-                                          color: AppColors.primary),
+                                          color: AppColors.primary, size: 20),
                                       onPressed: _decreaseQuantity,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 4),
                                   Container(
-                                    height: 40,
-                                    width: 40,
+                                    height: 36,
+                                    width: 36,
                                     decoration: BoxDecoration(
                                       color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: IconButton(
                                       icon: Icon(Icons.add,
-                                          color: AppColors.primary),
+                                          color: AppColors.primary, size: 20),
                                       onPressed: _increaseQuantity,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
                                     ),
                                   ),
                                 ],
@@ -544,13 +601,13 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                             }
                           },
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           _selectedSackPriceId != null
                               ? 'Enter whole numbers only'
                               : 'Decimal numbers allowed (e.g., 1.5 kg)',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 10,
                             color: Colors.grey.shade600,
                             fontStyle: FontStyle.italic,
                           ),
@@ -560,32 +617,32 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
                 // Add to Truck Button
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: AppColors.primary.withOpacity(0.4),
+                      elevation: 3,
+                      shadowColor: AppColors.primary.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     onPressed: _addToTruck,
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.local_shipping_outlined, size: 24),
-                        SizedBox(width: 8),
+                        Icon(Icons.local_shipping_outlined, size: 20),
+                        SizedBox(width: 6),
                         Text(
                           'Add to Truck',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -593,7 +650,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
             ),
           ),

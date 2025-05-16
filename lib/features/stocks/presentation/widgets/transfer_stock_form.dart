@@ -36,7 +36,6 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
   @override
   void initState() {
     super.initState();
-    // If the product has any sack price, select the first one by default
     if (widget.product.sackPrice.isNotEmpty) {
       _selectedSackIndex = 0;
     } else if (widget.product.perKiloPrice != null) {
@@ -111,28 +110,31 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Transfer Stock: ${widget.product.name}',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
+              child: Text(
+                'Transfer Stock: ${widget.product.name}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
             _buildTransferTypeDropdown(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             _buildTransferOptionSelector(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             _buildQuantityField(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildSubmitButton(),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -143,24 +145,28 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
     return DropdownButtonFormField<TransferType>(
       decoration: InputDecoration(
         labelText: 'Transfer Type',
-        labelStyle: const TextStyle(color: AppColors.primary),
+        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         filled: true,
         fillColor: AppColors.white,
-        prefixIcon: const Icon(Icons.swap_horiz, color: AppColors.secondary),
+        prefixIcon:
+            const Icon(Icons.swap_horiz, color: AppColors.secondary, size: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
       ),
       value: _selectedTransferType,
       items: TransferType.values.map((type) {
         return DropdownMenuItem<TransferType>(
           value: type,
-          child: Text(parseTransferType(type)),
+          child: Text(parseTransferType(type),
+              style: const TextStyle(fontSize: 14)),
         );
       }).toList(),
       onChanged: (value) {
@@ -190,33 +196,30 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
         const Text(
           'Select what to transfer:',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
           ),
         ),
-        const SizedBox(height: 16),
-
-        // Card containing pricing options
+        const SizedBox(height: 10),
         Card(
-          elevation: 3,
-          shadowColor: AppColors.primary.withAlpha((0.3 * 255).round()),
+          elevation: 2,
+          shadowColor: AppColors.primary.withAlpha((0.2 * 255).round()),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Per Kilo Option
                 if (hasPerKilo) ...[
                   Row(
                     children: [
                       Text(
                         'Per Kilo Stock',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade800,
                         ),
@@ -231,26 +234,26 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                           });
                         },
                         child: Container(
-                          width: 130,
-                          padding: const EdgeInsets.all(12),
+                          width: 110,
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: _isPerKilo
                                   ? AppColors.primary
                                   : Colors.grey.shade300,
-                              width: _isPerKilo ? 2 : 1,
+                              width: _isPerKilo ? 1.5 : 1,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             color: _isPerKilo
-                                ? AppColors.primaryLight
+                                ? AppColors.primaryLight.withOpacity(0.7)
                                 : Colors.white,
                             boxShadow: _isPerKilo
                                 ? [
                                     BoxShadow(
                                       color: AppColors.primary
-                                          .withAlpha((0.3 * 255).round()),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
+                                          .withAlpha((0.2 * 255).round()),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
                                     )
                                   ]
                                 : null,
@@ -261,16 +264,18 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                               Text(
                                 'Per Kilo',
                                 style: TextStyle(
+                                  fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                   color: _isPerKilo
                                       ? AppColors.primary
                                       : Colors.black87,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
-                                'Stock: ${widget.product.perKiloPrice!.stock.toStringAsFixed(2)}kg',
+                                'Stock: ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)}kg',
                                 style: TextStyle(
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: _isPerKilo
                                       ? AppColors.primary
@@ -283,23 +288,21 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                       ),
                     ],
                   ),
-                  if (hasSackPrices) const Divider(height: 24),
+                  if (hasSackPrices) const Divider(height: 16),
                 ],
-
-                // Sack Prices Section
                 if (hasSackPrices) ...[
                   Text(
                     'Sack Stock',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey.shade800,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                    spacing: 8,
+                    runSpacing: 8,
                     children:
                         widget.product.sackPrice.asMap().entries.map((entry) {
                       final index = entry.key;
@@ -313,29 +316,29 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                           });
                         },
                         child: Container(
-                          width: 130,
-                          padding: const EdgeInsets.all(12),
+                          width: 110,
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: !_isPerKilo && _selectedSackIndex == index
                                   ? AppColors.primary
                                   : Colors.grey.shade300,
                               width: !_isPerKilo && _selectedSackIndex == index
-                                  ? 2
+                                  ? 1.5
                                   : 1,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             color: !_isPerKilo && _selectedSackIndex == index
-                                ? AppColors.primaryLight
+                                ? AppColors.primaryLight.withOpacity(0.7)
                                 : Colors.white,
                             boxShadow:
                                 !_isPerKilo && _selectedSackIndex == index
                                     ? [
                                         BoxShadow(
                                           color: AppColors.primary
-                                              .withAlpha((0.3 * 255).round()),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
+                                              .withAlpha((0.2 * 255).round()),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
                                         )
                                       ]
                                     : null,
@@ -346,17 +349,20 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                               Text(
                                 parseSackType(sack.type),
                                 style: TextStyle(
+                                  fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                   color:
                                       !_isPerKilo && _selectedSackIndex == index
                                           ? AppColors.primary
                                           : Colors.black87,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
                                 'Stock: ${sack.stock}',
                                 style: TextStyle(
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color:
                                       !_isPerKilo && _selectedSackIndex == index
@@ -387,22 +393,26 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
             : 0);
 
     return TextFormField(
-      initialValue: _quantity.toString(),
+      initialValue: _quantity.toStringAsFixed(_isPerKilo ? 1 : 0),
       decoration: InputDecoration(
         labelText: _isPerKilo ? 'Quantity (kg)' : 'Quantity (sacks)',
-        labelStyle: const TextStyle(color: AppColors.primary),
+        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         filled: true,
         fillColor: AppColors.white,
-        prefixIcon: const Icon(Icons.inventory, color: AppColors.secondary),
-        helperText: 'Maximum: $maxQuantity',
+        prefixIcon:
+            const Icon(Icons.inventory, color: AppColors.secondary, size: 20),
+        helperText: 'Max: ${maxQuantity.toStringAsFixed(_isPerKilo ? 1 : 0)}',
+        helperStyle: const TextStyle(fontSize: 11),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
       ),
       keyboardType: _isPerKilo
           ? const TextInputType.numberWithOptions(decimal: true)
@@ -445,12 +455,12 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 45,
       child: ElevatedButton(
         onPressed: _isLoading
             ? null
             : () {
-                FocusScope.of(context).unfocus(); // Dismiss the keyboard
+                FocusScope.of(context).unfocus();
                 _submitForm().then((_) {
                   ref.read(productProvider.notifier).getProducts();
                 });
@@ -461,12 +471,17 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
+          padding: const EdgeInsets.symmetric(vertical: 10),
         ),
         child: _isLoading
-            ? const CircularProgressIndicator(color: AppColors.white)
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                    color: AppColors.white, strokeWidth: 3))
             : const Text(
                 'Transfer Stock',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
       ),
     );

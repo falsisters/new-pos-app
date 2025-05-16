@@ -114,43 +114,46 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
   Widget build(BuildContext context) {
     final ref = this.ref;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Edit Product Prices',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+              child: Text(
+                'Edit Product Prices',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
 
             // Per Kilo Price Section
             Card(
-              elevation: 3,
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: AppColors.primaryLight, width: 1.5),
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(color: AppColors.primaryLight, width: 1),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Per Kilo Price',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: AppColors.accent,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _buildPriceField(
                       initialValue: _perKiloPrice.toString(),
                       labelText: 'Per Kilo Price',
@@ -163,46 +166,46 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
             // Sack Prices Section
             if (_sackPrices.isNotEmpty) ...[
-              Text(
-                'Sack Prices',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Sack Prices',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _sackPrices.length,
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final sack = _sackPrices[index];
                   return Card(
-                    elevation: 2,
+                    elevation: 1.5,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(12.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             parseSackType(widget.product.sackPrice[index].type),
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.w500,
                               color: AppColors.primary,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 10),
                           _buildPriceField(
                             initialValue: sack.price.toString(),
                             labelText: 'Regular Price',
@@ -213,7 +216,7 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
 
                           // Only show special price and minimum quantity if the sack has them
                           if (sack.hasSpecialPrice) ...[
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             _buildPriceField(
                               initialValue: sack.specialPrice.toString(),
                               labelText: 'Special Price',
@@ -224,7 +227,7 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
                                         : double.parse(value!);
                               },
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             _buildQuantityField(
                               initialValue: sack.minimumQty.toString(),
                               labelText: 'Minimum Quantity',
@@ -244,7 +247,7 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
               ),
             ],
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Submit Button
             Center(
@@ -260,21 +263,26 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
                   backgroundColor: AppColors.secondary,
                   foregroundColor: AppColors.white,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: 3,
+                  elevation: 2.5,
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: AppColors.white)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            color: AppColors.white, strokeWidth: 3))
                     : const Text(
                         'Update Prices',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                            fontSize: 15, fontWeight: FontWeight.bold),
                       ),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -291,18 +299,21 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
       initialValue: initialValue,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: const TextStyle(color: AppColors.primary),
+        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         filled: true,
         fillColor: AppColors.white,
-        prefixIcon: const Icon(Icons.attach_money, color: AppColors.secondary),
+        prefixIcon: const Icon(Icons.attach_money,
+            color: AppColors.secondary, size: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
       ),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
@@ -333,18 +344,21 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
       initialValue: initialValue,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: const TextStyle(color: AppColors.primary),
+        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         filled: true,
         fillColor: AppColors.white,
-        prefixIcon: const Icon(Icons.numbers, color: AppColors.secondary),
+        prefixIcon:
+            const Icon(Icons.numbers, color: AppColors.secondary, size: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [
