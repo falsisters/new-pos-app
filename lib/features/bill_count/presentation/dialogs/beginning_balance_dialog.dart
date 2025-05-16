@@ -68,7 +68,7 @@ class _BeginningBalanceDialogState extends State<BeginningBalanceDialog> {
                 ),
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*(\.\d*)?$')),
               ],
             ),
             const SizedBox(height: 20),

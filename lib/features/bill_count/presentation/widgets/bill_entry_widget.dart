@@ -87,7 +87,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
 
           // Amount input field
           SizedBox(
-            width: 70,
+            width: 100, // Increased width from 70 to 100
             child: TextField(
               controller: _controller,
               keyboardType:
