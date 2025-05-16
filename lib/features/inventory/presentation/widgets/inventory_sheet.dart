@@ -1224,11 +1224,19 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   void _showQuickFormulasMenu() {
     if (_selectedRowIndex == null || _selectedColumnIndex == null) return;
 
+    final currentSheet =
+        _dataSource.currentSheet; // Use current sheet from data source
     final rowIndex = _selectedRowIndex!;
     final columnIndex = _selectedColumnIndex!;
-    final existingCell = _findCellInSheet(rowIndex, columnIndex);
-    final value = existingCell?.value ?? '';
-    final colorHex = existingCell?.color;
+
+    // Find the selected cell in the current sheet to get its properties
+    final selectedRowModel =
+        currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
+    final selectedCellModel = selectedRowModel?.cells
+        .firstWhereOrNull((c) => c.columnIndex == columnIndex);
+
+    final colorHex = selectedCellModel?.color ??
+        _selectedCellColorHex; // Prioritize current model's color
 
     showDialog(
       context: context,
@@ -1239,94 +1247,41 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // _buildFormulaOption(
-                //   context,
-                //   'Add Vertical Cells',
-                //   Icons.add,
-                //   () {
-                //     if (rowIndex >= 2) {
-                //       String formula =
-                //           '=${_getColumnLetter(columnIndex)}${rowIndex - 2} + ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                //       _handleCellSubmit(
-                //           rowIndex, columnIndex, formula, colorHex);
-                //       Navigator.of(context).pop();
-                //     } else {
-                //       ScaffoldMessenger.of(context).showSnackBar(
-                //         const SnackBar(content: Text('Not enough rows above')),
-                //       );
-                //     }
-                //   },
-                // ),
-                // _buildFormulaOption(
-                //   context,
-                //   'Add Left Cells',
-                //   Icons.add,
-                //   () {
-                //     if (columnIndex >= 2) {
-                //       String formula =
-                //           '=${_getColumnLetter(columnIndex - 2)}$rowIndex + ${_getColumnLetter(columnIndex - 1)}$rowIndex';
-                //       _handleCellSubmit(
-                //           rowIndex, columnIndex, formula, colorHex);
-                //       Navigator.of(context).pop();
-                //     } else {
-                //       ScaffoldMessenger.of(context).showSnackBar(
-                //         const SnackBar(
-                //             content: Text('Not enough columns to the left')),
-                //       );
-                //     }
-                //   },
-                // ),
                 _buildFormulaOption(
                   context,
                   'Subtract Vertical Cells',
                   Icons.remove,
                   () {
                     if (rowIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex)}${rowIndex - 2} - ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Not enough rows above')),
-                      );
-                    }
-                  },
-                ),
-                // _buildFormulaOption(
-                //   context,
-                //   'Multiply Vertical Cells',
-                //   Icons.clear,
-                //   () {
-                //     if (rowIndex >= 2) {
-                //       String formula =
-                //           '=${_getColumnLetter(columnIndex)}${rowIndex - 2} * ${_getColumnLetter(columnIndex)}${rowIndex - 1}';
-                //       _handleCellSubmit(
-                //           rowIndex, columnIndex, formula, colorHex);
-                //       Navigator.of(context).pop();
-                //     } else {
-                //       ScaffoldMessenger.of(context).showSnackBar(
-                //         const SnackBar(content: Text('Not enough rows above')),
-                //       );
-                //     }
-                //   },
-                // ),
-                _buildFormulaOption(
-                  context,
-                  'Multiply Left Cells',
-                  Icons.clear,
-                  () {
-                    if (columnIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex - 2)}$rowIndex * ${_getColumnLetter(columnIndex - 1)}$rowIndex';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
+                      // Needs at least two cells above to subtract: (row-2) - (row-1)
+                      // Ensure we are referencing valid row indices
+                      final topRowIndex = rowIndex - 2;
+                      final bottomRowIndex = rowIndex - 1;
+
+                      // Check if these rows actually exist in the sheet
+                      bool topRowExists = currentSheet.rows
+                          .any((r) => r.rowIndex == topRowIndex);
+                      bool bottomRowExists = currentSheet.rows
+                          .any((r) => r.rowIndex == bottomRowIndex);
+
+                      if (topRowExists && bottomRowExists) {
+                        String formula =
+                            '=${_getColumnLetter(columnIndex)}${topRowIndex} - ${_getColumnLetter(columnIndex)}${bottomRowIndex}';
+                        _handleCellSubmit(
+                            rowIndex, columnIndex, formula, colorHex);
+                        Navigator.of(context).pop();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Not enough valid rows above for subtraction.')),
+                        );
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Not enough columns to the left')),
+                            content:
+                                Text('Not enough rows above for subtraction.')),
                       );
                     }
                   },
@@ -1334,184 +1289,103 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                 _buildFormulaOption(
                   context,
                   'Apply Multiply to All Rows',
-                  // Icon should be a multiply sign
                   Icons.clear,
                   () {
-                    if (columnIndex >= 2) {
-                      String formula =
-                          '=${_getColumnLetter(columnIndex - 2)}$rowIndex * ${_getColumnLetter(columnIndex - 1)}$rowIndex';
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-
-                      // Apply to all other rows
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final sortedRows = List<InventoryRowModel>.from(
-                            widget.sheet.rows)
-                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
-
-                        for (var row in sortedRows) {
-                          if (row.rowIndex == rowIndex) continue;
-
-                          final leftCell1 = row.cells
-                              .where((c) => c.columnIndex == columnIndex - 2)
-                              .firstOrNull;
-                          final leftCell2 = row.cells
-                              .where((c) => c.columnIndex == columnIndex - 1)
-                              .firstOrNull;
-
-                          if (leftCell1 != null && leftCell2 != null) {
-                            try {
-                              double.parse(leftCell1.value ?? '');
-                              double.parse(leftCell2.value ?? '');
-
-                              String targetFormula =
-                                  '=${_getColumnLetter(columnIndex - 2)}${row.rowIndex} * ${_getColumnLetter(columnIndex - 1)}${row.rowIndex}';
-                              _handleCellSubmit(row.rowIndex, columnIndex,
-                                  targetFormula, null);
-                            } catch (_) {}
-                          }
-                        }
-                      });
-
-                      Navigator.of(context).pop();
-                    } else {
+                    if (columnIndex < 2) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Not enough columns to the left')),
+                            content: Text(
+                                'Select a cell in column C or higher to use this feature.')),
                       );
+                      Navigator.of(context).pop(); // Close dialog
+                      return;
                     }
-                  },
-                ),
-                _buildFormulaOption(
-                  context,
-                  'Apply Addition to Row',
-                  Icons.add,
-                  () {
-                    if (columnIndex >= 1) {
-                      String formula = '=';
-                      bool hasValues = false;
 
-                      // Loop through all columns to the left of current column
-                      for (int leftColIndex = 0;
-                          leftColIndex < columnIndex;
-                          leftColIndex++) {
-                        final String colName = _getColumnLetter(leftColIndex);
-
-                        // Add this cell reference to the formula
-                        if (hasValues) {
-                          formula += ' + ';
-                        }
-                        formula += '$colName$rowIndex';
-                        hasValues = true;
+                    String generateProductFormula(int rIdx, int cIdx) {
+                      List<String> terms = [];
+                      // Multiply columns from C (index 2) up to the column before the selected one
+                      for (int colToMultiply = 2;
+                          colToMultiply < cIdx;
+                          colToMultiply++) {
+                        terms.add("${_getColumnLetter(colToMultiply)}$rIdx");
                       }
-
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-
-                      // Apply the same formula to all other rows
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final sortedRows = List<InventoryRowModel>.from(
-                            widget.sheet.rows)
-                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
-
-                        for (var row in sortedRows) {
-                          if (row.rowIndex == rowIndex) continue;
-
-                          // Check if this row has any values in the left columns
-                          bool rowHasValues = false;
-                          for (int leftColIndex = 0;
-                              leftColIndex < columnIndex;
-                              leftColIndex++) {
-                            final leftCell = row.cells
-                                .where((c) => c.columnIndex == leftColIndex)
-                                .firstOrNull;
-                            if (leftCell != null &&
-                                leftCell.value != null &&
-                                leftCell.value!.isNotEmpty) {
-                              rowHasValues = true;
-                              break;
-                            }
-                          }
-
-                          // Skip rows with no values in left columns
-                          if (!rowHasValues) continue;
-
-                          // Create the same formula but for this row
-                          String targetFormula = '=';
-                          bool targetHasValues = false;
-
-                          for (int leftColIndex = 0;
-                              leftColIndex < columnIndex;
-                              leftColIndex++) {
-                            final String colName =
-                                _getColumnLetter(leftColIndex);
-
-                            if (targetHasValues) {
-                              targetFormula += ' + ';
-                            }
-                            targetFormula += '$colName${row.rowIndex}';
-                            targetHasValues = true;
-                          }
-
-                          _handleCellSubmit(
-                              row.rowIndex, columnIndex, targetFormula, null);
-                        }
-                      });
-
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Not enough columns to the left')),
-                      );
+                      if (terms.isEmpty) {
+                        // If selected column is C, or no columns to multiply, result is 1
+                        return "=1";
+                      }
+                      return "=" + terms.join(" * ");
                     }
+
+                    final mainFormula =
+                        generateProductFormula(rowIndex, columnIndex);
+                    _handleCellSubmit(
+                        rowIndex, columnIndex, mainFormula, colorHex);
+
+                    // Apply to all other rows
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final sortedRows =
+                          List<InventoryRowModel>.from(currentSheet.rows)
+                            ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                      for (var row in sortedRows) {
+                        if (row.rowIndex == rowIndex)
+                          continue; // Skip the already processed selected row
+
+                        final otherFormula =
+                            generateProductFormula(row.rowIndex, columnIndex);
+                        // Submit with null color for other rows
+                        _handleCellSubmit(
+                            row.rowIndex, columnIndex, otherFormula, null);
+                      }
+                    });
+
+                    Navigator.of(context).pop();
                   },
                 ),
                 _buildFormulaOption(
                   context,
-                  'Add All Vertical Cells',
+                  'Add All Cells Above',
                   Icons.add,
                   () {
-                    String formula = '=';
-                    bool hasValues = false;
+                    List<String> terms = [];
 
                     final sortedRows =
-                        List<InventoryRowModel>.from(widget.sheet.rows)
+                        List<InventoryRowModel>.from(currentSheet.rows)
                           ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
-                    for (var row in sortedRows) {
-                      // Don't skip the cell immediately above the current one
-                      if (row.rowIndex == rowIndex) continue;
+                    for (var rowIter in sortedRows) {
+                      if (rowIter.rowIndex < rowIndex) {
+                        // Only cells strictly above
+                        final cellInColumn = rowIter.cells.firstWhereOrNull(
+                            (c) => c.columnIndex == columnIndex);
 
-                      final cellInColumn = row.cells
-                          .where((c) => c.columnIndex == columnIndex)
-                          .firstOrNull;
-
-                      if (cellInColumn != null &&
-                          cellInColumn.value != null &&
-                          cellInColumn.value!.isNotEmpty) {
-                        try {
-                          double.parse(cellInColumn.value!);
-
-                          if (hasValues) {
-                            formula += ' + ';
+                        if (cellInColumn != null &&
+                            cellInColumn.value != null &&
+                            cellInColumn.value!.isNotEmpty) {
+                          try {
+                            // This check ensures we only include cells that currently hold a numeric value.
+                            // The formula itself will use cell references.
+                            double.parse(cellInColumn.value!);
+                            terms.add(
+                                '${_getColumnLetter(columnIndex)}${rowIter.rowIndex}');
+                          } catch (_) {
+                            // Value is not a plain number (e.g. text, #ERROR)
+                            // Do not include in sum if it's not currently representing a number.
                           }
-                          formula +=
-                              '${_getColumnLetter(columnIndex)}${row.rowIndex}';
-                          hasValues = true;
-                        } catch (_) {}
+                        }
                       }
                     }
 
-                    if (hasValues) {
+                    if (terms.isNotEmpty) {
+                      String formula = '=' + terms.join(' + ');
                       _handleCellSubmit(
                           rowIndex, columnIndex, formula, colorHex);
                       Navigator.of(context).pop();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content:
-                                Text('No numeric cells found in this column')),
+                            content: Text(
+                                'No numeric cells found above this cell in the column.')),
                       );
                     }
                   },
@@ -1635,7 +1509,8 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
 
   // Helper method to find a cell in the sheet
   InventoryCellModel? _findCellInSheet(int rowIndex, int columnIndex) {
-    final rowModel = widget.sheet.rows.firstWhereOrNull(
+    // Use _dataSource.currentSheet for consistency
+    final rowModel = _dataSource.currentSheet.rows.firstWhereOrNull(
       (r) => r.rowIndex == rowIndex,
     );
 
