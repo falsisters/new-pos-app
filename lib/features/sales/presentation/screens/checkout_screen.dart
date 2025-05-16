@@ -181,7 +181,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 // Cash Tendered Card (Conditional)
                 _buildCashTenderedCard(),
                 if (_selectedPaymentMethod == PaymentMethod.CASH)
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
 
                 // Order Summary Card
                 Card(
@@ -418,7 +418,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
 
                 // Payment Method Section
                 Card(
@@ -500,7 +500,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 8),
 
                 // Checkout Button
                 SizedBox(
