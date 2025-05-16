@@ -5,8 +5,9 @@ import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dar
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class CheckoutScreen extends ConsumerWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   final List<ProductDto> products;
   final double total;
 
@@ -17,12 +18,126 @@ class CheckoutScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final salesNotifier = ref.watch(salesProvider.notifier);
-    final formKey = GlobalKey<FormState>();
-    final paymentMethodController = TextEditingController(
-      text: PaymentMethod.CASH.toString(), // Initialize with CASH
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late PaymentMethod _selectedPaymentMethod;
+  final _cashGivenController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPaymentMethod = PaymentMethod.CASH; // Initialize with CASH
+    _cashGivenController.addListener(() {
+      setState(
+          () {}); // To update UI based on cash given input, e.g., change calculation
+    });
+  }
+
+  @override
+  void dispose() {
+    _cashGivenController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildCashTenderedCard() {
+    if (_selectedPaymentMethod != PaymentMethod.CASH) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.money, color: AppColors.primary),
+                const SizedBox(width: 12),
+                const Text(
+                  'Cash Tendered',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _cashGivenController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey[100],
+                hintText: 'Enter amount tendered',
+                prefixText: '₱',
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+              validator: (value) {
+                if (_selectedPaymentMethod == PaymentMethod.CASH) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter amount tendered';
+                  }
+                  final double? amount = double.tryParse(value);
+                  if (amount == null) {
+                    return 'Invalid amount';
+                  }
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final salesNotifier = ref.watch(salesProvider.notifier);
+
+    double cashGiven = 0.0;
+    double changeAmount = 0.0;
+    bool showChange = false;
+
+    if (_selectedPaymentMethod == PaymentMethod.CASH &&
+        _cashGivenController.text.isNotEmpty) {
+      final parsedCash = double.tryParse(_cashGivenController.text);
+      if (parsedCash != null) {
+        cashGiven = parsedCash;
+        if (cashGiven >= widget.total) {
+          changeAmount = cashGiven - widget.total;
+          showChange = true;
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -59,10 +174,15 @@ class CheckoutScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
-            key: formKey,
+            key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Cash Tendered Card (Conditional)
+                _buildCashTenderedCard(),
+                if (_selectedPaymentMethod == PaymentMethod.CASH)
+                  const SizedBox(height: 24),
+
                 // Order Summary Card
                 Card(
                   elevation: 4,
@@ -98,7 +218,7 @@ class CheckoutScreen extends ConsumerWidget {
                             ),
                             const Spacer(),
                             Text(
-                              '${products.length} item${products.length > 1 ? "s" : ""}',
+                              '${widget.products.length} item${widget.products.length > 1 ? "s" : ""}',
                               style: TextStyle(
                                 color: Colors.grey[700],
                                 fontWeight: FontWeight.w500,
@@ -112,11 +232,11 @@ class CheckoutScreen extends ConsumerWidget {
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: products.length,
+                        itemCount: widget.products.length,
                         separatorBuilder: (context, index) =>
                             const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final product = products[index];
+                          final product = widget.products[index];
                           final bool isDiscountApplied =
                               product.isDiscounted == true &&
                                   product.discountedPrice != null;
@@ -214,8 +334,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  // Total is already calculated considering discounts by CartList
-                                  '₱${total.toStringAsFixed(2)}',
+                                  '₱${widget.total.toStringAsFixed(2)}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.grey[800],
@@ -223,6 +342,52 @@ class CheckoutScreen extends ConsumerWidget {
                                 ),
                               ],
                             ),
+                            if (showChange) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Cash Tendered',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  Text(
+                                    '₱${cashGiven.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Change',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: AppColors.secondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₱${changeAmount.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.secondary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             const Divider(),
                             const SizedBox(height: 8),
@@ -237,8 +402,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Text(
-                                  // Total is already calculated considering discounts by CartList
-                                  '₱${total.toStringAsFixed(2)}',
+                                  '₱${widget.total.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -304,8 +468,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   const BorderSide(color: AppColors.primary),
                             ),
                           ),
-                          value:
-                              PaymentMethod.CASH, // Set initial value to CASH
+                          value: _selectedPaymentMethod,
                           items: PaymentMethod.values
                               .map((e) => DropdownMenuItem(
                                     value: e,
@@ -314,7 +477,13 @@ class CheckoutScreen extends ConsumerWidget {
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              paymentMethodController.text = value.toString();
+                              setState(() {
+                                _selectedPaymentMethod = value;
+                                if (_selectedPaymentMethod !=
+                                    PaymentMethod.CASH) {
+                                  _cashGivenController.clear();
+                                }
+                              });
                             }
                           },
                           validator: (value) {
@@ -339,10 +508,42 @@ class CheckoutScreen extends ConsumerWidget {
                   height: 54,
                   child: ElevatedButton(
                     onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        final paymentMethod = PaymentMethod.values.firstWhere(
-                          (e) => e.toString() == paymentMethodController.text,
-                        );
+                      if (_formKey.currentState!.validate()) {
+                        if (_selectedPaymentMethod == PaymentMethod.CASH) {
+                          final String cashGivenText =
+                              _cashGivenController.text;
+                          if (cashGivenText.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Please enter the amount tendered for cash payment.'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                          final double? tenderedAmount =
+                              double.tryParse(cashGivenText);
+                          if (tenderedAmount == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Invalid amount tendered.'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                          if (tenderedAmount < widget.total) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Cash tendered (₱${tenderedAmount.toStringAsFixed(2)}) is less than the total amount (₱${widget.total.toStringAsFixed(2)}).'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                        }
 
                         // Show confirmation dialog
                         showDialog(
@@ -353,7 +554,7 @@ class CheckoutScreen extends ConsumerWidget {
                             ),
                             title: const Text('Confirm Checkout'),
                             content: Text(
-                              'Complete your purchase for ₱${total.toStringAsFixed(2)}?',
+                              'Complete your purchase for ₱${widget.total.toStringAsFixed(2)}?',
                             ),
                             actions: [
                               TextButton(
@@ -365,9 +566,7 @@ class CheckoutScreen extends ConsumerWidget {
                                   Navigator.pop(context);
                                   // Process the sale
                                   salesNotifier.submitSale(
-                                      // Changed from createSale
-                                      total,
-                                      paymentMethod);
+                                      widget.total, _selectedPaymentMethod);
 
                                   // Show success and return
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -390,7 +589,7 @@ class CheckoutScreen extends ConsumerWidget {
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
-                                  Navigator.pop(context);
+                                  Navigator.pop(context); // Pop CheckoutScreen
                                 },
                                 child: const Text('CONFIRM'),
                               ),
