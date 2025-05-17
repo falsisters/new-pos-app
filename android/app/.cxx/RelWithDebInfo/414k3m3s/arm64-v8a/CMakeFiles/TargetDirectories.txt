@@ -1,0 +1,2 @@
+D:/Projects/falsisters-pos-app/android/app/.cxx/RelWithDebInfo/414k3m3s/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/Projects/falsisters-pos-app/android/app/.cxx/RelWithDebInfo/414k3m3s/arm64-v8a/CMakeFiles/rebuild_cache.dir
