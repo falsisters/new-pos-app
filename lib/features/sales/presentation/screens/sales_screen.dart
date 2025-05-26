@@ -32,47 +32,140 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        // Removed title
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
-        // Using just the TabBar as the primary component in the AppBar
-        // This maximizes the space for content
-        title: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.secondary,
-          labelColor: AppColors.white,
-          unselectedLabelColor: AppColors.white.withOpacity(0.7),
-          tabs: const [
-            Tab(icon: Icon(Icons.storefront), text: 'Products & Cart'),
-            Tab(icon: Icon(Icons.receipt_long), text: 'Recent Sales'),
-          ],
-          // Make tabs more prominent since they're the main navigation now
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          indicatorWeight: 3.0,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            // Products & Cart View
-            Row(
-              children: [
-                const Expanded(
-                  flex: 7, // 70% of the space
-                  child: ProductList(),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 3, // 30% of the space
-                  child: CartList(),
+        title: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            // Sales List View
-            const SalesListWidget(),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.storefront, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Products & Cart',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.analytics, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Recent Sales',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey[50]!, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            // Products & Cart View with enhanced layout
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const ProductList(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: CartList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Sales List View with enhanced container
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const SalesListWidget(),
+              ),
+            ),
           ],
         ),
       ),

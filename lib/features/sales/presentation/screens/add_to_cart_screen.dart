@@ -53,6 +53,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     if (widget.product.perKiloPrice != null &&
         widget.product.sackPrice.isEmpty) {
       _isPerKiloSelected = true;
+      // Calculate and set initial total price for 1.0 kg
+      _calculateInitialPerKiloTotalPrice();
     } else if (widget.product.sackPrice.isNotEmpty) {
       // Default to first sack price if no per kilo or if both exist
       _selectSackPrice(widget.product.sackPrice.first.id);
@@ -196,6 +198,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _isSpecialPrice = false;
       _isPerKiloSelected = true;
       _perKiloQuantityController.text = '1.0';
+      // Calculate and set total price for 1.0 kg
+      if (widget.product.perKiloPrice != null) {
+        final double unitPrice = widget.product.perKiloPrice!.price;
+        final double quantity = 1.0;
+        final double totalPrice = (quantity * unitPrice * 100).round() / 100;
+        final double roundedTotalPrice = _customRoundValue(totalPrice);
+        _perKiloTotalPriceController.text =
+            roundedTotalPrice.toStringAsFixed(2);
+      }
     });
   }
 
@@ -307,6 +318,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
     salesNotifier.addProductToCart(productDto);
     Navigator.pop(context);
+  }
+
+  void _calculateInitialPerKiloTotalPrice() {
+    if (widget.product.perKiloPrice != null) {
+      final double unitPrice = widget.product.perKiloPrice!.price;
+      final double quantity = 1.0;
+      final double totalPrice = (quantity * unitPrice * 100).round() / 100;
+      final double roundedTotalPrice = _customRoundValue(totalPrice);
+      _perKiloTotalPriceController.text = roundedTotalPrice.toStringAsFixed(2);
+    }
   }
 
   @override

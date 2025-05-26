@@ -20,71 +20,115 @@ class CartList extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Header
+          // Enhanced Header
           Container(
-            padding: const EdgeInsets.all(14.0),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(11),
-                topRight: Radius.circular(11),
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.1),
+                  AppColors.primary.withOpacity(0.05),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
-              border: Border(
-                bottom: BorderSide(color: AppColors.primary, width: 1.5),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.shopping_cart,
-                    color: AppColors.primary, size: 22),
-                const SizedBox(width: 10),
-                const Text(
-                  'Cart',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: Icon(Icons.shopping_cart,
+                      color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cart',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () {
-                    ref.refresh(salesProvider);
-                  },
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: IconButton(
+                    icon:
+                        Icon(Icons.refresh, color: AppColors.primary, size: 20),
+                    onPressed: () {
+                      ref.refresh(salesProvider);
+                    },
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Cart Items Count
+          // Enhanced Cart Items Count
           salesState.when(
             data: (state) {
               final productCount = state.cart.products.length;
               return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '$productCount ${productCount == 1 ? 'item' : 'items'} in cart',
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w500,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.secondary.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shopping_bag,
+                              size: 16, color: AppColors.secondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$productCount ${productCount == 1 ? 'item' : 'items'}',
+                            style: TextStyle(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             },
@@ -95,7 +139,7 @@ class CartList extends ConsumerWidget {
             error: (_, __) => const SizedBox(height: 20),
           ),
 
-          // Cart List
+          // Enhanced Cart List
           Expanded(
             child: salesState.when(
               data: (state) {
@@ -105,15 +149,22 @@ class CartList extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.shopping_cart_outlined,
-                            size: 60, color: Colors.grey[400]),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.shopping_cart_outlined,
+                              size: 48, color: Colors.grey[400]),
+                        ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Your cart is empty',
                           style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -131,87 +182,194 @@ class CartList extends ConsumerWidget {
 
                 return ListView.separated(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   itemCount: products.length,
                   separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final product = products[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
-                        title: Text(
-                          product.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        subtitle: Column(
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 4),
-                            _buildPriceInfo(product),
-                            const SizedBox(height: 2),
-                            _buildQuantityInfo(product),
-                            if (product.isDiscounted == true &&
-                                product.discountedPrice != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'Discounted Total: ₱${product.discountedPrice!.toInt()}',
-                                style: TextStyle(
-                                  color: AppColors.secondary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                            // Product name and delete button
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    product.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ]
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '₱${_calculateItemTotal(product)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: AppColors.accent,
-                              ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(Icons.delete_outline,
+                                        color: Colors.red[600], size: 20),
+                                    onPressed: () {
+                                      // Show enhanced confirmation dialog
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                          title: Row(
+                                            children: [
+                                              Icon(Icons.warning,
+                                                  color: Colors.orange,
+                                                  size: 24),
+                                              const SizedBox(width: 8),
+                                              const Text('Remove Item'),
+                                            ],
+                                          ),
+                                          content: Text(
+                                              'Remove ${product.name} from cart?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context).pop(),
+                                              child: const Text('CANCEL'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                                ref
+                                                    .read(
+                                                        salesProvider.notifier)
+                                                    .removeProductFromCart(
+                                                        product);
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              child: const Text('REMOVE'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.red),
-                              onPressed: () {
-                                // Show confirmation dialog
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Remove Item'),
-                                    content: Text(
-                                        'Remove ${product.name} from cart?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        child: const Text('CANCEL'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                          ref
-                                              .read(salesProvider.notifier)
-                                              .removeProductFromCart(product);
-                                        },
-                                        child: const Text('REMOVE'),
-                                      ),
+
+                            const SizedBox(height: 12),
+
+                            // Price and quantity info
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.attach_money,
+                                          size: 16, color: Colors.grey[600]),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: _buildPriceInfo(product)),
                                     ],
                                   ),
-                                );
-                              },
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.inventory,
+                                          size: 16, color: Colors.grey[600]),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                          child: _buildQuantityInfo(product)),
+                                    ],
+                                  ),
+                                  if (product.isDiscounted == true &&
+                                      product.discountedPrice != null) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.secondary
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.local_offer,
+                                              size: 16,
+                                              color: AppColors.secondary),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Discounted: ₱${product.discountedPrice!.toInt()}',
+                                            style: TextStyle(
+                                              color: AppColors.secondary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Total for this item
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.accent.withOpacity(0.1),
+                                    AppColors.accent.withOpacity(0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Item Total:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  Text(
+                                    '₱${_calculateItemTotal(product)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -229,8 +387,15 @@ class CartList extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 48),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.error_outline,
+                            color: Colors.red, size: 32),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Error loading cart',
@@ -242,8 +407,8 @@ class CartList extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         error.toString(),
-                        style: const TextStyle(
-                          color: Colors.grey,
+                        style: TextStyle(
+                          color: Colors.grey[600],
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -255,41 +420,65 @@ class CartList extends ConsumerWidget {
             ),
           ),
 
-          // Summary and checkout section
+          // Enhanced Summary and checkout section
           Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: const Border(
-                top: BorderSide(color: Colors.grey, width: 0.5),
+              gradient: LinearGradient(
+                colors: [Colors.grey[50]!, Colors.white],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border(
+                top: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                // Total amount
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.account_balance_wallet,
+                              color: AppColors.primary, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Total Amount:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      '₱${_calculateTotal(salesState)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: AppColors.accent,
+                      Text(
+                        '₱${_calculateTotal(salesState)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                          color: AppColors.accent,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // Enhanced checkout button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed:
                         salesState.valueOrNull?.cart.products.isEmpty ?? true
@@ -308,17 +497,26 @@ class CartList extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[300],
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 2,
+                      elevation: 3,
+                      shadowColor: AppColors.secondary.withOpacity(0.3),
                     ),
-                    child: const Text(
-                      'Checkout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.payment, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Proceed to Checkout',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -333,7 +531,7 @@ class CartList extends ConsumerWidget {
   Widget _buildPriceInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
       String priceText =
-          'Price: ₱${product.perKiloPrice!.price.toStringAsFixed(2)}/kg';
+          '₱${product.perKiloPrice!.price.toStringAsFixed(2)}/kg';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -341,6 +539,7 @@ class CartList extends ConsumerWidget {
         priceText,
         style: TextStyle(
           color: Colors.grey[700],
+          fontSize: 14,
           decoration:
               (product.isDiscounted == true && product.discountedPrice != null)
                   ? TextDecoration.lineThrough
@@ -348,8 +547,7 @@ class CartList extends ConsumerWidget {
         ),
       );
     } else if (product.sackPrice != null) {
-      String priceText =
-          'Price: ₱${product.sackPrice!.price.toStringAsFixed(2)}/sack';
+      String priceText = '₱${product.sackPrice!.price.toStringAsFixed(2)}/sack';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -357,6 +555,7 @@ class CartList extends ConsumerWidget {
         priceText,
         style: TextStyle(
           color: Colors.grey[700],
+          fontSize: 14,
           decoration:
               (product.isDiscounted == true && product.discountedPrice != null)
                   ? TextDecoration.lineThrough
@@ -367,7 +566,8 @@ class CartList extends ConsumerWidget {
       return Text(
         'Price not available',
         style: TextStyle(
-          color: Colors.grey[700],
+          color: Colors.grey[500],
+          fontSize: 14,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -377,16 +577,20 @@ class CartList extends ConsumerWidget {
   Widget _buildQuantityInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
       return Text(
-        'Quantity: ${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg',
+        '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg',
         style: TextStyle(
           color: Colors.grey[700],
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       );
     } else if (product.sackPrice != null) {
       return Text(
-        'Quantity: ${product.sackPrice!.quantity} sack(s)',
+        '${product.sackPrice!.quantity} sack(s)',
         style: TextStyle(
           color: Colors.grey[700],
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       );
     } else {
@@ -396,25 +600,21 @@ class CartList extends ConsumerWidget {
 
   String _calculateItemTotal(ProductDto product) {
     if (product.isDiscounted == true && product.discountedPrice != null) {
-      // Round to 2 decimal places then convert to int
       return product.discountedPrice!.toInt().toString();
     }
 
     double total = 0.0;
     if (product.perKiloPrice != null) {
-      // Use precise calculation to avoid floating point errors
       total =
           (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
                   .round() /
               100;
     } else if (product.sackPrice != null) {
-      // Use precise calculation to avoid floating point errors
       total = (product.sackPrice!.price * product.sackPrice!.quantity * 100)
               .round() /
           100;
     }
 
-    // Convert to int to remove decimal part - DON'T multiply by 100 here
     return total.toInt().toString();
   }
 
@@ -428,14 +628,12 @@ class CartList extends ConsumerWidget {
       if (product.isDiscounted == true && product.discountedPrice != null) {
         total += product.discountedPrice!;
       } else if (product.perKiloPrice != null) {
-        // Use precise calculation to avoid floating point errors
         double itemTotal =
             (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
                     .round() /
                 100;
         total += itemTotal;
       } else if (product.sackPrice != null) {
-        // Use precise calculation to avoid floating point errors
         double itemTotal =
             (product.sackPrice!.price * product.sackPrice!.quantity * 100)
                     .round() /
@@ -444,7 +642,6 @@ class CartList extends ConsumerWidget {
       }
     }
 
-    // Round the final total and convert to int - DON'T multiply by 100 here
     return total.toInt().toString();
   }
 }

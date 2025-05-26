@@ -75,50 +75,81 @@ class SalesListWidget extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
+          // Enhanced Header
           Container(
-            padding: const EdgeInsets.all(14.0),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(11),
-                topRight: Radius.circular(11),
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.1),
+                  AppColors.primary.withOpacity(0.05),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
-              border: Border(
-                bottom: BorderSide(color: AppColors.primary, width: 1.5),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.history, color: AppColors.primary, size: 22),
-                const SizedBox(width: 10),
-                const Text(
-                  'Recent Sales',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child:
+                      Icon(Icons.analytics, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Sales',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'Track and manage recent transactions',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () {
-                    // ignore: unused_result
-                    ref.refresh(salesProvider.notifier).getSales();
-                  },
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: IconButton(
+                    icon:
+                        Icon(Icons.refresh, color: AppColors.primary, size: 20),
+                    onPressed: () {
+                      ref.refresh(salesProvider.notifier).getSales();
+                    },
+                  ),
                 ),
               ],
             ),
@@ -132,15 +163,30 @@ class SalesListWidget extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long_outlined,
-                            size: 60, color: Colors.grey[400]),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.receipt_long_outlined,
+                              size: 48, color: Colors.grey[400]),
+                        ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'No recent sales found',
                           style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sales transactions will appear here',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -148,136 +194,205 @@ class SalesListWidget extends ConsumerWidget {
                   );
                 }
                 return ListView.separated(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(20.0),
                   itemCount: salesState.sales.length,
                   separatorBuilder: (context, index) =>
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final sale = salesState.sales[index];
                     final dateFormat = DateFormat('MMM dd, yyyy - hh:mm a');
                     final saleDate =
                         DateTime.tryParse(sale.createdAt)?.toLocal();
 
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        side: BorderSide(
-                            color: AppColors.primary.withOpacity(0.5),
-                            width: 0.5),
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.primary.withOpacity(0.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      clipBehavior: Clip.antiAlias,
                       child: ExpansionTile(
-                        backgroundColor: Colors.white,
-                        collapsedBackgroundColor: Colors.white,
+                        backgroundColor: Colors.transparent,
+                        collapsedBackgroundColor: Colors.transparent,
                         iconColor: AppColors.primary,
                         collapsedIconColor: AppColors.primary,
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          foregroundColor: AppColors.primary,
-                          child: const Icon(Icons.receipt_long_outlined),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.1),
+                                AppColors.primary.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.receipt_long_outlined,
+                              color: AppColors.primary, size: 20),
                         ),
                         title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Sale ID: ${sale.id.substring(0, 8)}...',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                        fontSize: 15),
-                                  ),
-                                  Text(
-                                    'Total: ₱${sale.totalAmount.toStringAsFixed(2)}',
+                                    'Sale #${sale.id.substring(0, 8)}',
                                     style: TextStyle(
-                                        color: Colors.green[800],
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '₱${sale.totalAmount.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: Colors.green[700],
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 14),
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.delete_outline, size: 16),
-                              label: const Text('Void'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Colors.redAccent.withOpacity(0.8),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                textStyle: const TextStyle(fontSize: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6.0),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.red,
+                                    Colors.red.withOpacity(0.8)
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                              onPressed: () async {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext dialogContext) {
-                                    return AlertDialog(
-                                      title: const Text('Confirm Void'),
-                                      content: Text(
-                                          'Are you sure you want to void Sale ID: ${sale.id.substring(0, 8)}...? This action cannot be undone.'),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          child: const Text('Cancel'),
-                                          onPressed: () {
-                                            Navigator.of(dialogContext).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          style: TextButton.styleFrom(
-                                              foregroundColor: Colors.red),
-                                          child: const Text('Void Sale'),
-                                          onPressed: () async {
-                                            Navigator.of(dialogContext).pop();
-                                            // ignore: unused_result
-                                            await ref
-                                                .read(salesProvider.notifier)
-                                                .deleteSale(sale.id);
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'Sale ${sale.id.substring(0, 8)} voided successfully.')),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
+                              child: ElevatedButton.icon(
+                                icon: Icon(Icons.delete_outline, size: 16),
+                                label: Text('Void',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext dialogContext) {
+                                      return AlertDialog(
+                                        title: const Text('Confirm Void'),
+                                        content: Text(
+                                            'Are you sure you want to void Sale ID: ${sale.id.substring(0, 8)}...? This action cannot be undone.'),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            child: const Text('Cancel'),
+                                            onPressed: () {
+                                              Navigator.of(dialogContext).pop();
+                                            },
+                                          ),
+                                          TextButton(
+                                            style: TextButton.styleFrom(
+                                                foregroundColor: Colors.red),
+                                            child: const Text('Void Sale'),
+                                            onPressed: () async {
+                                              Navigator.of(dialogContext).pop();
+                                              // ignore: unused_result
+                                              await ref
+                                                  .read(salesProvider.notifier)
+                                                  .deleteSale(sale.id);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        'Sale ${sale.id.substring(0, 8)} voided successfully.')),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),
                         subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 2.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
                             children: [
-                              Text(
-                                'Payment: ${parsePaymentMethod(sale.paymentMethod)}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              if (saleDate != null)
-                                Text(
-                                  'Date: ${dateFormat.format(saleDate)}',
-                                  style: const TextStyle(fontSize: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                                child: Text(
+                                  parsePaymentMethod(sale.paymentMethod),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.secondary,
+                                  ),
+                                ),
+                              ),
+                              if (saleDate != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  dateFormat.format(saleDate),
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.grey[600]),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                         childrenPadding: const EdgeInsets.only(
-                            left: 16, right: 16, bottom: 8),
+                            left: 16, right: 16, bottom: 16),
                         children: <Widget>[
-                          const Divider(height: 1),
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            height: 1,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.grey[300]!,
+                                  Colors.transparent
+                                ],
+                              ),
+                            ),
+                          ),
                           if (sale.saleItems.isEmpty)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -336,14 +451,27 @@ class SalesListWidget extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 48),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.error_outline,
+                            color: Colors.red, size: 32),
+                      ),
                       const SizedBox(height: 16),
-                      const Text('Failed to load sales',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        'Failed to load sales',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                       const SizedBox(height: 8),
-                      Text(error.toString(), textAlign: TextAlign.center),
+                      Text(
+                        error.toString(),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                     ],
                   ),
                 ),
