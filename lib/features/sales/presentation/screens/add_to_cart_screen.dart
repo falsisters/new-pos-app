@@ -10,6 +10,7 @@ import 'package:falsisters_pos_android/features/sales/data/providers/sales_provi
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:falsisters_pos_android/core/utils/extensions.dart';
 
 class AddToCartScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -79,11 +80,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   double _customRoundValue(double value) {
-    double decimalPart = value - value.truncate();
-    if (decimalPart > 0.90) {
-      return value.ceil().toDouble();
+    // Round to 2 decimal places to avoid floating point precision issues
+    double rounded = double.parse(value.toStringAsFixed(2));
+    double decimalPart = rounded - rounded.truncate();
+
+    // Use a more precise threshold for rounding up
+    if (decimalPart >= 0.90) {
+      return rounded.ceil().toDouble();
     }
-    return value;
+    return rounded;
   }
 
   void _updatePerKiloTotalPriceFromQuantity() {
@@ -100,12 +105,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         final double unitPrice = widget.product.perKiloPrice!.price;
 
         if (unitPrice <= 0) {
-          // If unit price is invalid, clear the total price field
           _perKiloTotalPriceController.clear();
         } else if (quantity != null && quantity > 0) {
-          // unitPrice > 0 here
-          double calculatedTotalPrice = quantity * unitPrice;
-          // Defensive check, though should not be needed if quantity > 0 and unitPrice > 0
+          // Use precise calculation with proper rounding
+          double calculatedTotalPrice =
+              (quantity * unitPrice * 100).round() / 100;
+
+          // Ensure non-negative result
           if (calculatedTotalPrice < 0) calculatedTotalPrice = 0;
 
           // Apply custom rounding
@@ -114,17 +120,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           _perKiloTotalPriceController.text =
               calculatedTotalPrice.toStringAsFixed(2);
         } else {
-          // unitPrice > 0, but quantity is null or <= 0
           if (currentQuantityText.isEmpty &&
               (_perKiloQuantityFocusNode.hasFocus ||
                   (!_perKiloQuantityFocusNode.hasFocus &&
                       !_perKiloTotalPriceFocusNode.hasFocus))) {
-            // Clear total price if quantity was cleared by user or programmatically when no focus
             _perKiloTotalPriceController.clear();
           }
-          // else: quantity is invalid (e.g. "0" or "abc") but not empty,
-          // or focus is not on quantity field during programmatic empty.
-          // Total price field remains unchanged, validators will handle.
         }
       }
       _isUpdatingPriceAndQuantityInternally = false;
@@ -145,12 +146,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         final double unitPrice = widget.product.perKiloPrice!.price;
 
         if (unitPrice <= 0) {
-          // If unit price is invalid, clear the quantity field
           _perKiloQuantityController.clear();
         } else if (totalPrice != null && totalPrice >= 0) {
-          // unitPrice > 0 here
-          double calculatedQuantity = totalPrice / unitPrice;
-          // Defensive check
+          // Use precise calculation with proper rounding
+          double calculatedQuantity =
+              (totalPrice * 100 / unitPrice).round() / 100;
+
+          // Ensure non-negative result
           if (calculatedQuantity < 0) calculatedQuantity = 0;
 
           // Apply custom rounding
@@ -159,17 +161,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           _perKiloQuantityController.text =
               calculatedQuantity.toStringAsFixed(2);
         } else {
-          // unitPrice > 0, but totalPrice is null or negative
           if (currentTotalPriceText.isEmpty &&
               (_perKiloTotalPriceFocusNode.hasFocus ||
                   (!_perKiloQuantityFocusNode.hasFocus &&
                       !_perKiloTotalPriceFocusNode.hasFocus))) {
-            // Clear quantity if total price was cleared by user or programmatically when no focus
             _perKiloQuantityController.clear();
           }
-          // else: total price is invalid (e.g. "-50" or "abc") but not empty,
-          // or focus is not on total price field during programmatic empty.
-          // Quantity field remains unchanged, validators will handle.
         }
       }
       _isUpdatingPriceAndQuantityInternally = false;
@@ -255,6 +252,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
       final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
 
+      // Round the price to avoid precision issues
+      final roundedPrice = _isSpecialPrice
+          ? double.parse((sackPrice.specialPrice!.price).toStringAsFixed(2))
+          : double.parse(sackPrice.price.toStringAsFixed(2));
+
       productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
@@ -262,19 +264,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: _isSpecialPrice,
         sackPrice: SackPriceDto(
           id: sackPrice.id,
-          price:
-              _isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price,
+          price: roundedPrice,
           quantity: quantity,
           type: sackPrice.type,
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: _isDiscounted
             ? double.tryParse(_discountedPriceController.text)
+                ?.let((val) => double.parse(val.toStringAsFixed(2)))
             : null,
       );
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final perKiloPrice = widget.product.perKiloPrice!;
       final quantity = double.tryParse(_perKiloQuantityController.text) ?? 1.0;
+
+      // Round the price to avoid precision issues
+      final roundedPrice = double.parse(perKiloPrice.price.toStringAsFixed(2));
+      final roundedQuantity = double.parse(quantity.toStringAsFixed(2));
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -283,12 +289,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
-          price: perKiloPrice.price,
-          quantity: quantity,
+          price: roundedPrice,
+          quantity: roundedQuantity,
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: _isDiscounted
             ? double.tryParse(_discountedPriceController.text)
+                ?.let((val) => double.parse(val.toStringAsFixed(2)))
             : null,
       );
     } else {
@@ -299,7 +306,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     }
 
     salesNotifier.addProductToCart(productDto);
-
     Navigator.pop(context);
   }
 

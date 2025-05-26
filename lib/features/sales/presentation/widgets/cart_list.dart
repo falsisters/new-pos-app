@@ -396,21 +396,31 @@ class CartList extends ConsumerWidget {
 
   String _calculateItemTotal(ProductDto product) {
     if (product.isDiscounted == true && product.discountedPrice != null) {
+      // Round to 2 decimal places then convert to int
       return product.discountedPrice!.toInt().toString();
     }
+
     double total = 0.0;
     if (product.perKiloPrice != null) {
-      total = product.perKiloPrice!.price * product.perKiloPrice!.quantity;
+      // Use precise calculation to avoid floating point errors
+      total =
+          (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
+                  .round() /
+              100;
     } else if (product.sackPrice != null) {
-      total = product.sackPrice!.price * product.sackPrice!.quantity;
+      // Use precise calculation to avoid floating point errors
+      total = (product.sackPrice!.price * product.sackPrice!.quantity * 100)
+              .round() /
+          100;
     }
-    // Truncate the decimal part
+
+    // Convert to int to remove decimal part - DON'T multiply by 100 here
     return total.toInt().toString();
   }
 
   String _calculateTotal(AsyncValue<SalesState> salesState) {
     if (salesState.valueOrNull == null) {
-      return '0'; // Return 0 instead of 0.00 to match toInt()
+      return '0';
     }
 
     double total = 0.0;
@@ -418,11 +428,23 @@ class CartList extends ConsumerWidget {
       if (product.isDiscounted == true && product.discountedPrice != null) {
         total += product.discountedPrice!;
       } else if (product.perKiloPrice != null) {
-        total += product.perKiloPrice!.price * product.perKiloPrice!.quantity;
+        // Use precise calculation to avoid floating point errors
+        double itemTotal =
+            (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
+                    .round() /
+                100;
+        total += itemTotal;
       } else if (product.sackPrice != null) {
-        total += product.sackPrice!.price * product.sackPrice!.quantity;
+        // Use precise calculation to avoid floating point errors
+        double itemTotal =
+            (product.sackPrice!.price * product.sackPrice!.quantity * 100)
+                    .round() /
+                100;
+        total += itemTotal;
       }
     }
+
+    // Round the final total and convert to int - DON'T multiply by 100 here
     return total.toInt().toString();
   }
 }
