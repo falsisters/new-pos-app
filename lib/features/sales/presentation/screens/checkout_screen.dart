@@ -567,28 +567,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   // Process the sale
                                   salesNotifier.submitSale(
                                       widget.total, _selectedPaymentMethod);
-
-                                  // Show success and return
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(Icons.check_circle,
-                                              color: Colors.white),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Checkout successful!',
-                                          )
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
                                   Navigator.pop(context); // Pop CheckoutScreen
                                 },
                                 child: const Text('CONFIRM'),
