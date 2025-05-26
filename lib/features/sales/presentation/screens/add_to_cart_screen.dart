@@ -483,23 +483,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 onTap: () => _selectSackPrice(sackPrice.id),
                 subLabel: 'Regular',
               ));
-              if (sackPrice.specialPrice != null) {
-                sackChips.add(_buildPriceChip(
-                  label: parseSackType(sackPrice.type),
-                  price: sackPrice.specialPrice!.price,
-                  stock: sackPrice.stock.toDouble(),
-                  isSelected:
-                      _selectedSackPriceId == sackPrice.id && _isSpecialPrice,
-                  onTap: () => _selectSackPrice(
-                    sackPrice.id,
-                    isSpecial: true,
-                    minimumQty: sackPrice.specialPrice!.minimumQty,
-                  ),
-                  isSpecial: true,
-                  minimumQty: sackPrice.specialPrice!.minimumQty,
-                  subLabel: 'Special',
-                ));
-              }
+              // if (sackPrice.specialPrice != null) {
+              //   sackChips.add(_buildPriceChip(
+              //     label: parseSackType(sackPrice.type),
+              //     price: sackPrice.specialPrice!.price,
+              //     stock: sackPrice.stock.toDouble(),
+              //     isSelected:
+              //         _selectedSackPriceId == sackPrice.id && _isSpecialPrice,
+              //     onTap: () => _selectSackPrice(
+              //       sackPrice.id,
+              //       isSpecial: true,
+              //       minimumQty: sackPrice.specialPrice!.minimumQty,
+              //     ),
+              //     isSpecial: true,
+              //     minimumQty: sackPrice.specialPrice!.minimumQty,
+              //     subLabel: 'Special',
+              //   ));
+              // }
               return sackChips;
             }),
           ],
