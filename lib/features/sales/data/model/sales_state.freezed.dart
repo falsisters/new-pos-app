@@ -18,7 +18,6 @@ mixin _$SalesState {
   CartModel get cart;
   List<SaleModel> get sales;
   String? get orderId;
-  String? get editingSaleId; // Added for tracking sale being edited
   String? get error;
 
   /// Create a copy of SalesState
@@ -39,24 +38,17 @@ mixin _$SalesState {
             (identical(other.cart, cart) || other.cart == cart) &&
             const DeepCollectionEquality().equals(other.sales, sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
-            (identical(other.editingSaleId, editingSaleId) ||
-                other.editingSaleId == editingSaleId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      cart,
-      const DeepCollectionEquality().hash(sales),
-      orderId,
-      editingSaleId,
-      error);
+  int get hashCode => Object.hash(runtimeType, cart,
+      const DeepCollectionEquality().hash(sales), orderId, error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, editingSaleId: $editingSaleId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error)';
   }
 }
 
@@ -67,11 +59,7 @@ abstract mixin class $SalesStateCopyWith<$Res> {
       _$SalesStateCopyWithImpl;
   @useResult
   $Res call(
-      {CartModel cart,
-      List<SaleModel> sales,
-      String? orderId,
-      String? editingSaleId,
-      String? error});
+      {CartModel cart, List<SaleModel> sales, String? orderId, String? error});
 
   $CartModelCopyWith<$Res> get cart;
 }
@@ -91,7 +79,6 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
     Object? cart = null,
     Object? sales = null,
     Object? orderId = freezed,
-    Object? editingSaleId = freezed,
     Object? error = freezed,
   }) {
     return _then(_self.copyWith(
@@ -106,10 +93,6 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
       orderId: freezed == orderId
           ? _self.orderId
           : orderId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      editingSaleId: freezed == editingSaleId
-          ? _self.editingSaleId
-          : editingSaleId // ignore: cast_nullable_to_non_nullable
               as String?,
       error: freezed == error
           ? _self.error
@@ -136,7 +119,6 @@ class _SalesState implements SalesState {
       {required this.cart,
       required final List<SaleModel> sales,
       this.orderId,
-      this.editingSaleId,
       this.error})
       : _sales = sales;
   factory _SalesState.fromJson(Map<String, dynamic> json) =>
@@ -154,9 +136,6 @@ class _SalesState implements SalesState {
 
   @override
   final String? orderId;
-  @override
-  final String? editingSaleId;
-// Added for tracking sale being edited
   @override
   final String? error;
 
@@ -183,24 +162,17 @@ class _SalesState implements SalesState {
             (identical(other.cart, cart) || other.cart == cart) &&
             const DeepCollectionEquality().equals(other._sales, _sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
-            (identical(other.editingSaleId, editingSaleId) ||
-                other.editingSaleId == editingSaleId) &&
             (identical(other.error, error) || other.error == error));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      cart,
-      const DeepCollectionEquality().hash(_sales),
-      orderId,
-      editingSaleId,
-      error);
+  int get hashCode => Object.hash(runtimeType, cart,
+      const DeepCollectionEquality().hash(_sales), orderId, error);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, editingSaleId: $editingSaleId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error)';
   }
 }
 
@@ -213,11 +185,7 @@ abstract mixin class _$SalesStateCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {CartModel cart,
-      List<SaleModel> sales,
-      String? orderId,
-      String? editingSaleId,
-      String? error});
+      {CartModel cart, List<SaleModel> sales, String? orderId, String? error});
 
   @override
   $CartModelCopyWith<$Res> get cart;
@@ -238,7 +206,6 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
     Object? cart = null,
     Object? sales = null,
     Object? orderId = freezed,
-    Object? editingSaleId = freezed,
     Object? error = freezed,
   }) {
     return _then(_SalesState(
@@ -253,10 +220,6 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
       orderId: freezed == orderId
           ? _self.orderId
           : orderId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      editingSaleId: freezed == editingSaleId
-          ? _self.editingSaleId
-          : editingSaleId // ignore: cast_nullable_to_non_nullable
               as String?,
       error: freezed == error
           ? _self.error

@@ -277,6 +277,21 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
   }
 
+  // Update starting amount (total cash) - only update local state
+  Future<void> updateStartingAmount(double startingAmount) async {
+    final currentState = state.value!;
+    final currentBillCount = currentState.billCount ?? const BillCountModel();
+
+    print("Updating starting amount to: $startingAmount");
+
+    final updatedBillCount = currentBillCount.copyWith(
+      startingAmount: startingAmount,
+    );
+
+    // Update local state immediately without async loading
+    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
+  }
+
   // Save current bill count to server
   Future<void> saveBillCount({String? date}) async {
     state = const AsyncLoading();
@@ -339,15 +354,19 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
             DateFormat('yyyy-MM-dd')
                 .format(currentBillCount.date ?? DateTime.now());
 
-        // Create the request model with ALL bills
+        // Create the request model with ALL bills including startingAmount
         final request = CreateBillCountRequestModel(
           date: formattedDate,
+          startingAmount: currentBillCount.startingAmount,
           expenses: currentBillCount.expenses,
           showExpenses: currentBillCount.showExpenses,
           beginningBalance: currentBillCount.beginningBalance,
           showBeginningBalance: currentBillCount.showBeginningBalance,
           bills: billsList, // All bills, including zeros
         );
+
+        print(
+            "Request payload includes startingAmount: ${request.startingAmount}");
 
         // Choose between update and create based on ID presence
         final BillCountModel savedBillCount;

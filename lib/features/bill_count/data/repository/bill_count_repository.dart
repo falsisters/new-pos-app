@@ -73,6 +73,7 @@ class BillCountRepository {
       print("Updating bill count with ID: $id");
       print("Bills being sent in update: " +
           billCount.bills!.map((b) => '${b.type.name}:${b.amount}').join(', '));
+      print("Starting amount being sent: ${billCount.startingAmount}");
       print("Update payload: $data");
 
       // Use the /bills/:id endpoint

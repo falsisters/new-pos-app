@@ -7,6 +7,9 @@ import 'package:falsisters_pos_android/features/bill_count/data/providers/bill_c
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/bill_entry_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/expense_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/total_cash_dialog.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {
@@ -89,6 +92,21 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         onSave: (double value) {
           ref.read(billCountProvider.notifier).updateBeginningBalance(value);
           // Do not auto-save, let the user decide when to save
+        },
+      ),
+    );
+  }
+
+  void _showTotalCashDialog() {
+    final billCountState = ref.read(billCountProvider).value;
+    if (billCountState == null || billCountState.billCount == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => TotalCashDialog(
+        initialValue: billCountState.billCount!.startingAmount,
+        onSave: (double value) {
+          ref.read(billCountProvider.notifier).updateStartingAmount(value);
         },
       ),
     );
@@ -392,6 +410,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                             ),
                           ),
 
+                        // Total Cash Widget
+                        TotalCashWidget(
+                          totalCash: billCount.startingAmount,
+                          onEdit: _showTotalCashDialog,
+                        ),
+
                         // Beginning Balance Display
                         Container(
                           width: double.infinity,
@@ -437,6 +461,12 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                             ],
                           ),
+                        ),
+
+                        // Initial Count Widget
+                        InitialCountWidget(
+                          totalCash: billCount.startingAmount,
+                          beginningBalance: billCount.beginningBalance,
                         ),
 
                         // Bills count entries

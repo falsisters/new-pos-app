@@ -12,7 +12,6 @@ _SalesState _$SalesStateFromJson(Map<String, dynamic> json) => _SalesState(
           .map((e) => SaleModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       orderId: json['orderId'] as String?,
-      editingSaleId: json['editingSaleId'] as String?,
       error: json['error'] as String?,
     );
 
@@ -21,6 +20,5 @@ Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
       'cart': instance.cart,
       'sales': instance.sales,
       'orderId': instance.orderId,
-      'editingSaleId': instance.editingSaleId,
       'error': instance.error,
     };

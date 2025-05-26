@@ -16,6 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CreateBillCountRequestModel {
   String? get date;
+  double? get startingAmount;
   double? get expenses;
   bool? get showExpenses;
   double? get beginningBalance;
@@ -40,6 +41,8 @@ mixin _$CreateBillCountRequestModel {
         (other.runtimeType == runtimeType &&
             other is CreateBillCountRequestModel &&
             (identical(other.date, date) || other.date == date) &&
+            (identical(other.startingAmount, startingAmount) ||
+                other.startingAmount == startingAmount) &&
             (identical(other.expenses, expenses) ||
                 other.expenses == expenses) &&
             (identical(other.showExpenses, showExpenses) ||
@@ -56,6 +59,7 @@ mixin _$CreateBillCountRequestModel {
   int get hashCode => Object.hash(
       runtimeType,
       date,
+      startingAmount,
       expenses,
       showExpenses,
       beginningBalance,
@@ -64,7 +68,7 @@ mixin _$CreateBillCountRequestModel {
 
   @override
   String toString() {
-    return 'CreateBillCountRequestModel(date: $date, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, bills: $bills)';
+    return 'CreateBillCountRequestModel(date: $date, startingAmount: $startingAmount, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, bills: $bills)';
   }
 }
 
@@ -77,6 +81,7 @@ abstract mixin class $CreateBillCountRequestModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String? date,
+      double? startingAmount,
       double? expenses,
       bool? showExpenses,
       double? beginningBalance,
@@ -98,6 +103,7 @@ class _$CreateBillCountRequestModelCopyWithImpl<$Res>
   @override
   $Res call({
     Object? date = freezed,
+    Object? startingAmount = freezed,
     Object? expenses = freezed,
     Object? showExpenses = freezed,
     Object? beginningBalance = freezed,
@@ -109,6 +115,10 @@ class _$CreateBillCountRequestModelCopyWithImpl<$Res>
           ? _self.date
           : date // ignore: cast_nullable_to_non_nullable
               as String?,
+      startingAmount: freezed == startingAmount
+          ? _self.startingAmount
+          : startingAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
       expenses: freezed == expenses
           ? _self.expenses
           : expenses // ignore: cast_nullable_to_non_nullable
@@ -138,6 +148,7 @@ class _$CreateBillCountRequestModelCopyWithImpl<$Res>
 class _CreateBillCountRequestModel implements CreateBillCountRequestModel {
   const _CreateBillCountRequestModel(
       {this.date,
+      this.startingAmount,
       this.expenses,
       this.showExpenses,
       this.beginningBalance,
@@ -149,6 +160,8 @@ class _CreateBillCountRequestModel implements CreateBillCountRequestModel {
 
   @override
   final String? date;
+  @override
+  final double? startingAmount;
   @override
   final double? expenses;
   @override
@@ -189,6 +202,8 @@ class _CreateBillCountRequestModel implements CreateBillCountRequestModel {
         (other.runtimeType == runtimeType &&
             other is _CreateBillCountRequestModel &&
             (identical(other.date, date) || other.date == date) &&
+            (identical(other.startingAmount, startingAmount) ||
+                other.startingAmount == startingAmount) &&
             (identical(other.expenses, expenses) ||
                 other.expenses == expenses) &&
             (identical(other.showExpenses, showExpenses) ||
@@ -205,6 +220,7 @@ class _CreateBillCountRequestModel implements CreateBillCountRequestModel {
   int get hashCode => Object.hash(
       runtimeType,
       date,
+      startingAmount,
       expenses,
       showExpenses,
       beginningBalance,
@@ -213,7 +229,7 @@ class _CreateBillCountRequestModel implements CreateBillCountRequestModel {
 
   @override
   String toString() {
-    return 'CreateBillCountRequestModel(date: $date, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, bills: $bills)';
+    return 'CreateBillCountRequestModel(date: $date, startingAmount: $startingAmount, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, bills: $bills)';
   }
 }
 
@@ -228,6 +244,7 @@ abstract mixin class _$CreateBillCountRequestModelCopyWith<$Res>
   @useResult
   $Res call(
       {String? date,
+      double? startingAmount,
       double? expenses,
       bool? showExpenses,
       double? beginningBalance,
@@ -249,6 +266,7 @@ class __$CreateBillCountRequestModelCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   $Res call({
     Object? date = freezed,
+    Object? startingAmount = freezed,
     Object? expenses = freezed,
     Object? showExpenses = freezed,
     Object? beginningBalance = freezed,
@@ -260,6 +278,10 @@ class __$CreateBillCountRequestModelCopyWithImpl<$Res>
           ? _self.date
           : date // ignore: cast_nullable_to_non_nullable
               as String?,
+      startingAmount: freezed == startingAmount
+          ? _self.startingAmount
+          : startingAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
       expenses: freezed == expenses
           ? _self.expenses
           : expenses // ignore: cast_nullable_to_non_nullable
