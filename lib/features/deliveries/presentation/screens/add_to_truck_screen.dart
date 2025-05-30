@@ -22,6 +22,7 @@ class AddToTruckScreen extends ConsumerStatefulWidget {
 
 class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _quantityController = TextEditingController();
 
   // State management variables
   dynamic _quantity = 1;
@@ -40,6 +41,15 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       _selectedSackPriceId = widget.product.sackPrice.first.id;
       _isPerKiloSelected = false;
     }
+
+    // Initialize the controller with the initial quantity
+    _quantityController.text = _quantity.toString();
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
   }
 
   void _selectSackPrice(String id) {
@@ -47,6 +57,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       _selectedSackPriceId = id;
       _isPerKiloSelected = false;
       _quantity = 1;
+      _quantityController.text = _quantity.toString();
     });
   }
 
@@ -55,6 +66,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       _selectedSackPriceId = null;
       _isPerKiloSelected = true;
       _quantity = 1.0;
+      _quantityController.text = _quantity.toString();
     });
   }
 
@@ -66,6 +78,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
         // Per kilo price, allow decimal
         _quantity = ((_quantity as double) * 10 + 1) / 10;
       }
+      _quantityController.text = _quantity.toString();
     });
   }
 
@@ -81,6 +94,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
           _quantity = ((_quantity as double) * 10 - 1) / 10;
         }
       }
+      _quantityController.text = _quantity.toString();
     });
   }
 
@@ -509,39 +523,56 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       );
     }
 
+    // Collect all options
+    List<Widget> allOptions = [];
+
+    // Add per kilo option
+    if (hasPerKilo) {
+      allOptions.add(
+        _buildOptionCard(
+          isSelected: _isPerKiloSelected,
+          onTap: _selectPerKilo,
+          icon: Icons.scale_rounded,
+          title: 'Per Kilogram',
+          subtitle: 'Custom weight loading',
+          color: Colors.green,
+        ),
+      );
+    }
+
+    // Add sack options
+    if (hasSackPrices) {
+      for (final sack in widget.product.sackPrice) {
+        final isSelected = _selectedSackPriceId == sack.id;
+        allOptions.add(
+          _buildOptionCard(
+            isSelected: isSelected,
+            onTap: () => _selectSackPrice(sack.id),
+            icon: Icons.inventory_rounded,
+            title: parseSackType(sack.type),
+            subtitle: 'Sack loading option',
+            color: AppColors.accent,
+          ),
+        );
+      }
+    }
+
+    // Create grid layout with 2 columns
     return Column(
       children: [
-        // Per Kilo Option
-        if (hasPerKilo)
-          _buildOptionCard(
-            isSelected: _isPerKiloSelected,
-            onTap: _selectPerKilo,
-            icon: Icons.scale_rounded,
-            title: 'Per Kilogram',
-            subtitle: 'Custom weight loading',
-            color: Colors.green,
-          ),
-
-        if (hasPerKilo && hasSackPrices) const SizedBox(height: 12),
-
-        // Sack Options
-        if (hasSackPrices)
-          Expanded(
-            child: ListView.separated(
-              itemCount: widget.product.sackPrice.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final sack = widget.product.sackPrice[index];
-                final isSelected = _selectedSackPriceId == sack.id;
-                return _buildOptionCard(
-                  isSelected: isSelected,
-                  onTap: () => _selectSackPrice(sack.id),
-                  icon: Icons.inventory_rounded,
-                  title: parseSackType(sack.type),
-                  subtitle: 'Sack loading option',
-                  color: AppColors.accent,
-                );
-              },
+        for (int i = 0; i < allOptions.length; i += 2)
+          Padding(
+            padding:
+                EdgeInsets.only(bottom: i + 2 < allOptions.length ? 12 : 0),
+            child: Row(
+              children: [
+                Expanded(child: allOptions[i]),
+                if (i + 1 < allOptions.length) ...[
+                  const SizedBox(width: 12),
+                  Expanded(child: allOptions[i + 1]),
+                ] else
+                  const Expanded(child: SizedBox()),
+              ],
             ),
           ),
       ],
@@ -628,46 +659,78 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   Widget _buildQuantitySection() {
     return Column(
       children: [
+        // Quantity Input Field
         Expanded(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Quantity Display
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.primary.withOpacity(0.05),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                        Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Text(
-                    _quantity.toString(),
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isPerKiloSelected ? 'kilograms' : 'sacks',
+                // Manual Input Field
+                TextFormField(
+                  controller: _quantityController,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
                   ),
+                  keyboardType: _selectedSackPriceId != null
+                      ? TextInputType.number
+                      : const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: _selectedSackPriceId != null
+                      ? [FilteringTextInputFormatter.digitsOnly]
+                      : [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}'))
+                        ],
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          BorderSide(color: AppColors.primary, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.primary.withOpacity(0.05),
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    suffixText: _isPerKiloSelected ? 'kg' : 'sacks',
+                    suffixStyle: TextStyle(
+                      color: AppColors.primary.withOpacity(0.7),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Enter quantity';
+                    }
+                    final qty = double.tryParse(value);
+                    if (qty == null || qty <= 0) {
+                      return 'Invalid quantity';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    if (_selectedSackPriceId != null) {
+                      final qty = int.tryParse(value);
+                      if (qty != null && qty > 0) {
+                        _quantity = qty;
+                      }
+                    } else {
+                      final qty = double.tryParse(value);
+                      if (qty != null && qty > 0) {
+                        _quantity = qty;
+                      }
+                    }
+                  },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Quantity Controls
                 Row(
@@ -688,57 +751,6 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
               ],
             ),
           ),
-        ),
-
-        // Manual Input
-        TextFormField(
-          key: ValueKey('${_selectedSackPriceId ?? 'kilo'}_$_quantity'),
-          initialValue: _quantity.toString(),
-          keyboardType: _selectedSackPriceId != null
-              ? TextInputType.number
-              : const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: _selectedSackPriceId != null
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-          decoration: InputDecoration(
-            labelText: 'Enter quantity',
-            labelStyle: TextStyle(color: AppColors.primary, fontSize: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Enter quantity';
-            }
-            final qty = double.tryParse(value);
-            if (qty == null || qty <= 0) {
-              return 'Invalid quantity';
-            }
-            return null;
-          },
-          onChanged: (value) {
-            if (_selectedSackPriceId != null) {
-              final qty = int.tryParse(value);
-              if (qty != null && qty > 0) {
-                setState(() => _quantity = qty);
-              }
-            } else {
-              final qty = double.tryParse(value);
-              if (qty != null && qty > 0) {
-                setState(() => _quantity = qty);
-              }
-            }
-          },
         ),
       ],
     );

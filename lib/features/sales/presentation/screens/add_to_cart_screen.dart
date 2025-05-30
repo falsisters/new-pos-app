@@ -662,99 +662,180 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   Widget _buildPricingOptions() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        if (widget.product.perKiloPrice != null)
-          _buildPriceChip(
-            label: 'Per Kilo',
-            price: widget.product.perKiloPrice!.price,
-            stock: widget.product.perKiloPrice!.stock,
-            isSelected: _isPerKiloSelected,
-            onTap: _selectPerKilo,
-            isPerKilo: true,
+    final hasPerKilo = widget.product.perKiloPrice != null;
+    final hasSackPrices = widget.product.sackPrice.isNotEmpty;
+
+    if (!hasPerKilo && !hasSackPrices) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No pricing options available for this product',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Collect all options
+    List<Widget> allOptions = [];
+
+    // Add per kilo option
+    if (hasPerKilo) {
+      allOptions.add(
+        _buildOptionCard(
+          isSelected: _isPerKiloSelected,
+          onTap: _selectPerKilo,
+          icon: Icons.scale_rounded,
+          title: 'Per Kilogram',
+          subtitle:
+              '₱${widget.product.perKiloPrice!.price.toStringAsFixed(2)} / kg',
+          stock:
+              '${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg available',
+          color: Colors.green,
+        ),
+      );
+    }
+
+    // Add sack options
+    if (hasSackPrices) {
+      for (final sack in widget.product.sackPrice) {
+        final isSelected = _selectedSackPriceId == sack.id && !_isSpecialPrice;
+        allOptions.add(
+          _buildOptionCard(
+            isSelected: isSelected,
+            onTap: () => _selectSackPrice(sack.id),
+            icon: Icons.inventory_rounded,
+            title: parseSackType(sack.type),
+            subtitle: '₱${sack.price.toStringAsFixed(2)} / sack',
+            stock: '${sack.stock.toInt()} sacks available',
+            color: AppColors.accent,
           ),
-        ...widget.product.sackPrice.expand((sackPrice) {
-          List<Widget> sackChips = [];
-          sackChips.add(_buildPriceChip(
-            label: parseSackType(sackPrice.type),
-            price: sackPrice.price,
-            stock: sackPrice.stock.toDouble(),
-            isSelected:
-                _selectedSackPriceId == sackPrice.id && !_isSpecialPrice,
-            onTap: () => _selectSackPrice(sackPrice.id),
-            subLabel: 'Regular',
-          ));
-          return sackChips;
-        }),
+        );
+      }
+    }
+
+    // Create grid layout with 2 columns
+    return Column(
+      children: [
+        for (int i = 0; i < allOptions.length; i += 2)
+          Padding(
+            padding: EdgeInsets.only(bottom: i + 2 < allOptions.length ? 8 : 0),
+            child: Row(
+              children: [
+                Expanded(child: allOptions[i]),
+                if (i + 1 < allOptions.length) ...[
+                  const SizedBox(width: 8),
+                  Expanded(child: allOptions[i + 1]),
+                ] else
+                  const Expanded(child: SizedBox()),
+              ],
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildPriceChip({
-    required String label,
-    required double price,
-    required double stock,
+  Widget _buildOptionCard({
     required bool isSelected,
     required VoidCallback onTap,
-    bool isPerKilo = false,
-    bool isSpecial = false,
-    int? minimumQty,
-    String? subLabel,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String stock,
+    required Color color,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+            color: isSelected ? color : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected
-              ? AppColors.primaryLight.withOpacity(0.7)
-              : Colors.white,
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: color.withOpacity(0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.primary : Colors.black87,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? color.withOpacity(0.2) : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? color : Colors.grey[600],
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? color : Colors.grey[700],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle_rounded, color: color, size: 16),
+              ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
-              '₱${price.toStringAsFixed(2)}',
+              subtitle,
               style: TextStyle(
-                fontSize: 14,
-                color: isSelected ? AppColors.primary : Colors.black,
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? color.withOpacity(0.8) : Colors.grey[600],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
-              'Stock: ${isPerKilo ? stock.toStringAsFixed(1) + "kg" : stock.toInt()}',
+              stock,
               style: TextStyle(
-                fontSize: 10,
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.8)
-                    : Colors.grey.shade600,
+                fontSize: 9,
+                color: isSelected ? color.withOpacity(0.7) : Colors.grey[500],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -797,6 +878,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 }
                 return null;
               },
+              // Remove onChanged to prevent focus loss
             ),
           ),
         if (_isPerKiloSelected) ...[
@@ -828,6 +910,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 if (qty == null || qty <= 0) return 'Valid quantity > 0';
                 return null;
               },
+              // Remove onChanged to prevent focus loss - listeners handle updates
             ),
           ),
           const SizedBox(height: 8),
@@ -859,6 +942,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
                 return null;
               },
+              // Remove onChanged to prevent focus loss - listeners handle updates
             ),
           ),
         ],
