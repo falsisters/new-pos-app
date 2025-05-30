@@ -14,6 +14,9 @@ _TransferState _$TransferStateFromJson(Map<String, dynamic> json) =>
           const [],
       isLoading: json['isLoading'] as bool? ?? false,
       error: json['error'] as String?,
+      selectedDate: json['selectedDate'] == null
+          ? null
+          : DateTime.parse(json['selectedDate'] as String),
     );
 
 Map<String, dynamic> _$TransferStateToJson(_TransferState instance) =>
@@ -21,4 +24,5 @@ Map<String, dynamic> _$TransferStateToJson(_TransferState instance) =>
       'transferList': instance.transferList,
       'isLoading': instance.isLoading,
       'error': instance.error,
+      'selectedDate': instance.selectedDate?.toIso8601String(),
     };

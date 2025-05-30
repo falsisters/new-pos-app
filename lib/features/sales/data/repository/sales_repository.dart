@@ -28,9 +28,18 @@ class SalesRepository {
     }
   }
 
-  Future<List<SaleModel>> getSales() async {
+  Future<List<SaleModel>> getSales({DateTime? date}) async {
     try {
-      final response = await _dio.instance.get('/sale/recent/cashier');
+      String endpoint = '/sale/recent/cashier';
+
+      // Add date query parameter if provided
+      if (date != null) {
+        final dateString =
+            date.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+        endpoint += '?date=$dateString';
+      }
+
+      final response = await _dio.instance.get(endpoint);
 
       print('Response Type: ${response.data.runtimeType}');
       print('Response Text:');

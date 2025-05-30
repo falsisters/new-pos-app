@@ -16,12 +16,23 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   @override
   Future<SalesState> build() async {
     try {
-      final sales = await _salesRepository.getSales();
-      return SalesState(cart: CartModel(), sales: sales, orderId: null);
+      final today = DateTime.now();
+      final sales = await _salesRepository.getSales(date: today);
+      return SalesState(
+        cart: CartModel(),
+        sales: sales,
+        orderId: null,
+        selectedDate: today,
+      );
     } catch (e) {
       print('Error in SalesNotifier.build: $e');
       // Return empty state instead of throwing
-      return SalesState(cart: CartModel(), sales: [], orderId: null);
+      return SalesState(
+        cart: CartModel(),
+        sales: [],
+        orderId: null,
+        selectedDate: DateTime.now(),
+      );
     }
   }
 
@@ -29,47 +40,62 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     state = const AsyncLoading();
     final currentCart = state.value?.cart ?? CartModel();
     final currentOrderId = state.value?.orderId;
+    final currentSelectedDate = state.value?.selectedDate ?? DateTime.now();
 
     state = await AsyncValue.guard(() async {
       try {
         await _salesRepository.deleteSale(id);
-        final sales = await _salesRepository.getSales();
+        final sales =
+            await _salesRepository.getSales(date: currentSelectedDate);
         return SalesState(
-            cart: currentCart, sales: sales, orderId: currentOrderId);
+          cart: currentCart,
+          sales: sales,
+          orderId: currentOrderId,
+          selectedDate: currentSelectedDate,
+        );
       } catch (e) {
         print('Error in SalesNotifier.deleteSale: $e');
         return SalesState(
           cart: currentCart,
           sales: [], // Use empty list on error
           orderId: currentOrderId,
+          selectedDate: currentSelectedDate,
           error: e.toString(),
         );
       }
     });
   }
 
-  Future<void> getSales() async {
+  Future<void> getSales({DateTime? date}) async {
     state = const AsyncLoading();
     final currentCart = state.value?.cart ?? CartModel();
     final currentOrderId = state.value?.orderId;
+    final targetDate = date ?? state.value?.selectedDate ?? DateTime.now();
 
     state = await AsyncValue.guard(() async {
       try {
-        final sales = await _salesRepository.getSales();
+        final sales = await _salesRepository.getSales(date: targetDate);
         return SalesState(
-            cart: currentCart, // Keep the current cart
-            sales: sales,
-            orderId: currentOrderId); // Keep order ID
+          cart: currentCart, // Keep the current cart
+          sales: sales,
+          orderId: currentOrderId, // Keep order ID
+          selectedDate: targetDate,
+        );
       } catch (e) {
         print('Error in SalesNotifier.getSales: $e');
         return SalesState(
           cart: currentCart,
           sales: [], // Use empty list on error
           orderId: currentOrderId,
+          selectedDate: targetDate,
           error: e.toString(),
         );
       }
     });
+  }
+
+  Future<void> changeSelectedDate(DateTime newDate) async {
+    await getSales(date: newDate);
   }
 
   Future<void> setCartItems(List<ProductDto> items, String? orderId) async {
@@ -81,6 +107,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         error: null,
         orderId: orderId,
         sales: currentState.sales,
+        selectedDate: currentState.selectedDate,
       );
     });
   }
@@ -99,6 +126,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         sales: currentState.sales,
         orderId: currentState.orderId,
         error: currentState.error,
+        selectedDate: currentState.selectedDate,
       );
     });
   }
@@ -119,6 +147,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         sales: currentState.sales,
         orderId: currentState.orderId,
         error: currentState.error,
+        selectedDate: currentState.selectedDate,
       );
     });
   }
@@ -157,7 +186,8 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         // Safely get sales with error handling
         List<SaleModel> sales = [];
         try {
-          sales = await _salesRepository.getSales();
+          sales = await _salesRepository.getSales(
+              date: preAsyncState!.selectedDate);
         } catch (e) {
           print('Error fetching sales after submit: $e');
           // Continue with empty sales rather than crashing
@@ -168,6 +198,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
           sales: sales,
           orderId: null,
           error: null,
+          selectedDate: preAsyncState!.selectedDate,
         );
       } catch (e) {
         print('Error in submitSale: $e');
@@ -176,6 +207,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
           sales: preAsyncState.sales,
           orderId: preAsyncState.orderId,
           error: e.toString(),
+          selectedDate: preAsyncState.selectedDate,
         );
       }
     });

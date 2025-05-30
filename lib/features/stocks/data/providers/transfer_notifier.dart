@@ -8,36 +8,47 @@ class TransferNotifier extends AsyncNotifier<TransferState> {
   @override
   Future<TransferState> build() async {
     try {
-      final transferLists = await _transferRepository.getTransfers();
+      final today = DateTime.now();
+      final transferLists = await _transferRepository.getTransfers(date: today);
       return TransferState(
         transferList: transferLists,
+        selectedDate: today,
       );
     } catch (e) {
       return TransferState(
         transferList: [],
         error: e.toString(),
+        selectedDate: DateTime.now(),
       );
     }
   }
 
-  Future<TransferState> getTransferList() async {
+  Future<TransferState> getTransferList({DateTime? date}) async {
     state = const AsyncLoading();
+    final targetDate = date ?? state.value?.selectedDate ?? DateTime.now();
 
     state = await AsyncValue.guard(() async {
       try {
-        final transferLists = await _transferRepository.getTransfers();
+        final transferLists =
+            await _transferRepository.getTransfers(date: targetDate);
 
         return TransferState(
           transferList: transferLists,
+          selectedDate: targetDate,
         );
       } catch (e) {
         return TransferState(
           transferList: [],
           error: e.toString(),
+          selectedDate: targetDate,
         );
       }
     });
 
     return state.value!;
+  }
+
+  Future<void> changeSelectedDate(DateTime newDate) async {
+    await getTransferList(date: newDate);
   }
 }

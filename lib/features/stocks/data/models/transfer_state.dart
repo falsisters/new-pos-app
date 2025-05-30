@@ -10,6 +10,7 @@ sealed class TransferState with _$TransferState {
     @Default([]) List<TransferModel> transferList,
     @Default(false) bool isLoading,
     String? error,
+    DateTime? selectedDate,
   }) = _TransferState;
 
   factory TransferState.fromJson(Map<String, dynamic> json) =>

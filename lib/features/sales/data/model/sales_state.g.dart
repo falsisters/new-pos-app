@@ -13,6 +13,9 @@ _SalesState _$SalesStateFromJson(Map<String, dynamic> json) => _SalesState(
           .toList(),
       orderId: json['orderId'] as String?,
       error: json['error'] as String?,
+      selectedDate: json['selectedDate'] == null
+          ? null
+          : DateTime.parse(json['selectedDate'] as String),
     );
 
 Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
@@ -21,4 +24,5 @@ Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
       'sales': instance.sales,
       'orderId': instance.orderId,
       'error': instance.error,
+      'selectedDate': instance.selectedDate?.toIso8601String(),
     };

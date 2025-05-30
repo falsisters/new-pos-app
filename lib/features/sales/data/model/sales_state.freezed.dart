@@ -19,6 +19,7 @@ mixin _$SalesState {
   List<SaleModel> get sales;
   String? get orderId;
   String? get error;
+  DateTime? get selectedDate;
 
   /// Create a copy of SalesState
   /// with the given fields replaced by the non-null parameter values.
@@ -38,17 +39,19 @@ mixin _$SalesState {
             (identical(other.cart, cart) || other.cart == cart) &&
             const DeepCollectionEquality().equals(other.sales, sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.selectedDate, selectedDate) ||
+                other.selectedDate == selectedDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, cart,
-      const DeepCollectionEquality().hash(sales), orderId, error);
+      const DeepCollectionEquality().hash(sales), orderId, error, selectedDate);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error, selectedDate: $selectedDate)';
   }
 }
 
@@ -59,7 +62,11 @@ abstract mixin class $SalesStateCopyWith<$Res> {
       _$SalesStateCopyWithImpl;
   @useResult
   $Res call(
-      {CartModel cart, List<SaleModel> sales, String? orderId, String? error});
+      {CartModel cart,
+      List<SaleModel> sales,
+      String? orderId,
+      String? error,
+      DateTime? selectedDate});
 
   $CartModelCopyWith<$Res> get cart;
 }
@@ -80,6 +87,7 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
     Object? sales = null,
     Object? orderId = freezed,
     Object? error = freezed,
+    Object? selectedDate = freezed,
   }) {
     return _then(_self.copyWith(
       cart: null == cart
@@ -98,6 +106,10 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      selectedDate: freezed == selectedDate
+          ? _self.selectedDate
+          : selectedDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 
@@ -119,7 +131,8 @@ class _SalesState implements SalesState {
       {required this.cart,
       required final List<SaleModel> sales,
       this.orderId,
-      this.error})
+      this.error,
+      this.selectedDate})
       : _sales = sales;
   factory _SalesState.fromJson(Map<String, dynamic> json) =>
       _$SalesStateFromJson(json);
@@ -138,6 +151,8 @@ class _SalesState implements SalesState {
   final String? orderId;
   @override
   final String? error;
+  @override
+  final DateTime? selectedDate;
 
   /// Create a copy of SalesState
   /// with the given fields replaced by the non-null parameter values.
@@ -162,17 +177,24 @@ class _SalesState implements SalesState {
             (identical(other.cart, cart) || other.cart == cart) &&
             const DeepCollectionEquality().equals(other._sales, _sales) &&
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.selectedDate, selectedDate) ||
+                other.selectedDate == selectedDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, cart,
-      const DeepCollectionEquality().hash(_sales), orderId, error);
+  int get hashCode => Object.hash(
+      runtimeType,
+      cart,
+      const DeepCollectionEquality().hash(_sales),
+      orderId,
+      error,
+      selectedDate);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error)';
+    return 'SalesState(cart: $cart, sales: $sales, orderId: $orderId, error: $error, selectedDate: $selectedDate)';
   }
 }
 
@@ -185,7 +207,11 @@ abstract mixin class _$SalesStateCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {CartModel cart, List<SaleModel> sales, String? orderId, String? error});
+      {CartModel cart,
+      List<SaleModel> sales,
+      String? orderId,
+      String? error,
+      DateTime? selectedDate});
 
   @override
   $CartModelCopyWith<$Res> get cart;
@@ -207,6 +233,7 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
     Object? sales = null,
     Object? orderId = freezed,
     Object? error = freezed,
+    Object? selectedDate = freezed,
   }) {
     return _then(_SalesState(
       cart: null == cart
@@ -225,6 +252,10 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      selectedDate: freezed == selectedDate
+          ? _self.selectedDate
+          : selectedDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 

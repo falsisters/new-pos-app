@@ -18,6 +18,7 @@ mixin _$TransferState {
   List<TransferModel> get transferList;
   bool get isLoading;
   String? get error;
+  DateTime? get selectedDate;
 
   /// Create a copy of TransferState
   /// with the given fields replaced by the non-null parameter values.
@@ -39,17 +40,23 @@ mixin _$TransferState {
                 .equals(other.transferList, transferList) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.selectedDate, selectedDate) ||
+                other.selectedDate == selectedDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(transferList), isLoading, error);
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(transferList),
+      isLoading,
+      error,
+      selectedDate);
 
   @override
   String toString() {
-    return 'TransferState(transferList: $transferList, isLoading: $isLoading, error: $error)';
+    return 'TransferState(transferList: $transferList, isLoading: $isLoading, error: $error, selectedDate: $selectedDate)';
   }
 }
 
@@ -59,7 +66,11 @@ abstract mixin class $TransferStateCopyWith<$Res> {
           TransferState value, $Res Function(TransferState) _then) =
       _$TransferStateCopyWithImpl;
   @useResult
-  $Res call({List<TransferModel> transferList, bool isLoading, String? error});
+  $Res call(
+      {List<TransferModel> transferList,
+      bool isLoading,
+      String? error,
+      DateTime? selectedDate});
 }
 
 /// @nodoc
@@ -78,6 +89,7 @@ class _$TransferStateCopyWithImpl<$Res>
     Object? transferList = null,
     Object? isLoading = null,
     Object? error = freezed,
+    Object? selectedDate = freezed,
   }) {
     return _then(_self.copyWith(
       transferList: null == transferList
@@ -92,6 +104,10 @@ class _$TransferStateCopyWithImpl<$Res>
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      selectedDate: freezed == selectedDate
+          ? _self.selectedDate
+          : selectedDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -102,7 +118,8 @@ class _TransferState implements TransferState {
   const _TransferState(
       {final List<TransferModel> transferList = const [],
       this.isLoading = false,
-      this.error})
+      this.error,
+      this.selectedDate})
       : _transferList = transferList;
   factory _TransferState.fromJson(Map<String, dynamic> json) =>
       _$TransferStateFromJson(json);
@@ -121,6 +138,8 @@ class _TransferState implements TransferState {
   final bool isLoading;
   @override
   final String? error;
+  @override
+  final DateTime? selectedDate;
 
   /// Create a copy of TransferState
   /// with the given fields replaced by the non-null parameter values.
@@ -146,17 +165,23 @@ class _TransferState implements TransferState {
                 .equals(other._transferList, _transferList) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
-            (identical(other.error, error) || other.error == error));
+            (identical(other.error, error) || other.error == error) &&
+            (identical(other.selectedDate, selectedDate) ||
+                other.selectedDate == selectedDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_transferList), isLoading, error);
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_transferList),
+      isLoading,
+      error,
+      selectedDate);
 
   @override
   String toString() {
-    return 'TransferState(transferList: $transferList, isLoading: $isLoading, error: $error)';
+    return 'TransferState(transferList: $transferList, isLoading: $isLoading, error: $error, selectedDate: $selectedDate)';
   }
 }
 
@@ -168,7 +193,11 @@ abstract mixin class _$TransferStateCopyWith<$Res>
       __$TransferStateCopyWithImpl;
   @override
   @useResult
-  $Res call({List<TransferModel> transferList, bool isLoading, String? error});
+  $Res call(
+      {List<TransferModel> transferList,
+      bool isLoading,
+      String? error,
+      DateTime? selectedDate});
 }
 
 /// @nodoc
@@ -187,6 +216,7 @@ class __$TransferStateCopyWithImpl<$Res>
     Object? transferList = null,
     Object? isLoading = null,
     Object? error = freezed,
+    Object? selectedDate = freezed,
   }) {
     return _then(_TransferState(
       transferList: null == transferList
@@ -201,6 +231,10 @@ class __$TransferStateCopyWithImpl<$Res>
           ? _self.error
           : error // ignore: cast_nullable_to_non_nullable
               as String?,
+      selectedDate: freezed == selectedDate
+          ? _self.selectedDate
+          : selectedDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }

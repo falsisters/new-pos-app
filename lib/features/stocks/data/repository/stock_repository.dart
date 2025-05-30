@@ -64,9 +64,18 @@ class StockRepository {
     }
   }
 
-  Future<List<TransferModel>> getTransfers() async {
+  Future<List<TransferModel>> getTransfers({DateTime? date}) async {
     try {
-      final response = await _dio.instance.get('/transfer/cashier');
+      String endpoint = '/transfer/cashier';
+
+      // Add date query parameter if provided
+      if (date != null) {
+        final dateString =
+            date.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+        endpoint = '/transfer/cashier/date?date=$dateString';
+      }
+
+      final response = await _dio.instance.get(endpoint);
 
       if (response.data == null) {
         return [];
