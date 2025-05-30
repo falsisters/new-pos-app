@@ -30,56 +30,115 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: AppColors.primary,
-        // Removed title
+        foregroundColor: AppColors.white,
         elevation: 0,
-        // Using just the TabBar as the primary component in the AppBar
-        title: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.white,
-          unselectedLabelColor: AppColors.primaryLight.withOpacity(0.7),
-          indicatorColor: AppColors.accent,
-          indicatorWeight: 3,
-          // Make tabs more prominent since they're the main navigation now
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(
-              icon: Icon(Icons.inventory_2_outlined),
-              text: "Stock Management",
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
             ),
-            Tab(
-              icon: Icon(Icons.history_outlined),
-              text: "Transfer History",
+          ),
+        ),
+        title: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Stock Management',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Transfer History',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: TabBarView(
-          controller: _tabController,
-          children: const [
-            // Stock Management Tab
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: StockProductList(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey[50]!, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // Stock Management Tab
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            // Transfer History Tab
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: TransfersList(),
+                child: const StockProductList(),
+              ),
+              // Transfer History Tab
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+                child: const TransfersList(),
+              ),
+            ],
+          ),
         ),
       ),
     );

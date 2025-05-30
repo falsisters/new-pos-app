@@ -85,9 +85,20 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Prices updated successfully'),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded,
+                      color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Prices updated successfully'),
+                ],
+              ),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
             ),
           );
 
@@ -97,8 +108,18 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error updating prices: $e'),
+              content: Row(
+                children: [
+                  Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Error updating prices: $e')),
+                ],
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
             ),
           );
         }
@@ -113,177 +134,403 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-              child: Text(
-                'Edit Product Prices',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-
-            // Per Kilo Price Section
-            Card(
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: AppColors.primaryLight, width: 1),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Per Kilo Price',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPriceField(
-                      initialValue: _perKiloPrice.toString(),
-                      labelText: 'Per Kilo Price',
-                      onSaved: (value) {
-                        _perKiloPrice = double.parse(value!);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Sack Prices Section
-            if (_sackPrices.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  'Sack Prices',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.grey[50]!, Colors.white],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Enhanced Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.primary.withOpacity(0.05),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
                 ),
-              ),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _sackPrices.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final sack = _sackPrices[index];
-                  return Card(
-                    elevation: 1.5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(0.8)
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.attach_money_rounded,
+                          color: Colors.white, size: 24),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            parseSackType(widget.product.sackPrice[index].type),
+                            'Edit Product Prices',
                             style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.primary,
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          _buildPriceField(
-                            initialValue: sack.price.toString(),
-                            labelText: 'Regular Price',
-                            onSaved: (value) {
-                              _sackPrices[index].price = double.parse(value!);
-                            },
+                          const SizedBox(height: 4),
+                          Text(
+                            'Update pricing information for ${widget.product.name}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-
-                          // Only show special price and minimum quantity if the sack has them
-                          if (sack.hasSpecialPrice) ...[
-                            const SizedBox(height: 8),
-                            _buildPriceField(
-                              initialValue: sack.specialPrice.toString(),
-                              labelText: 'Special Price',
-                              onSaved: (value) {
-                                _sackPrices[index].specialPrice =
-                                    value?.isEmpty == true
-                                        ? 0
-                                        : double.parse(value!);
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            _buildQuantityField(
-                              initialValue: sack.minimumQty.toString(),
-                              labelText: 'Minimum Quantity',
-                              onSaved: (value) {
-                                _sackPrices[index].minimumQty =
-                                    value?.isEmpty == true
-                                        ? 0
-                                        : int.parse(value!);
-                              },
-                            ),
-                          ],
                         ],
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Per Kilo Price Section
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.scale_rounded,
+                                color: Colors.green[700], size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Per Kilogram Pricing',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildPriceField(
+                        initialValue: _perKiloPrice.toString(),
+                        labelText: 'Price per Kilogram (₱)',
+                        onSaved: (value) {
+                          _perKiloPrice = double.parse(value!);
+                        },
+                        prefixIcon: Icons.scale_rounded,
+                        borderColor: Colors.green,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Sack Prices Section
+              if (_sackPrices.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: AppColors.accent.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.inventory_rounded,
+                                  color: AppColors.accent, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Sack Pricing Options',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _sackPrices.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final sack = _sackPrices[index];
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                AppColors.primary,
+                                                AppColors.primary
+                                                    .withOpacity(0.8)
+                                              ],
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            parseSackType(widget
+                                                .product.sackPrice[index].type),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildPriceField(
+                                      initialValue: sack.price.toString(),
+                                      labelText: 'Regular Price (₱)',
+                                      onSaved: (value) {
+                                        _sackPrices[index].price =
+                                            double.parse(value!);
+                                      },
+                                      prefixIcon: Icons.attach_money_rounded,
+                                      borderColor: AppColors.primary,
+                                    ),
+
+                                    // Special Price Section
+                                    if (sack.hasSpecialPrice) ...[
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary
+                                              .withOpacity(0.05),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: AppColors.secondary
+                                                  .withOpacity(0.2)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.local_offer_rounded,
+                                                    color: AppColors.secondary,
+                                                    size: 18),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Special Pricing',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.secondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            _buildPriceField(
+                                              initialValue:
+                                                  sack.specialPrice.toString(),
+                                              labelText: 'Special Price (₱)',
+                                              onSaved: (value) {
+                                                _sackPrices[index]
+                                                        .specialPrice =
+                                                    value?.isEmpty == true
+                                                        ? 0
+                                                        : double.parse(value!);
+                                              },
+                                              prefixIcon:
+                                                  Icons.local_offer_rounded,
+                                              borderColor: AppColors.secondary,
+                                              required: false,
+                                            ),
+                                            const SizedBox(height: 12),
+                                            _buildQuantityField(
+                                              initialValue:
+                                                  sack.minimumQty.toString(),
+                                              labelText:
+                                                  'Minimum Quantity for Special Price',
+                                              onSaved: (value) {
+                                                _sackPrices[index].minimumQty =
+                                                    value?.isEmpty == true
+                                                        ? 0
+                                                        : int.parse(value!);
+                                              },
+                                              required: false,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 32),
+
+              // Enhanced Submit Button
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _isLoading
+                        ? [Colors.grey[400]!, Colors.grey[300]!]
+                        : [
+                            AppColors.secondary,
+                            AppColors.secondary.withOpacity(0.8)
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _isLoading
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: AppColors.secondary.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _isLoading
+                        ? null
+                        : () {
+                            _submitForm().then((_) {
+                              ref.read(productProvider.notifier).getProducts();
+                            });
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isLoading) ...[
+                            SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ] else ...[
+                            Icon(Icons.save_rounded,
+                                color: Colors.white, size: 20),
+                            const SizedBox(width: 12),
+                          ],
+                          Text(
+                            _isLoading ? 'Updating Prices...' : 'Update Prices',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
-
-            const SizedBox(height: 24),
-
-            // Submit Button
-            Center(
-              child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        _submitForm().then((_) {
-                          ref.read(productProvider.notifier).getProducts();
-                        });
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  foregroundColor: AppColors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2.5,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: AppColors.white, strokeWidth: 3))
-                    : const Text(
-                        'Update Prices',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -293,44 +540,68 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
     required String initialValue,
     required String labelText,
     required Function(String?) onSaved,
+    required IconData prefixIcon,
+    required Color borderColor,
     bool required = true,
   }) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primaryLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-        ),
-        filled: true,
-        fillColor: AppColors.white,
-        prefixIcon: const Icon(Icons.attach_money,
-            color: AppColors.secondary, size: 20),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-      ],
-      validator: (value) {
-        if (required && (value == null || value.isEmpty)) {
-          return 'Please enter a price';
-        }
-        if (value != null &&
-            value.isNotEmpty &&
-            double.tryParse(value) == null) {
-          return 'Please enter a valid price';
-        }
-        return null;
-      },
-      onSaved: onSaved,
+      child: TextFormField(
+        initialValue: initialValue,
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: TextStyle(
+              color: borderColor, fontSize: 14, fontWeight: FontWeight.w500),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: borderColor.withOpacity(0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: borderColor.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: borderColor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: borderColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(prefixIcon, color: borderColor, size: 20),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+        ],
+        validator: (value) {
+          if (required && (value == null || value.isEmpty)) {
+            return 'Please enter a price';
+          }
+          if (value != null &&
+              value.isNotEmpty &&
+              double.tryParse(value) == null) {
+            return 'Please enter a valid price';
+          }
+          return null;
+        },
+        onSaved: onSaved,
+      ),
     );
   }
 
@@ -340,40 +611,67 @@ class _EditPriceFormState extends ConsumerState<EditPriceForm> {
     required Function(String?) onSaved,
     bool required = true,
   }) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: const TextStyle(color: AppColors.primary, fontSize: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primaryLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-        ),
-        filled: true,
-        fillColor: AppColors.white,
-        prefixIcon:
-            const Icon(Icons.numbers, color: AppColors.secondary, size: 20),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-      ],
-      validator: (value) {
-        if (required && (value == null || value.isEmpty)) {
-          return 'Please enter a quantity';
-        }
-        if (value != null && value.isNotEmpty && int.tryParse(value) == null) {
-          return 'Please enter a valid quantity';
-        }
-        return null;
-      },
-      onSaved: onSaved,
+      child: TextFormField(
+        initialValue: initialValue,
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: TextStyle(
+              color: AppColors.secondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.secondary.withOpacity(0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.secondary.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.secondary, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.numbers_rounded,
+                color: AppColors.secondary, size: 20),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        validator: (value) {
+          if (required && (value == null || value.isEmpty)) {
+            return 'Please enter a quantity';
+          }
+          if (value != null &&
+              value.isNotEmpty &&
+              int.tryParse(value) == null) {
+            return 'Please enter a valid quantity';
+          }
+          return null;
+        },
+        onSaved: onSaved,
+      ),
     );
   }
 }
