@@ -18,7 +18,7 @@ class EditShiftForm extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Consumer(builder: (context, ref, _) {
         final employees = ref.watch(employeeProvider);
         final isLoading =
@@ -34,33 +34,60 @@ class EditShiftForm extends ConsumerWidget {
             ref: ref,
             shiftData: shiftData,
           ),
-          loading: () => const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text("Loading employees..."),
-              ],
+          loading: () => Container(
+            height: 200,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary),
+                  SizedBox(height: 16),
+                  Text(
+                    "Loading employees...",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          error: (err, stack) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, color: Colors.red, size: 48),
-                SizedBox(height: 16),
-                Text(
-                  "Error loading employees: ${err.toString()}",
-                  style: TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.refresh(employeeProvider),
-                  child: Text("Retry"),
-                ),
-              ],
+          error: (err, stack) => Container(
+            height: 200,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[400], size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Error loading employees",
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    err.toString(),
+                    style: const TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => ref.refresh(employeeProvider),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Retry"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -97,7 +124,6 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
   @override
   void initState() {
     super.initState();
-    // Initialize selected employees based on the shift data
     _initSelectedEmployees();
   }
 
@@ -107,12 +133,10 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
           .map((e) => e.toString())
           .toList();
 
-      // Find matching employees from the employee list
       selectedEmployees = widget.employees
           .where((employee) => employeeIds.contains(employee.id))
           .toList();
 
-      // Update the employee controller
       widget.employeeController.text =
           selectedEmployees.map((e) => e.id).join(',');
     }
@@ -131,52 +155,71 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
       children: [
         if (widget.error != null)
           Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
+              gradient: LinearGradient(
+                colors: [Colors.red[50]!, Colors.red[100]!],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red[200]!),
             ),
-            child: Text(
-              widget.error!,
-              style: TextStyle(color: Colors.red.shade800),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.error!,
+                    style: TextStyle(
+                      color: Colors.red[800],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
-        // Search input
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Search Employees',
-            prefixIcon: const Icon(
-              Icons.search,
-              color: AppColors.primary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primaryLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            labelStyle: const TextStyle(color: AppColors.primary),
-          ),
-          onChanged: (value) => setState(() => searchQuery = value),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Multi-select dropdown
+        // Modern search input
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.primaryLight),
-            borderRadius: BorderRadius.circular(8),
-            color: AppColors.white,
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TextField(
+            decoration: InputDecoration(
+              labelText: 'Search employees...',
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: AppColors.accent,
+                size: 22,
+              ),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              labelStyle: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+              ),
+            ),
+            onChanged: (value) => setState(() => searchQuery = value),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Enhanced multi-select container
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryLight.withOpacity(0.3),
-                blurRadius: 5,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -185,77 +228,161 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  'Selected Employees (${selectedEmployees.length})',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontSize: 16,
-                  ),
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.people_rounded,
+                      color: AppColors.accent,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Selected Employees',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[800],
+                        fontSize: 18,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${selectedEmployees.length}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Selected employees chips with cashier indicator
+              // Selected employees chips
               if (selectedEmployees.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 12,
+                    runSpacing: 12,
                     children: List.generate(selectedEmployees.length, (index) {
                       final employee = selectedEmployees[index];
                       final isCashier = index == 0;
 
-                      return Chip(
-                        label: Text(
-                          isCashier
-                              ? "${employee.name} (Cashier)"
-                              : employee.name,
-                          style: const TextStyle(color: AppColors.white),
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isCashier
+                                ? [Colors.amber[400]!, Colors.amber[600]!]
+                                : [
+                                    AppColors.accent,
+                                    AppColors.accent.withOpacity(0.8)
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  (isCashier ? Colors.amber : AppColors.accent)
+                                      .withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        backgroundColor:
-                            isCashier ? Colors.teal : AppColors.secondary,
-                        deleteIconColor: AppColors.white,
-                        deleteIcon: const Icon(Icons.close, size: 18),
-                        onDeleted: () {
-                          setState(() {
-                            selectedEmployees.remove(employee);
-                            widget.employeeController.text =
-                                selectedEmployees.map((e) => e.id).join(',');
-                          });
-                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              isCashier
+                                  ? "${employee.name} (Cashier)"
+                                  : employee.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedEmployees.remove(employee);
+                                  widget.employeeController.text =
+                                      selectedEmployees
+                                          .map((e) => e.id)
+                                          .join(',');
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       );
-                    }).toList(),
+                    }),
                   ),
                 ),
 
-              // Employee list for selection
+              if (selectedEmployees.isNotEmpty) const SizedBox(height: 20),
+
+              // Employee list
               Container(
                 constraints: const BoxConstraints(maxHeight: 200),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
                 child: filteredEmployees.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'No employees found',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
+                    ? Container(
+                        height: 100,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                color: Colors.grey[400],
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No employees found',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       )
                     : ListView.separated(
                         shrinkWrap: true,
+                        padding: EdgeInsets.zero,
                         itemCount: filteredEmployees.length,
-                        separatorBuilder: (context, index) => const Divider(
+                        separatorBuilder: (context, index) => Divider(
                           height: 1,
-                          color: AppColors.primaryLight,
+                          color: Colors.grey[200],
+                          indent: 20,
+                          endIndent: 20,
                         ),
                         itemBuilder: (context, index) {
                           final employee = filteredEmployees[index];
@@ -264,62 +391,104 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
                           final isCashier = isSelected &&
                               selectedEmployees.indexOf(employee) == 0;
 
-                          return CheckboxListTile(
-                            title: Row(
-                              children: [
-                                Text(
-                                  employee.name,
-                                  style: TextStyle(
-                                    color: isCashier
-                                        ? Colors.teal
-                                        : isSelected
-                                            ? AppColors.primary
-                                            : Colors.black87,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                                if (isCashier)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8.0),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    selectedEmployees.remove(employee);
+                                  } else {
+                                    selectedEmployees.add(employee);
+                                  }
+                                  widget.employeeController.text =
+                                      selectedEmployees
+                                          .map((e) => e.id)
+                                          .join(',');
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
                                       decoration: BoxDecoration(
-                                        color: Colors.teal.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: Colors.teal),
-                                      ),
-                                      child: const Text(
-                                        'Cashier',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.teal,
-                                          fontWeight: FontWeight.bold,
+                                        color: isSelected
+                                            ? (isCashier
+                                                ? Colors.amber[600]
+                                                : AppColors.accent)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? (isCashier
+                                                  ? Colors.amber[600]!
+                                                  : AppColors.accent)
+                                              : Colors.grey[400]!,
+                                          width: 2,
                                         ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: isSelected
+                                          ? const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 14,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            employee.name,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                              color: isCashier
+                                                  ? Colors.amber[700]
+                                                  : isSelected
+                                                      ? AppColors.accent
+                                                      : Colors.grey[800],
+                                            ),
+                                          ),
+                                          if (isCashier) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber[100],
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                    color: Colors.amber[300]!),
+                                              ),
+                                              child: Text(
+                                                'CASHIER',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.amber[800],
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
-                                  ),
-                              ],
+                                  ],
+                                ),
+                              ),
                             ),
-                            value: isSelected,
-                            activeColor:
-                                isCashier ? Colors.teal : AppColors.accent,
-                            checkColor: AppColors.white,
-                            onChanged: (selected) {
-                              setState(() {
-                                if (selected == true) {
-                                  selectedEmployees.add(employee);
-                                } else {
-                                  selectedEmployees.remove(employee);
-                                }
-                                widget.employeeController.text =
-                                    selectedEmployees
-                                        .map((e) => e.id)
-                                        .join(',');
-                              });
-                            },
                           );
                         },
                       ),
@@ -328,79 +497,124 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
+
+        // Modern action buttons
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey.shade700,
-                  side: BorderSide(color: Colors.grey.shade400),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.accent,
+                      AppColors.accent.withOpacity(0.8),
+                    ],
                   ),
-                  elevation: 2,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-                onPressed: widget.isLoading
-                    ? null
-                    : () {
-                        final shiftId = widget.shiftData['id'] as String;
-                        widget.ref
-                            .read(shiftProvider.notifier)
-                            .editShift(
-                              shiftId,
-                              CreateShiftRequestModel(
-                                employees:
-                                    selectedEmployees.map((e) => e.id).toList(),
+                child: ElevatedButton(
+                  onPressed: widget.isLoading || selectedEmployees.isEmpty
+                      ? null
+                      : () {
+                          final shiftId = widget.shiftData['id'] as String;
+                          widget.ref
+                              .read(shiftProvider.notifier)
+                              .editShift(
+                                shiftId,
+                                CreateShiftRequestModel(
+                                  employees: selectedEmployees
+                                      .map((e) => e.id)
+                                      .toList(),
+                                ),
+                              )
+                              .then((_) {
+                            widget.ref.invalidate(shiftProvider);
+                            Navigator.pop(context);
+                          });
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                  child: widget.isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.save_rounded,
+                              color: selectedEmployees.isEmpty
+                                  ? Colors.grey[600]
+                                  : Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'UPDATE SHIFT',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: selectedEmployees.isEmpty
+                                    ? Colors.grey[600]
+                                    : Colors.white,
+                                letterSpacing: 0.5,
                               ),
-                            )
-                            .then((_) {
-                          // Force a refresh of the provider to ensure UI is updated
-                          widget.ref.invalidate(shiftProvider);
-                          Navigator.pop(context);
-                        });
-                      },
-                child: widget.isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppColors.white),
+                            ),
+                          ],
                         ),
-                      )
-                    : const Text(
-                        'Update Shift',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                ),
               ),
             ),
           ],
