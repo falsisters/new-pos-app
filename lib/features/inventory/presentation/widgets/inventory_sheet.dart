@@ -1070,7 +1070,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                 onCellTap: (details) {
                   if (details.rowColumnIndex.rowIndex > 0 && // Skip header
                       details.column.columnName != 'itemName') {
-                    // Get the actual data grid row - fixing the undefined getter error
+                    // Get the actual data grid row
                     final rowData = _dataSource.rows.isNotEmpty &&
                             details.rowColumnIndex.rowIndex - 1 <
                                 _dataSource.rows.length
@@ -1432,6 +1432,103 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
                                 'No numeric cells found above this cell in the column.')),
                       );
                     }
+                  },
+                ),
+                _buildFormulaOption(
+                  context,
+                  'Apply Addition to All Rows',
+                  Icons.add_circle_outline,
+                  () {
+                    if (columnIndex <= 1) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text(
+                                'Select a cell in column C or higher to use this feature.')),
+                      );
+                      Navigator.of(context).pop(); // Close dialog
+                      return;
+                    }
+
+                    String generateSumFormula(
+                        int rIdx, int cIdx, InventoryRowModel rowModel) {
+                      List<String> terms = [];
+                      bool hasValidValues = false;
+
+                      // Sum columns from B (index 1) up to the column before the selected one
+                      // Skip column A (index 0) as it's the row number column
+                      for (int colToSum = 1; colToSum < cIdx; colToSum++) {
+                        // Check if this cell has a value
+                        final cell = rowModel.cells.firstWhereOrNull(
+                          (c) => c.columnIndex == colToSum,
+                        );
+
+                        if (cell != null &&
+                            cell.value != null &&
+                            cell.value!.isNotEmpty &&
+                            cell.value != '0') {
+                          try {
+                            // Try parsing to see if it's a numeric value
+                            double.parse(cell.value!);
+                            terms.add("${_getColumnLetter(colToSum)}$rIdx");
+                            hasValidValues = true;
+                          } catch (_) {
+                            // If not numeric, only add if it's a formula
+                            if (cell.formula != null &&
+                                cell.formula!.startsWith('=')) {
+                              terms.add("${_getColumnLetter(colToSum)}$rIdx");
+                              hasValidValues = true;
+                            }
+                          }
+                        }
+                      }
+
+                      if (!hasValidValues || terms.isEmpty) {
+                        return ""; // Return empty string when no valid values to sum
+                      }
+
+                      return "=" + terms.join(" + ");
+                    }
+
+                    // Find the current row model for the selected cell
+                    final selectedRowModel = currentSheet.rows.firstWhereOrNull(
+                      (r) => r.rowIndex == rowIndex,
+                    );
+
+                    if (selectedRowModel == null) {
+                      Navigator.of(context).pop();
+                      return;
+                    }
+
+                    final mainFormula = generateSumFormula(
+                        rowIndex, columnIndex, selectedRowModel);
+
+                    if (mainFormula.isNotEmpty) {
+                      _handleCellSubmit(
+                          rowIndex, columnIndex, mainFormula, colorHex);
+                    }
+
+                    // Apply to all other rows
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final sortedRows =
+                          List<InventoryRowModel>.from(currentSheet.rows)
+                            ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                      for (var row in sortedRows) {
+                        if (row.rowIndex == rowIndex)
+                          continue; // Skip the already processed selected row
+
+                        final otherFormula =
+                            generateSumFormula(row.rowIndex, columnIndex, row);
+
+                        // Only apply formula if there are values to sum
+                        if (otherFormula.isNotEmpty) {
+                          _handleCellSubmit(
+                              row.rowIndex, columnIndex, otherFormula, null);
+                        }
+                      }
+                    });
+
+                    Navigator.of(context).pop();
                   },
                 ),
               ],
