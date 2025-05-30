@@ -148,492 +148,630 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
-        actions: [
-          IconButton(
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.arrow_back_rounded, size: 20),
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.local_shipping_rounded, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Add to Truck",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    widget.product.name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close_rounded, size: 20),
+            ),
           ),
         ],
-        title: const Text('Add to Truck'),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [Colors.grey[50]!, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.grey.shade100],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Name and Image
-                Card(
-                  elevation: 3,
-                  shadowColor: AppColors.primary.withOpacity(0.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      children: [
-                        Hero(
-                          tag: 'product-${widget.product.id}',
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.local_shipping_outlined,
-                              size: 30,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.product.name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Product ID: ${widget.product.id}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              // Product Info Card - Fixed at top
+              Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
+                  ],
                 ),
-
-                const SizedBox(height: 16),
-
-                // Pricing Options Title
-                Container(
-                  margin: const EdgeInsets.only(bottom: 10),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      Icon(Icons.local_shipping,
-                          color: AppColors.primary, size: 20),
-                      const SizedBox(width: 6),
+                      Hero(
+                        tag: 'product-${widget.product.id}',
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.15),
+                                AppColors.primary.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: AppColors.primary.withOpacity(0.1)),
+                          ),
+                          child: Icon(
+                            Icons.inventory_2_rounded,
+                            size: 28,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Loading Options',
-                              style: TextStyle(
+                            Text(
+                              widget.product.name,
+                              style: const TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.4,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                                letterSpacing: -0.2,
                               ),
                             ),
-                            if (widget.product.perKiloPrice != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.yellow.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                                child: Text(
-                                  'NOTE: Per Kilogram will be loaded into Kahon.',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'ID: ${widget.product.id.substring(0, 8).toUpperCase()}',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
 
-                // Combined Pricing Options Section
-                Card(
-                  elevation: 2,
-                  shadowColor: AppColors.primary.withOpacity(0.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Wrap options in a horizontal grid
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            // Per Kilo Price option (if available)
-                            if (widget.product.perKiloPrice != null)
-                              SizedBox(
-                                width: (MediaQuery.of(context).size.width -
-                                        24 -
-                                        24 -
-                                        8) /
-                                    2,
-                                child: InkWell(
-                                  onTap: _selectPerKilo,
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _isPerKiloSelected
-                                          ? AppColors.primary.withOpacity(0.15)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: _isPerKiloSelected
-                                            ? AppColors.primary
-                                            : Colors.grey.shade300,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            const Text(
-                                              'Per Kilogram',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            Radio(
-                                              value: true,
-                                              groupValue: _isPerKiloSelected,
-                                              onChanged: (_) =>
-                                                  _selectPerKilo(),
-                                              activeColor: AppColors.primary,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          'Custom weight',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            // Sack Prices as cards
-                            ...widget.product.sackPrice.map((sackPrice) {
-                              final isSelected =
-                                  _selectedSackPriceId == sackPrice.id;
-                              return SizedBox(
-                                width: (MediaQuery.of(context).size.width -
-                                        24 -
-                                        24 -
-                                        8) /
-                                    2,
-                                child: InkWell(
-                                  onTap: () => _selectSackPrice(sackPrice.id),
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.primary.withOpacity(0.15)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : Colors.grey.shade300,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                parseSackType(sackPrice.type),
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            Radio(
-                                              value: sackPrice.id,
-                                              groupValue: _selectedSackPriceId,
-                                              onChanged: (_) =>
-                                                  _selectSackPrice(
-                                                      sackPrice.id),
-                                              activeColor: AppColors.primary,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          'Sack Type',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Quantity Input
-                Container(
-                  margin: const EdgeInsets.only(left: 4, bottom: 6),
+              // Main Content - Flexible
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      Icon(Icons.scale, color: AppColors.primary, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Quantity',
-                        style: TextStyle(
-                          color: Colors.grey.shade800,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                      // Loading Options - Left side
+                      Expanded(
+                        flex: 6,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.secondary
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(Icons.local_shipping_rounded,
+                                          color: AppColors.secondary, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Loading Options',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.secondary,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: _buildLoadingOptions(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 16),
+
+                      // Quantity Section - Right side
+                      Expanded(
+                        flex: 4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            AppColors.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(Icons.numbers_rounded,
+                                          color: AppColors.primary, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Quantity',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Expanded(
+                                  child: _buildQuantitySection(),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Card(
-                  elevation: 2,
-                  shadowColor: AppColors.primary.withOpacity(0.2),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          key: ValueKey(
-                              '${_selectedSackPriceId ?? 'kilo'}_$_quantity'),
-                          initialValue: _quantity.toString(),
-                          keyboardType: _selectedSackPriceId != null
-                              ? TextInputType.number
-                              : const TextInputType.numberWithOptions(
-                                  decimal: true),
-                          inputFormatters: _selectedSackPriceId != null
-                              ? [FilteringTextInputFormatter.digitsOnly]
-                              : [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'^\d+\.?\d{0,2}')),
-                                ],
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: AppColors.primary.withOpacity(0.7)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: AppColors.primary, width: 1.5),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12.0, horizontal: 10.0),
-                            hintText: 'Enter quantity',
-                            labelText: 'Quantity',
-                            labelStyle: TextStyle(
-                                color: AppColors.primary, fontSize: 14),
-                            suffixIcon: Container(
-                              margin: const EdgeInsets.only(right: 6),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    height: 36,
-                                    width: 36,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(Icons.remove,
-                                          color: AppColors.primary, size: 20),
-                                      onPressed: _decreaseQuantity,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    height: 36,
-                                    width: 36,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(Icons.add,
-                                          color: AppColors.primary, size: 20),
-                                      onPressed: _increaseQuantity,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a quantity';
-                            }
+              ),
 
-                            if (_selectedSackPriceId != null) {
-                              // Validate for sack price (integers only)
-                              final qty = int.tryParse(value);
-                              if (qty == null || qty <= 0) {
-                                return 'Please enter a valid quantity';
-                              }
-                            } else {
-                              // Validate for per kilo price (decimals allowed)
-                              final qty = double.tryParse(value);
-                              if (qty == null || qty <= 0) {
-                                return 'Please enter a valid quantity';
-                              }
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            if (_selectedSackPriceId != null) {
-                              // For sack price, use integer
-                              final qty = int.tryParse(value);
-                              if (qty != null && qty > 0) {
-                                setState(() {
-                                  _quantity = qty;
-                                });
-                              }
-                            } else {
-                              // For per kilo price, use double
-                              final qty = double.tryParse(value);
-                              if (qty != null && qty > 0) {
-                                setState(() {
-                                  _quantity = qty;
-                                });
-                              }
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _selectedSackPriceId != null
-                              ? 'Enter whole numbers only'
-                              : 'Decimal numbers allowed (e.g., 1.5 kg)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Add to Truck Button
-                SizedBox(
+              // Add to Truck Button - Fixed at bottom
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.secondary,
                       foregroundColor: Colors.white,
-                      elevation: 3,
-                      shadowColor: AppColors.primary.withOpacity(0.3),
+                      elevation: 8,
+                      shadowColor: AppColors.secondary.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     onPressed: _addToTruck,
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.local_shipping_outlined, size: 20),
-                        SizedBox(width: 6),
+                        Icon(Icons.local_shipping_outlined, size: 24),
+                        const SizedBox(width: 12),
                         Text(
                           'Add to Truck',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingOptions() {
+    final hasPerKilo = widget.product.perKiloPrice != null;
+    final hasSackPrices = widget.product.sackPrice.isNotEmpty;
+
+    if (!hasPerKilo && !hasSackPrices) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No loading options available for this product',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Per Kilo Option
+        if (hasPerKilo)
+          _buildOptionCard(
+            isSelected: _isPerKiloSelected,
+            onTap: _selectPerKilo,
+            icon: Icons.scale_rounded,
+            title: 'Per Kilogram',
+            subtitle: 'Custom weight loading',
+            color: Colors.green,
+          ),
+
+        if (hasPerKilo && hasSackPrices) const SizedBox(height: 12),
+
+        // Sack Options
+        if (hasSackPrices)
+          Expanded(
+            child: ListView.separated(
+              itemCount: widget.product.sackPrice.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final sack = widget.product.sackPrice[index];
+                final isSelected = _selectedSackPriceId == sack.id;
+                return _buildOptionCard(
+                  isSelected: isSelected,
+                  onTap: () => _selectSackPrice(sack.id),
+                  icon: Icons.inventory_rounded,
+                  title: parseSackType(sack.type),
+                  subtitle: 'Sack loading option',
+                  color: AppColors.accent,
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildOptionCard({
+    required bool isSelected,
+    required VoidCallback onTap,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected ? color.withOpacity(0.2) : Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? color : Colors.grey[600],
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? color : Colors.grey[700],
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected
+                          ? color.withOpacity(0.8)
+                          : Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: color, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuantitySection() {
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Quantity Display
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withOpacity(0.1),
+                        AppColors.primary.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    _quantity.toString(),
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isPerKiloSelected ? 'kilograms' : 'sacks',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Quantity Controls
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildQuantityButton(
+                      icon: Icons.remove_rounded,
+                      onPressed: _decreaseQuantity,
+                      color: Colors.red,
+                    ),
+                    _buildQuantityButton(
+                      icon: Icons.add_rounded,
+                      onPressed: _increaseQuantity,
+                      color: Colors.green,
+                    ),
+                  ],
+                ),
               ],
             ),
+          ),
+        ),
+
+        // Manual Input
+        TextFormField(
+          key: ValueKey('${_selectedSackPriceId ?? 'kilo'}_$_quantity'),
+          initialValue: _quantity.toString(),
+          keyboardType: _selectedSackPriceId != null
+              ? TextInputType.number
+              : const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: _selectedSackPriceId != null
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+          decoration: InputDecoration(
+            labelText: 'Enter quantity',
+            labelStyle: TextStyle(color: AppColors.primary, fontSize: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter quantity';
+            }
+            final qty = double.tryParse(value);
+            if (qty == null || qty <= 0) {
+              return 'Invalid quantity';
+            }
+            return null;
+          },
+          onChanged: (value) {
+            if (_selectedSackPriceId != null) {
+              final qty = int.tryParse(value);
+              if (qty != null && qty > 0) {
+                setState(() => _quantity = qty);
+              }
+            } else {
+              final qty = double.tryParse(value);
+              if (qty != null && qty > 0) {
+                setState(() => _quantity = qty);
+              }
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Container(
+            width: 48,
+            height: 48,
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
         ),
       ),

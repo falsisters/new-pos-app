@@ -336,39 +336,61 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.close),
           ),
         ],
-        title: const Text('Add to Cart', style: TextStyle(fontSize: 18)),
+        title: const Text('Add to Cart',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey[50]!, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
+                // Product Header Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withOpacity(0.1),
+                        AppColors.primary.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.1)),
+                  ),
                   child: Row(
                     children: [
                       Hero(
                         tag: 'product-${widget.product.id}',
                         child: Container(
-                          width: 70,
-                          height: 70,
+                          width: 60,
+                          height: 60,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
                                 spreadRadius: 1,
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                             image: DecorationImage(
@@ -378,31 +400,32 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               widget.product.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                'Select pricing & quantity',
+                                'Configure your order',
                                 style: TextStyle(
                                   color: AppColors.primary,
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -413,45 +436,223 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     ],
                   ),
                 ),
-                _buildSectionTitle('Pricing Options', Icons.payments_outlined),
-                _buildPricingOptions(),
-                const SizedBox(height: 12),
-                _buildSectionTitle('Quantity', Icons.scale_outlined),
-                _buildQuantityInput(),
-                const SizedBox(height: 12),
-                _buildSectionTitle(
-                    'Discount (Optional)', Icons.local_offer_outlined),
-                _buildDiscountInput(),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 3,
-                      shadowColor: AppColors.primary.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+
+                const SizedBox(height: 16),
+
+                // Pricing Options
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: AppColors.accent.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
-                    ),
-                    onPressed: _addToCart,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.shopping_cart, size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'Add to Cart',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.payments_outlined,
+                                  color: AppColors.accent, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Pricing Options',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 12),
+                        _buildPricingOptions(),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 16),
+
+                // Quantity & Discount Row
+                Row(
+                  children: [
+                    // Quantity Section
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: AppColors.secondary.withOpacity(0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          AppColors.secondary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.scale_outlined,
+                                        color: AppColors.secondary, size: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Quantity',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.secondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _buildQuantityInput(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Discount Section
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border:
+                              Border.all(color: Colors.orange.withOpacity(0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.local_offer_outlined,
+                                        color: Colors.orange[700], size: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Discount',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.orange[700],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _buildDiscountInput(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Add to Cart Button
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withOpacity(0.8)
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: _addToCart,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shopping_cart_rounded,
+                                color: Colors.white, size: 20),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Add to Cart',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -460,78 +661,34 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 6),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPricingOptions() {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (widget.product.perKiloPrice != null)
-              _buildPriceChip(
-                label: 'Per Kilo',
-                price: widget.product.perKiloPrice!.price,
-                stock: widget.product.perKiloPrice!.stock,
-                isSelected: _isPerKiloSelected,
-                onTap: _selectPerKilo,
-                isPerKilo: true,
-              ),
-            ...widget.product.sackPrice.expand((sackPrice) {
-              List<Widget> sackChips = [];
-              sackChips.add(_buildPriceChip(
-                label: parseSackType(sackPrice.type),
-                price: sackPrice.price,
-                stock: sackPrice.stock.toDouble(),
-                isSelected:
-                    _selectedSackPriceId == sackPrice.id && !_isSpecialPrice,
-                onTap: () => _selectSackPrice(sackPrice.id),
-                subLabel: 'Regular',
-              ));
-              // if (sackPrice.specialPrice != null) {
-              //   sackChips.add(_buildPriceChip(
-              //     label: parseSackType(sackPrice.type),
-              //     price: sackPrice.specialPrice!.price,
-              //     stock: sackPrice.stock.toDouble(),
-              //     isSelected:
-              //         _selectedSackPriceId == sackPrice.id && _isSpecialPrice,
-              //     onTap: () => _selectSackPrice(
-              //       sackPrice.id,
-              //       isSpecial: true,
-              //       minimumQty: sackPrice.specialPrice!.minimumQty,
-              //     ),
-              //     isSpecial: true,
-              //     minimumQty: sackPrice.specialPrice!.minimumQty,
-              //     subLabel: 'Special',
-              //   ));
-              // }
-              return sackChips;
-            }),
-          ],
-        ),
-      ),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (widget.product.perKiloPrice != null)
+          _buildPriceChip(
+            label: 'Per Kilo',
+            price: widget.product.perKiloPrice!.price,
+            stock: widget.product.perKiloPrice!.stock,
+            isSelected: _isPerKiloSelected,
+            onTap: _selectPerKilo,
+            isPerKilo: true,
+          ),
+        ...widget.product.sackPrice.expand((sackPrice) {
+          List<Widget> sackChips = [];
+          sackChips.add(_buildPriceChip(
+            label: parseSackType(sackPrice.type),
+            price: sackPrice.price,
+            stock: sackPrice.stock.toDouble(),
+            isSelected:
+                _selectedSackPriceId == sackPrice.id && !_isSpecialPrice,
+            onTap: () => _selectSackPrice(sackPrice.id),
+            subLabel: 'Regular',
+          ));
+          return sackChips;
+        }),
+      ],
     );
   }
 
@@ -549,13 +706,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            width: isSelected ? 1.5 : 1,
+            width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           color: isSelected
               ? AppColors.primaryLight.withOpacity(0.7)
               : Colors.white,
@@ -563,7 +720,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               ? [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.2),
-                    blurRadius: 4,
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   )
                 ]
@@ -573,47 +730,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? AppColors.primary : Colors.black87,
-                  ),
-                ),
-                if (isSpecial)
-                  Container(
-                    margin: const EdgeInsets.only(left: 4),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'SPECIAL',
-                      style: TextStyle(
-                        color: Colors.red.shade700,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            if (subLabel != null && !isSpecial)
-              Padding(
-                padding: const EdgeInsets.only(top: 1.0),
-                child: Text(subLabel,
-                    style: TextStyle(
-                        fontSize: 9,
-                        color: isSelected
-                            ? AppColors.primary.withOpacity(0.8)
-                            : Colors.grey.shade600)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? AppColors.primary : Colors.black87,
               ),
+            ),
             const SizedBox(height: 2),
             Text(
               '₱${price.toStringAsFixed(2)}',
@@ -623,7 +747,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 1),
             Text(
               'Stock: ${isPerKilo ? stock.toStringAsFixed(1) + "kg" : stock.toInt()}',
               style: TextStyle(
@@ -633,16 +756,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     : Colors.grey.shade600,
               ),
             ),
-            if (isSpecial && minimumQty != null)
-              Text(
-                'Min: $minimumQty',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isSelected
-                      ? AppColors.primary.withOpacity(0.8)
-                      : Colors.grey.shade600,
-                ),
-              ),
           ],
         ),
       ),
@@ -650,116 +763,141 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   Widget _buildQuantityInput() {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          children: [
-            if (_selectedSackPriceId != null)
-              TextFormField(
-                controller: _sackQuantityController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: _inputDecoration(
-                  labelText: 'Sack Quantity',
-                  suffixIcon: _buildQuantityControls(),
+    return Column(
+      children: [
+        if (_selectedSackPriceId != null)
+          Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Enter quantity';
-                  final qty = int.tryParse(value);
-                  if (qty == null || qty <= 0) return 'Valid quantity > 0';
-                  if (_isSpecialPrice) {
-                    final sackPrice = widget.product.sackPrice
-                        .firstWhere((sp) => sp.id == _selectedSackPriceId);
-                    if (qty < (sackPrice.specialPrice?.minimumQty ?? 0)) {
-                      return 'Min qty is ${sackPrice.specialPrice?.minimumQty}';
-                    }
-                  }
-                  return null;
-                },
-              ),
-            if (_isPerKiloSelected) ...[
-              TextFormField(
-                controller: _perKiloQuantityController,
-                focusNode: _perKiloQuantityFocusNode,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                decoration: _inputDecoration(
-                  labelText: 'Quantity (kg)',
-                  suffixIcon: _buildQuantityControls(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Enter quantity';
-                  final qty = double.tryParse(value);
-                  if (qty == null || qty <= 0) return 'Valid quantity > 0';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _perKiloTotalPriceController,
-                focusNode: _perKiloTotalPriceFocusNode,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                decoration: _inputDecoration(
-                  labelText: 'Total Price (₱)',
-                  prefixText: '₱ ',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty)
-                    return 'Enter total price';
-                  final priceVal = double.tryParse(value);
-                  if (priceVal == null || priceVal < 0)
-                    return 'Valid price >= 0';
-                  return null;
-                },
-              ),
-            ],
-            const SizedBox(height: 4),
-            Text(
-              _selectedSackPriceId != null
-                  ? 'Enter whole numbers for sacks.'
-                  : 'Enter kg quantity or total price. The other calculates automatically.',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic),
+              ],
             ),
-          ],
-        ),
-      ),
+            child: TextFormField(
+              controller: _sackQuantityController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: _inputDecoration(
+                labelText: 'Sacks',
+                suffixIcon: _buildQuantityControls(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Enter quantity';
+                final qty = int.tryParse(value);
+                if (qty == null || qty <= 0) return 'Valid quantity > 0';
+                if (_isSpecialPrice) {
+                  final sackPrice = widget.product.sackPrice
+                      .firstWhere((sp) => sp.id == _selectedSackPriceId);
+                  if (qty < (sackPrice.specialPrice?.minimumQty ?? 0)) {
+                    return 'Min qty is ${sackPrice.specialPrice?.minimumQty}';
+                  }
+                }
+                return null;
+              },
+            ),
+          ),
+        if (_isPerKiloSelected) ...[
+          Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: _perKiloQuantityController,
+              focusNode: _perKiloQuantityFocusNode,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              decoration: _inputDecoration(
+                labelText: 'Kg',
+                suffixIcon: _buildQuantityControls(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Enter quantity';
+                final qty = double.tryParse(value);
+                if (qty == null || qty <= 0) return 'Valid quantity > 0';
+                return null;
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: _perKiloTotalPriceController,
+              focusNode: _perKiloTotalPriceFocusNode,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              decoration: _inputDecoration(
+                labelText: 'Total ₱',
+                prefixText: '₱ ',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Enter total price';
+                final priceVal = double.tryParse(value);
+                if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
+                return null;
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 
-  InputDecoration _inputDecoration(
-      {required String labelText, String? prefixText, Widget? suffixIcon}) {
+  InputDecoration _inputDecoration({
+    required String labelText,
+    String? prefixText,
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.primary, width: 2),
       ),
       labelText: labelText,
-      labelStyle: TextStyle(color: AppColors.primary, fontSize: 14),
+      labelStyle: TextStyle(color: AppColors.primary, fontSize: 12),
       prefixText: prefixText,
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       isDense: true,
+      filled: true,
+      fillColor: Colors.white,
     );
   }
 
   Widget _buildQuantityControls() {
     return SizedBox(
-      width: 80,
+      width: 70,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -773,75 +911,75 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Widget _quantityButton(IconData icon, VoidCallback onPressed) {
     return Container(
-      height: 30,
-      width: 30,
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      height: 28,
+      width: 28,
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(icon, color: AppColors.primary, size: 18),
+        icon: Icon(icon, color: AppColors.primary, size: 16),
         onPressed: onPressed,
       ),
     );
   }
 
   Widget _buildDiscountInput() {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
-        child: Column(
-          children: [
-            CheckboxListTile(
-              title: const Text('Apply Discounted Price',
-                  style: TextStyle(fontSize: 14)),
-              value: _isDiscounted,
-              onChanged: (bool? value) {
-                setState(() {
-                  _isDiscounted = value ?? false;
-                  if (!_isDiscounted) _discountedPriceController.clear();
-                });
-              },
-              activeColor: AppColors.primary,
-              controlAffinity: ListTileControlAffinity.leading,
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 6),
-            ),
-            if (_isDiscounted)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                child: TextFormField(
-                  controller: _discountedPriceController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}')),
-                  ],
-                  decoration: _inputDecoration(
-                    labelText: 'Discounted Price (Total)',
-                    prefixText: '₱ ',
-                  ),
-                  validator: (value) {
-                    if (_isDiscounted) {
-                      if (value == null || value.isEmpty)
-                        return 'Enter discounted price';
-                      final priceVal = double.tryParse(value);
-                      if (priceVal == null || priceVal <= 0)
-                        return 'Valid price > 0';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-          ],
+    return Column(
+      children: [
+        Transform.scale(
+          scale: 0.8,
+          child: CheckboxListTile(
+            title: Text('Apply Discount', style: TextStyle(fontSize: 12)),
+            value: _isDiscounted,
+            onChanged: (bool? value) {
+              setState(() {
+                _isDiscounted = value ?? false;
+                if (!_isDiscounted) _discountedPriceController.clear();
+              });
+            },
+            activeColor: Colors.orange[700],
+            controlAffinity: ListTileControlAffinity.leading,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
         ),
-      ),
+        if (_isDiscounted)
+          Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: _discountedPriceController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              decoration: _inputDecoration(
+                labelText: 'Price ₱',
+                prefixText: '₱ ',
+              ),
+              validator: (value) {
+                if (_isDiscounted) {
+                  if (value == null || value.isEmpty)
+                    return 'Enter discounted price';
+                  final priceVal = double.tryParse(value);
+                  if (priceVal == null || priceVal <= 0)
+                    return 'Valid price > 0';
+                }
+                return null;
+              },
+            ),
+          ),
+      ],
     );
   }
 }
