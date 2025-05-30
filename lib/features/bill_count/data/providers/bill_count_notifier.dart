@@ -277,6 +277,21 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
   }
 
+  // Update total cash value - only update local state
+  Future<void> updateTotalCash(double totalCash) async {
+    final currentState = state.value!;
+    final currentBillCount = currentState.billCount ?? const BillCountModel();
+
+    print("Updating total cash to: $totalCash");
+
+    final updatedBillCount = currentBillCount.copyWith(
+      totalCash: totalCash,
+    );
+
+    // Update local state immediately without async loading
+    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
+  }
+
   // Update starting amount (total cash) - only update local state
   Future<void> updateStartingAmount(double startingAmount) async {
     final currentState = state.value!;
@@ -286,6 +301,7 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
 
     final updatedBillCount = currentBillCount.copyWith(
       startingAmount: startingAmount,
+      totalCash: startingAmount, // Also update totalCash to match
     );
 
     // Update local state immediately without async loading

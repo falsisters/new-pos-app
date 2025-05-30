@@ -104,9 +104,9 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
     showDialog(
       context: context,
       builder: (context) => TotalCashDialog(
-        initialValue: billCountState.billCount!.startingAmount,
+        initialValue: billCountState.billCount!.totalCash,
         onSave: (double value) {
-          ref.read(billCountProvider.notifier).updateStartingAmount(value);
+          ref.read(billCountProvider.notifier).updateTotalCash(value);
         },
       ),
     );
@@ -412,81 +412,97 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
 
                         // Total Cash Widget
                         TotalCashWidget(
-                          totalCash: billCount.startingAmount,
+                          totalCash: billCount.totalCash,
                           onEdit: _showTotalCashDialog,
                         ),
 
                         // Beginning Balance Display
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                "BEGINNING BALANCE",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Row(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text(
+                                    "BEGINNING BALANCE",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     "₱ ${currencyFormat.format(billCount.beginningBalance)}",
                                     style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    color: AppColors.secondary,
-                                    onPressed: _showBeginningBalanceDialog,
                                   ),
                                 ],
                               ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.edit_rounded),
+                                  color: AppColors.secondary,
+                                  iconSize: 24,
+                                  onPressed: _showBeginningBalanceDialog,
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-
-                        // Initial Count Widget
-                        InitialCountWidget(
-                          totalCash: billCount.startingAmount,
-                          beginningBalance: billCount.beginningBalance,
                         ),
 
                         // Bills count entries
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                "BILL COUNT",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
                               BillEntryWidget(
                                 type: BillType.THOUSAND,
                                 initialAmount: _getBillAmount(
@@ -566,24 +582,32 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 },
                               ),
 
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(thickness: 1),
+                              Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                height: 1,
+                                color: Colors.grey.shade200,
                               ),
 
-                              // Subtotal before expenses
+                              // Subtotal
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  SizedBox(
-                                    width: 130,
-                                    child: Text(
-                                      "₱ ${currencyFormat.format(billCount.billsTotal)}",
-                                      textAlign: TextAlign.right,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Text(
+                                    "SUBTOTAL",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  Text(
+                                    "₱ ${currencyFormat.format(billCount.billsTotal)}",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
                                   ),
                                 ],
@@ -595,81 +619,103 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                         // Expenses section
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: billCount.showExpenses
+                                  ? AppColors.accent.withOpacity(0.3)
+                                  : Colors.grey.shade200,
+                              width: billCount.showExpenses ? 2 : 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Column(
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Checkbox(
-                                        value: billCount.showExpenses,
-                                        onChanged: (_) => _toggleExpenses(),
-                                        activeColor: AppColors.accent,
+                                  Transform.scale(
+                                    scale: 1.1,
+                                    child: Checkbox(
+                                      value: billCount.showExpenses,
+                                      onChanged: (_) => _toggleExpenses(),
+                                      activeColor: AppColors.accent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
                                       ),
-                                      const Text(
-                                        "+ EXPENSES",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                  Row(
-                                    children: [
-                                      if (billCount.showExpenses)
-                                        Text(
-                                          "₱ ${currencyFormat.format(billCount.expenses)}",
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        color: AppColors.accent,
-                                        onPressed: _showExpenseDialog,
+                                  Expanded(
+                                    child: Text(
+                                      "ADD EXPENSES",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: billCount.showExpenses
+                                            ? AppColors.accent
+                                            : Colors.grey.shade600,
                                       ),
-                                    ],
+                                    ),
+                                  ),
+                                  if (billCount.showExpenses)
+                                    Text(
+                                      "₱ ${currencyFormat.format(billCount.expenses)}",
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accent.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.edit_rounded),
+                                      color: AppColors.accent,
+                                      iconSize: 20,
+                                      onPressed: _showExpenseDialog,
+                                    ),
                                   ),
                                 ],
                               ),
                               if (billCount.showExpenses)
                                 Column(
                                   children: [
-                                    const Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 8),
-                                      child: Divider(thickness: 1),
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      height: 1,
+                                      color: AppColors.accent.withOpacity(0.2),
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        SizedBox(
-                                          width: 130,
-                                          child: Text(
-                                            "₱ ${currencyFormat.format(billCount.totalWithExpenses)}",
-                                            textAlign: TextAlign.right,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        Text(
+                                          "TOTAL WITH EXPENSES",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          "₱ ${currencyFormat.format(billCount.totalWithExpenses)}",
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.accent,
                                           ),
                                         ),
                                       ],
@@ -683,52 +729,59 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                         // Beginning Balance to deduct
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: billCount.showBeginningBalance
+                                  ? AppColors.secondary.withOpacity(0.3)
+                                  : Colors.grey.shade200,
+                              width: billCount.showBeginningBalance ? 2 : 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: Column(
+                          child: Row(
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Checkbox(
-                                        value: billCount.showBeginningBalance,
-                                        onChanged: (_) =>
-                                            _toggleBeginningBalance(),
-                                        activeColor: AppColors.secondary,
-                                      ),
-                                      const Text(
-                                        "- BEGINNING BALANCE",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                              Transform.scale(
+                                scale: 1.1,
+                                child: Checkbox(
+                                  value: billCount.showBeginningBalance,
+                                  onChanged: (_) => _toggleBeginningBalance(),
+                                  activeColor: AppColors.secondary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
-                                  if (billCount.showBeginningBalance)
-                                    Text(
-                                      "₱ ${currencyFormat.format(billCount.beginningBalance)}",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                ],
+                                ),
                               ),
+                              Expanded(
+                                child: Text(
+                                  "SUBTRACT BEGINNING BALANCE",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: billCount.showBeginningBalance
+                                        ? AppColors.secondary
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                              if (billCount.showBeginningBalance)
+                                Text(
+                                  "₱ ${currencyFormat.format(billCount.beginningBalance)}",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.secondary,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -736,32 +789,43 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                         // Final total
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.primary,
-                              width: 2,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                "TOTAL",
+                                "FINAL TOTAL",
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                               Text(
                                 "₱ ${currencyFormat.format(billCount.finalTotal)}",
                                 style: const TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],

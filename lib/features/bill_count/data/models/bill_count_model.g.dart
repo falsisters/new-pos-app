@@ -14,6 +14,7 @@ _BillCountModel _$BillCountModelFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       startingAmount: (json['startingAmount'] as num?)?.toDouble() ?? 0,
+      totalCash: (json['totalCash'] as num?)?.toDouble() ?? 0,
       expenses: (json['expenses'] as num?)?.toDouble() ?? 0,
       showExpenses: json['showExpenses'] as bool? ?? false,
       beginningBalance: (json['beginningBalance'] as num?)?.toDouble() ?? 0,
@@ -31,6 +32,7 @@ Map<String, dynamic> _$BillCountModelToJson(_BillCountModel instance) =>
       'id': instance.id,
       'bills': instance.bills,
       'startingAmount': instance.startingAmount,
+      'totalCash': instance.totalCash,
       'expenses': instance.expenses,
       'showExpenses': instance.showExpenses,
       'beginningBalance': instance.beginningBalance,

@@ -9,6 +9,7 @@ sealed class CreateBillCountRequestModel with _$CreateBillCountRequestModel {
   const factory CreateBillCountRequestModel({
     String? date,
     double? startingAmount,
+    double? totalCash,
     double? expenses,
     bool? showExpenses,
     double? beginningBalance,

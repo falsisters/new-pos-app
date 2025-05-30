@@ -11,6 +11,7 @@ _CreateBillCountRequestModel _$CreateBillCountRequestModelFromJson(
     _CreateBillCountRequestModel(
       date: json['date'] as String?,
       startingAmount: (json['startingAmount'] as num?)?.toDouble(),
+      totalCash: (json['totalCash'] as num?)?.toDouble(),
       expenses: (json['expenses'] as num?)?.toDouble(),
       showExpenses: json['showExpenses'] as bool?,
       beginningBalance: (json['beginningBalance'] as num?)?.toDouble(),
@@ -25,6 +26,7 @@ Map<String, dynamic> _$CreateBillCountRequestModelToJson(
     <String, dynamic>{
       'date': instance.date,
       'startingAmount': instance.startingAmount,
+      'totalCash': instance.totalCash,
       'expenses': instance.expenses,
       'showExpenses': instance.showExpenses,
       'beginningBalance': instance.beginningBalance,

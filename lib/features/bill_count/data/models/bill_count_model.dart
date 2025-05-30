@@ -10,6 +10,7 @@ sealed class BillCountModel with _$BillCountModel {
     String? id,
     @Default([]) List<BillModel> bills,
     @Default(0) double startingAmount,
+    @Default(0) double totalCash,
     @Default(0) double expenses,
     @Default(false) bool showExpenses,
     @Default(0) double beginningBalance,
