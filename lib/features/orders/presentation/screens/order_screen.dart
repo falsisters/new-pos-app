@@ -12,72 +12,145 @@ class OrderScreen extends ConsumerWidget {
     final orderState = ref.watch(orderProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Orders',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: orderState.isLoading
+                ? null
+                : () => ref.read(orderProvider.notifier).refreshOrders(),
+            icon: orderState.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            tooltip: 'Refresh Orders',
+          ),
+        ],
       ),
       body: SafeArea(
         child: orderState.when(
           data: (data) => RefreshIndicator(
             onRefresh: () => ref.read(orderProvider.notifier).refreshOrders(),
             color: AppColors.primary,
+            backgroundColor: AppColors.surface,
             child: OrderList(orders: data.orders),
           ),
-          loading: () => const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-          ),
-          error: (error, stackTrace) => Center(
+          loading: () => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 60,
-                  color: AppColors.accent.withOpacity(0.7),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading orders',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLighter,
+                    shape: BoxShape.circle,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    error.toString(),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600]),
+                  child: const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    strokeWidth: 3,
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.read(orderProvider.notifier).refreshOrders(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                const Text(
+                  'Loading orders...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          error: (error, stackTrace) => Center(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    offset: const Offset(0, 2),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline,
+                      size: 32,
+                      color: AppColors.error,
                     ),
                   ),
-                )
-              ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Unable to load orders',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please check your connection and try again',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          ref.read(orderProvider.notifier).refreshOrders(),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text(
+                        'Try Again',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
