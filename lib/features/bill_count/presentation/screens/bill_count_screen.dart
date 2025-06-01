@@ -9,7 +9,6 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
-import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/total_cash_dialog.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {
@@ -37,15 +36,25 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   }
 
   // Create a new bill count for the selected date
-  void _createNewBillCount() {
-    ref.read(billCountProvider.notifier).createNewBillCount(
+  void _createNewBillCount() async {
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Creating new bill count..."),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // Create and save the new bill count with zero values
+    await ref.read(billCountProvider.notifier).createAndSaveBillCount(
           date: DateFormat('yyyy-MM-dd').format(_selectedDate),
         );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("New bill count created - enter your values and save"),
-        backgroundColor: Colors.blue,
+        content: Text("New bill count created - you can now enter values"),
+        backgroundColor: Colors.lightGreen,
         duration: Duration(seconds: 2),
       ),
     );
@@ -92,21 +101,6 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         onSave: (double value) {
           ref.read(billCountProvider.notifier).updateBeginningBalance(value);
           // Do not auto-save, let the user decide when to save
-        },
-      ),
-    );
-  }
-
-  void _showTotalCashDialog() {
-    final billCountState = ref.read(billCountProvider).value;
-    if (billCountState == null || billCountState.billCount == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => TotalCashDialog(
-        initialValue: billCountState.billCount!.totalCash,
-        onSave: (double value) {
-          ref.read(billCountProvider.notifier).updateTotalCash(value);
         },
       ),
     );
@@ -364,56 +358,9 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        // Message for new bill count
-                        if (billCount.id == null)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.primary),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.info_outline,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Creating New Bill Count",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Enter the bill counts for ${DateFormat('MMMM dd, yyyy').format(_selectedDate)} and press SAVE when done.",
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Total Cash Widget
+                        // Total Cash Widget (now Net Cash, no edit button)
                         TotalCashWidget(
                           totalCash: billCount.totalCash,
-                          onEdit: _showTotalCashDialog,
                         ),
 
                         // Beginning Balance Display

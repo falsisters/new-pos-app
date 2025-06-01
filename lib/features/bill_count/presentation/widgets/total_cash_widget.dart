@@ -4,12 +4,10 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 
 class TotalCashWidget extends StatelessWidget {
   final double totalCash;
-  final VoidCallback onEdit;
 
   const TotalCashWidget({
     Key? key,
     required this.totalCash,
-    required this.onEdit,
   }) : super(key: key);
 
   @override
@@ -38,43 +36,25 @@ class TotalCashWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "TOTAL CASH SALES",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.9),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "₱ ${currencyFormat.format(totalCash)}",
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+          Text(
+            "NET CASH",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.9),
+              letterSpacing: 0.5,
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.edit_rounded),
+          const SizedBox(height: 8),
+          Text(
+            "₱ ${currencyFormat.format(totalCash)}",
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
               color: Colors.white,
-              iconSize: 24,
-              onPressed: onEdit,
             ),
           ),
         ],

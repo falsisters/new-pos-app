@@ -80,6 +80,65 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     });
   }
 
+  // Create and save a new bill count for a specific date with zero values
+  Future<void> createAndSaveBillCount({String? date}) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        // Parse the date or use today
+        DateTime billDate;
+        if (date != null) {
+          try {
+            billDate = DateFormat('yyyy-MM-dd').parse(date);
+          } catch (e) {
+            billDate = DateTime.now();
+          }
+        } else {
+          billDate = DateTime.now();
+        }
+
+        final formattedDate = DateFormat('yyyy-MM-dd').format(billDate);
+
+        // Create bills list with zero values for all types
+        final billsList = <BillModel>[];
+        for (var billType in BillType.values) {
+          billsList.add(BillModel(
+            type: billType,
+            amount: 0,
+            value: 0.0,
+          ));
+        }
+
+        // Create the request model with all zero values
+        final request = CreateBillCountRequestModel(
+          date: formattedDate,
+          startingAmount: 0.0,
+          expenses: 0.0,
+          showExpenses: false,
+          beginningBalance: 0.0,
+          showBeginningBalance: false,
+          bills: billsList,
+        );
+
+        print(
+            "Creating new bill count with zero values for date: $formattedDate");
+
+        // Save to server immediately
+        final savedBillCount =
+            await _billCountRepository.createOrUpdateBillCount(request);
+
+        print("Bill count created successfully with ID: ${savedBillCount.id}");
+        print("Server returned totalCash: ${savedBillCount.totalCash}");
+
+        return BillCountState(billCount: savedBillCount);
+      } catch (e) {
+        print("Error creating and saving bill count: $e");
+        return BillCountState(error: e.toString());
+      }
+    });
+  }
+
   // Update bill amount - only update local state
   Future<void> updateBillAmount(BillType type, int amount) async {
     final currentState = state.value!;
