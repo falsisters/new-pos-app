@@ -14,15 +14,34 @@ class AttachmentsScreen extends ConsumerStatefulWidget {
   ConsumerState<AttachmentsScreen> createState() => _AttachmentsScreenState();
 }
 
-class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
+class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   AttachmentType? _selectedType;
   bool _showSearchBar = false;
 
+  late AnimationController _fabAnimationController;
+  late Animation<double> _fabAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fabAnimation = CurvedAnimation(
+      parent: _fabAnimationController,
+      curve: Curves.elasticOut,
+    );
+    _fabAnimationController.forward();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -47,31 +66,61 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
     final attachmentState = ref.watch(attachmentProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: _showSearchBar
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Search by name...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(color: Colors.white),
-                cursorColor: Colors.white,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              )
-            : const Text('Attachments'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: _showSearchBar
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Search attachments...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    border: InputBorder.none,
+                    icon: Icon(Icons.search_rounded,
+                        color: Colors.white.withOpacity(0.8)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  cursorColor: Colors.white,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              )
+            : const Text(
+                'Attachments',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
         actions: [
-          // Search toggle button
           IconButton(
-            icon: Icon(_showSearchBar ? Icons.close : Icons.search),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _showSearchBar
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _showSearchBar ? Icons.close_rounded : Icons.search_rounded,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
             onPressed: () {
               setState(() {
                 _showSearchBar = !_showSearchBar;
@@ -82,220 +131,377 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
               });
             },
           ),
-          // Filter by type button
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _selectedType != null
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.tune_rounded,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
             onPressed: () => _showFilterDialog(context),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.refresh_rounded,
+                  size: 20, color: Colors.white),
+            ),
             onPressed: () {
               ref.read(attachmentProvider.notifier).getAttachments();
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateAttachmentScreen(),
+      floatingActionButton: ScaleTransition(
+        scale: _fabAnimation,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
             ),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Attachment'),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.grey.shade100],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const CreateAttachmentScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    return SlideTransition(
+                      position: animation.drive(
+                        Tween(begin: const Offset(0, 1), end: Offset.zero),
+                      ),
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            },
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text(
+              'Add Attachment',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ),
-        child: Column(
-          children: [
-            if (_selectedType != null)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    const Text('Filtered by: ',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    Chip(
-                      label: Text(attachmentTypeToString(_selectedType!)),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () {
-                        setState(() {
-                          _selectedType = null;
-                        });
-                      },
-                      backgroundColor:
-                          _getColorForType(_selectedType!).withOpacity(0.2),
-                      labelStyle:
-                          TextStyle(color: _getColorForType(_selectedType!)),
+      ),
+      body: Column(
+        children: [
+          // Modern filter chips
+          if (_selectedType != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _getColorForType(_selectedType!).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color:
+                            _getColorForType(_selectedType!).withOpacity(0.3),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: attachmentState.when(
-                data: (data) {
-                  final filteredAttachments =
-                      _filterAttachments(data.attachments);
-
-                  if (filteredAttachments.isEmpty) {
-                    if (data.attachments.isEmpty) {
-                      // No attachments at all
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.photo_library_outlined,
-                              size: 80,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No attachments found',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Add attachments by clicking the button below',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      // No search results
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 80,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No matching attachments',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Try changing your search or filter',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Manage Attachments',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
+                        Icon(
+                          Icons.filter_list_rounded,
+                          size: 16,
+                          color: _getColorForType(_selectedType!),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(width: 8),
                         Text(
-                          filteredAttachments.length != data.attachments.length
-                              ? 'Showing ${filteredAttachments.length} of ${data.attachments.length} attachments'
-                              : 'All your uploaded documents in one place',
+                          attachmentTypeToString(_selectedType!),
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: _getColorForType(_selectedType!),
+                            fontWeight: FontWeight.w500,
                             fontSize: 14,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.8,
-                            ),
-                            itemCount: filteredAttachments.length,
-                            itemBuilder: (context, index) {
-                              final attachment = filteredAttachments[index];
-                              return AttachmentTile(
-                                attachment: attachment,
-                                onDelete: () => _showDeleteConfirmation(
-                                    context, ref, attachment.id),
-                              );
-                            },
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedType = null;
+                            });
+                          },
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: _getColorForType(_selectedType!),
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stack) => Center(
+                  ),
+                ],
+              ),
+            ),
+
+          Expanded(
+            child: attachmentState.when(
+              data: (data) {
+                final filteredAttachments =
+                    _filterAttachments(data.attachments);
+
+                if (filteredAttachments.isEmpty) {
+                  return _buildEmptyState(data.attachments.isEmpty);
+                }
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 60,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading attachments',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade700,
+                      // Header with modern typography
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'My Attachments',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1A1A1A),
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              filteredAttachments.length !=
+                                      data.attachments.length
+                                  ? 'Showing ${filteredAttachments.length} of ${data.attachments.length} attachments'
+                                  : 'All your uploaded documents organized in one place',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        error.toString(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
+
+                      const SizedBox(height: 24),
+
+                      // Modern grid with improved spacing - smaller cards
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4, // Increased from 2 to 4
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.75, // Slightly adjusted ratio
                         ),
-                        textAlign: TextAlign.center,
+                        itemCount: filteredAttachments.length,
+                        itemBuilder: (context, index) {
+                          final attachment = filteredAttachments[index];
+                          return AttachmentTile(
+                            attachment: attachment,
+                            onDelete: () => _showDeleteConfirmation(
+                                context, ref, attachment.id),
+                          );
+                        },
                       ),
                     ],
                   ),
+                );
+              },
+              loading: () => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Loading attachments...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              error: (error, stack) => _buildErrorState(error.toString()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool noAttachments) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                noAttachments
+                    ? Icons.photo_library_outlined
+                    : Icons.search_off_rounded,
+                size: 40,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              noAttachments ? 'No attachments yet' : 'No matching attachments',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              noAttachments
+                  ? 'Start by adding your first attachment using the button below'
+                  : 'Try adjusting your search or filter criteria',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 40,
+                color: Colors.red.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Something went wrong',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              error,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -307,8 +513,13 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Attachment'),
-        content: const Text('Are you sure you want to delete this attachment?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete Attachment',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+            'Are you sure you want to delete this attachment? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -317,16 +528,24 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
               style: TextStyle(color: Colors.grey.shade700),
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(attachmentProvider.notifier).deleteAttachment(id);
-            },
-            child: const Text('Delete'),
+            child: TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ref.read(attachmentProvider.notifier).deleteAttachment(id);
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  color: Colors.red.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -337,12 +556,30 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Filter Attachments',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.tune_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Filter Attachments',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -351,20 +588,34 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
             children: [
               const Text(
                 'Select attachment type:',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               ...AttachmentType.values.map((type) => _buildFilterOption(type)),
-              const Divider(height: 24),
-              ListTile(
-                leading: const Icon(Icons.clear_all),
-                title: const Text('Clear filter'),
-                onTap: () {
-                  setState(() {
-                    _selectedType = null;
-                  });
-                  Navigator.pop(context);
-                },
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.clear_all_rounded, color: Colors.grey.shade600),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Clear all filters',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -375,9 +626,6 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
             child: const Text('Close'),
           ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
       ),
     );
   }
@@ -386,41 +634,47 @@ class _AttachmentsScreenState extends ConsumerState<AttachmentsScreen> {
     final bool isSelected = _selectedType == type;
     final color = _getColorForType(type);
 
-    return ListTile(
-      leading: Icon(
-        isSelected ? Icons.check_circle : Icons.circle_outlined,
-        color: isSelected ? color : Colors.grey,
-      ),
-      title: Text(
-        attachmentTypeToString(type),
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? color : null,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? color.withOpacity(0.3) : Colors.grey.shade200,
         ),
       ),
-      tileColor: isSelected ? color.withOpacity(0.1) : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+      child: ListTile(
+        leading: Icon(
+          isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+          color: isSelected ? color : Colors.grey.shade400,
+        ),
+        title: Text(
+          attachmentTypeToString(type),
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? color : null,
+          ),
+        ),
+        onTap: () {
+          setState(() {
+            _selectedType = isSelected ? null : type;
+          });
+          Navigator.pop(context);
+        },
       ),
-      onTap: () {
-        setState(() {
-          _selectedType = type;
-        });
-        Navigator.pop(context);
-      },
     );
   }
 
   Color _getColorForType(AttachmentType type) {
     switch (type) {
       case AttachmentType.EXPENSE_RECEIPT:
-        return Colors.orange.shade700;
+        return const Color(0xFFFF6B35);
       case AttachmentType.CHECKS_AND_BANK_TRANSFER:
-        return Colors.blue.shade700;
+        return const Color(0xFF1976D2);
       case AttachmentType.INVENTORIES:
-        return Colors.green.shade700;
+        return const Color(0xFF388E3C);
       case AttachmentType.SUPPORTING_DOCUMENTS:
-        return Colors.purple.shade700;
+        return const Color(0xFF7B1FA2);
     }
   }
 }
