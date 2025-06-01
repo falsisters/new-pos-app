@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 
 class InventorySheet extends ConsumerStatefulWidget {
   final InventorySheetModel sheet;
+
   const InventorySheet({
     super.key,
     required this.sheet,
@@ -27,11 +28,18 @@ class InventorySheet extends ConsumerStatefulWidget {
   ConsumerState<InventorySheet> createState() => _InventorySheetState();
 }
 
-class _InventorySheetState extends ConsumerState<InventorySheet> {
+class _InventorySheetState extends ConsumerState<InventorySheet>
+    with TickerProviderStateMixin {
   late InventorySheetDataSource _dataSource;
   final DataGridController _dataGridController = DataGridController();
   bool _isEditable = false;
+  bool _isLoading = false;
   late InventoryFormulaHandler _formulaHandler;
+
+  // Animation controllers for modern UI transitions
+  late AnimationController _editModeAnimationController;
+  late Animation<double> _editModeScaleAnimation;
+  late Animation<Color?> _editModeBorderColorAnimation;
 
   // Track cells that depend on other cells for formula calculation
   final Map<String, Set<String>> _formulaDependencies = {};
@@ -39,7 +47,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   // Store pending cell changes
   final Map<String, CellChange> _pendingChanges = {};
 
-  // Add variables to track currently selected cell
+  // Track currently selected cell
   int? _selectedRowIndex;
   int? _selectedColumnIndex;
   InventoryCellModel? _selectedCell;
@@ -49,9 +57,39 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
     _formulaHandler = InventoryFormulaHandler(sheet: widget.sheet);
     _initializeDataSource();
     _buildFormulaDependencyMap();
+  }
+
+  void _initializeAnimations() {
+    _editModeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _editModeScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(
+      parent: _editModeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _editModeBorderColorAnimation = ColorTween(
+      begin: AppColors.primary.withOpacity(0.3),
+      end: AppColors.primary,
+    ).animate(CurvedAnimation(
+      parent: _editModeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _editModeAnimationController.dispose();
+    super.dispose();
   }
 
   // Build a map of formula dependencies
@@ -104,23 +142,38 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   void _toggleEditMode() {
     setState(() {
       _isEditable = !_isEditable;
-      _initializeDataSource(); // Refresh data source with new editable state
+      _initializeDataSource();
+
+      if (_isEditable) {
+        _editModeAnimationController.forward();
+      } else {
+        _editModeAnimationController.reverse();
+      }
     });
+
+    // Provide haptic feedback
+    HapticFeedback.mediumImpact();
   }
 
-  void _saveChanges() {
-    // Apply all pending changes
-    _applyPendingChanges().then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Changes saved!')),
-      );
+  Future<void> _saveChanges() async {
+    if (_isLoading) return;
 
-      // Optionally turn off edit mode after saving
+    setState(() => _isLoading = true);
+
+    try {
+      await _applyPendingChanges();
+      _showSnackBar('Changes saved successfully!');
+
       setState(() {
         _isEditable = false;
         _initializeDataSource();
+        _editModeAnimationController.reverse();
       });
-    });
+    } catch (e) {
+      _showSnackBar('Failed to save changes: ${e.toString()}', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   // Apply all pending changes to the database
@@ -910,322 +963,568 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // Enable edit mode with double-click anywhere on the sheet
       onDoubleTap: !_isEditable ? _toggleEditMode : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    widget.sheet.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      if (!_isEditable)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Text(
-                            'Double-click to edit',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      IconButton(
-                        icon:
-                            const Icon(Icons.refresh, color: AppColors.primary),
-                        tooltip: 'Refresh Data',
-                        onPressed: () {
-                          ref
-                              .read(inventoryProvider.notifier)
-                              .getInventoryByDate(null, null);
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(_isEditable ? Icons.lock : Icons.edit),
-                        onPressed: _toggleEditMode,
-                        tooltip: _isEditable ? 'View Mode' : 'Edit Mode',
-                        color: AppColors.primary,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: AppColors.primary),
-                        tooltip: 'Add Calculation Rows',
-                        onPressed: () {
-                          // Get currently selected row index or default to last row
-                          int rowIndex = _dataGridController.selectedIndex != -1
-                              ? _dataGridController.selectedIndex
-                              : widget.sheet.rows.length - 1;
-
-                          // Find the actual row index from the model
-                          if (rowIndex >= 0 &&
-                              rowIndex < widget.sheet.rows.length) {
-                            _showAddRowsDialog(
-                                widget.sheet.rows[rowIndex].rowIndex);
-                          } else {
-                            // Default to adding at the end
-                            _showAddRowsDialog(widget.sheet.rows.isNotEmpty
-                                ? widget.sheet.rows.last.rowIndex
-                                : 0);
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.help_outline,
-                            color: AppColors.primary),
-                        tooltip: 'Formula Help',
-                        onPressed: () {
-                          _showFormulaHelpDialog();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete Selected Row',
-                        onPressed: () {
-                          // Get currently selected row
-                          if (_dataGridController.selectedIndex != -1) {
-                            int selectedIndex =
-                                _dataGridController.selectedIndex;
-                            if (selectedIndex >= 0 &&
-                                selectedIndex < widget.sheet.rows.length) {
-                              // Confirm before deleting
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: const Text('Confirm Delete'),
-                                    content: const Text(
-                                        'Are you sure you want to delete this row? This action cannot be undone.'),
-                                    actions: [
-                                      TextButton(
-                                        child: const Text('Cancel'),
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                      ),
-                                      TextButton(
-                                        child: const Text('Delete',
-                                            style:
-                                                TextStyle(color: Colors.red)),
-                                        onPressed: () {
-                                          _deleteRow(widget
-                                              .sheet.rows[selectedIndex].id);
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('Please select a row to delete')),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+      child: AnimatedBuilder(
+        animation: _editModeAnimationController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _editModeScaleAnimation.value,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _editModeBorderColorAnimation.value ??
+                      AppColors.primary.withOpacity(0.3),
+                  width: _isEditable ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _isEditable
+                        ? AppColors.primary.withOpacity(0.2)
+                        : Colors.grey.withOpacity(0.1),
+                    spreadRadius: _isEditable ? 3 : 1,
+                    blurRadius: _isEditable ? 12 : 6,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-            ),
-            const Divider(height: 1, color: AppColors.primaryLight),
-            Expanded(
-              child: SfDataGrid(
-                source: _dataSource,
-                controller: _dataGridController,
-                gridLinesVisibility: GridLinesVisibility.both,
-                headerGridLinesVisibility: GridLinesVisibility.both,
-                columnWidthMode: ColumnWidthMode.auto,
-                allowEditing: _isEditable,
-                selectionMode: SelectionMode.multiple,
-                navigationMode: GridNavigationMode.cell,
-                frozenColumnsCount: 1, // Freeze the first column (item names)
-                columns: _buildColumns(),
-                onCellTap: (details) {
-                  if (details.rowColumnIndex.rowIndex > 0 && // Skip header
-                      details.column.columnName != 'itemName') {
-                    // Get the actual data grid row
-                    final rowData = _dataSource.rows.isNotEmpty &&
-                            details.rowColumnIndex.rowIndex - 1 <
-                                _dataSource.rows.length
-                        ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
-                        : null;
-
-                    if (rowData != null) {
-                      // Extract row cell data from the first column
-                      final firstCell = rowData.getCells().first;
-                      if (firstCell.value is RowCellData) {
-                        final rowCellData = firstCell.value as RowCellData;
-                        final rowIndex = rowCellData.rowIndex;
-                        final columnIndex = int.parse(
-                            details.column.columnName.replaceAll('column', ''));
-
-                        // Find the cell in the data model
-                        final rowModel = widget.sheet.rows.firstWhereOrNull(
-                          (r) => r.rowIndex == rowIndex,
-                        );
-
-                        InventoryCellModel? cell;
-                        if (rowModel != null) {
-                          cell = rowModel.cells.firstWhereOrNull(
-                            (c) => c.columnIndex == columnIndex,
-                          );
-                        }
-
-                        setState(() {
-                          _selectedRowIndex = rowIndex;
-                          _selectedColumnIndex = columnIndex;
-                          _selectedCell = cell;
-                          _selectedCellValue = cell?.value ?? '';
-                        });
-                      }
-                    }
-                  }
-                },
-              ),
-            ),
-
-            // Add save button at the bottom when in edit mode
-            if (_isEditable)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_pendingChanges.isNotEmpty)
-                      Text(
-                        '${_pendingChanges.length} unsaved changes',
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildModernHeader(),
+                  Expanded(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
                         ),
                       ),
-                    Expanded(child: Container()), // Spacer
-
-                    // Add cell operation buttons
-                    if (_selectedRowIndex != null &&
-                        _selectedColumnIndex != null)
-                      Row(
-                        children: [
-                          // Add Quick Formulas button
-                          ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.functions,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            label: const Text('Quick Formulas',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.white)),
-                            onPressed: () {
-                              _showQuickFormulasMenu();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.red,
-                              size: 16,
-                            ),
-                            label: const Text('Erase Cell Value',
-                                style:
-                                    TextStyle(fontSize: 12, color: Colors.red)),
-                            onPressed: () {
-                              if (_selectedRowIndex != null &&
-                                  _selectedColumnIndex != null) {
-                                _eraseCell(
-                                    _selectedRowIndex!, _selectedColumnIndex!);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Color picker button
-                          ElevatedButton.icon(
-                            icon: Icon(
-                              Icons.color_lens,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            label: const Text('Change Color',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.white)),
-                            onPressed: () {
-                              _showColorPickerDialog(
-                                  _selectedRowIndex!,
-                                  _selectedColumnIndex!,
-                                  _selectedCellValue ?? '');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                      ),
-
-                    ElevatedButton.icon(
-                      onPressed: _saveChanges,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save Changes'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                      child: SfDataGrid(
+                        source: _dataSource,
+                        controller: _dataGridController,
+                        gridLinesVisibility: GridLinesVisibility.both,
+                        headerGridLinesVisibility: GridLinesVisibility.both,
+                        columnWidthMode: ColumnWidthMode.auto,
+                        allowEditing: _isEditable,
+                        selectionMode: SelectionMode.multiple,
+                        navigationMode: GridNavigationMode.cell,
+                        frozenColumnsCount: 1,
+                        columns: _buildColumns(),
+                        onCellTap: _handleCellTap,
                       ),
                     ),
+                  ),
+                  _buildEditControlsPanel(),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _handleCellTap(DataGridCellTapDetails details) {
+    if (details.rowColumnIndex.rowIndex > 0 &&
+        details.column.columnName != 'itemName') {
+      final rowData = _dataSource.rows.isNotEmpty &&
+              details.rowColumnIndex.rowIndex - 1 < _dataSource.rows.length
+          ? _dataSource.rows[details.rowColumnIndex.rowIndex - 1]
+          : null;
+
+      if (rowData != null) {
+        final firstCell = rowData.getCells().first;
+        if (firstCell.value is RowCellData) {
+          final rowCellData = firstCell.value as RowCellData;
+          final rowIndex = rowCellData.rowIndex;
+          final columnIndex =
+              int.parse(details.column.columnName.replaceAll('column', ''));
+
+          final rowModel = widget.sheet.rows.firstWhereOrNull(
+            (r) => r.rowIndex == rowIndex,
+          );
+
+          InventoryCellModel? cell;
+          if (rowModel != null) {
+            cell = rowModel.cells.firstWhereOrNull(
+              (c) => c.columnIndex == columnIndex,
+            );
+          }
+
+          setState(() {
+            _selectedRowIndex = rowIndex;
+            _selectedColumnIndex = columnIndex;
+            _selectedCell = cell;
+            _selectedCellValue = cell?.value ?? '';
+            _selectedCellColorHex = cell?.color;
+          });
+        }
+      }
+    }
+  }
+
+  Widget _buildModernHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.secondary.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.sheet.name,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (!_isEditable)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.touch_app,
+                              size: 16,
+                              color: AppColors.primary.withOpacity(0.8),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Double-click to edit',
+                              style: TextStyle(
+                                color: AppColors.primary.withOpacity(0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
-          ],
+              _buildActionButtons(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _buildModernActionButton(
+          icon: Icons.refresh,
+          label: 'Refresh',
+          onPressed: () {
+            ref.read(inventoryProvider.notifier).getInventoryByDate(null, null);
+          },
+          color: AppColors.secondary,
+        ),
+        _buildModernActionButton(
+          icon: _isEditable ? Icons.visibility : Icons.edit,
+          label: _isEditable ? 'View Mode' : 'Edit Mode',
+          onPressed: _toggleEditMode,
+          color: _isEditable ? Colors.orange : AppColors.primary,
+          isPrimary: true,
+        ),
+        _buildModernActionButton(
+          icon: Icons.add,
+          label: 'Add Rows',
+          onPressed: _handleAddRows,
+          color: Colors.green,
+        ),
+        _buildModernActionButton(
+          icon: Icons.help_outline,
+          label: 'Help',
+          onPressed: _showFormulaHelpDialog,
+          color: Colors.blue,
+        ),
+        if (_isEditable)
+          _buildModernActionButton(
+            icon: Icons.delete,
+            label: 'Delete',
+            onPressed: _handleDeleteRow,
+            color: Colors.red,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildModernActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required Color color,
+    bool isPrimary = false,
+  }) {
+    return Material(
+      elevation: isPrimary ? 6 : 3,
+      shadowColor: color.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color,
+                color.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Add a new method to show quick formulas menu
+  void _handleAddRows() {
+    int rowIndex = _dataGridController.selectedIndex != -1
+        ? _dataGridController.selectedIndex
+        : widget.sheet.rows.length - 1;
+
+    if (rowIndex >= 0 && rowIndex < widget.sheet.rows.length) {
+      _showAddRowsDialog(widget.sheet.rows[rowIndex].rowIndex);
+    } else {
+      _showAddRowsDialog(
+          widget.sheet.rows.isNotEmpty ? widget.sheet.rows.last.rowIndex : 0);
+    }
+  }
+
+  void _handleDeleteRow() {
+    if (_dataGridController.selectedIndex != -1) {
+      int selectedIndex = _dataGridController.selectedIndex;
+      if (selectedIndex >= 0 && selectedIndex < widget.sheet.rows.length) {
+        _showDeleteConfirmationDialog(selectedIndex);
+      }
+    } else {
+      _showSnackBar('Please select a row to delete', isError: true);
+    }
+  }
+
+  void _showDeleteConfirmationDialog(int selectedIndex) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Confirm Delete'),
+          content: const Text(
+            'Are you sure you want to delete this row? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+              onPressed: () {
+                _deleteRow(widget.sheet.rows[selectedIndex].id);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEditControlsPanel() {
+    if (!_isEditable) return const SizedBox.shrink();
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.05),
+            AppColors.secondary.withOpacity(0.02),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
+        border: Border(
+          top: BorderSide(
+            color: AppColors.primary.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          if (_pendingChanges.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.pending_actions,
+                      color: Colors.orange, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_pendingChanges.length} unsaved changes',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (_selectedRowIndex != null && _selectedColumnIndex != null)
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildEditActionButton(
+                        icon: Icons.functions,
+                        label: 'Quick Formulas',
+                        onPressed: _showQuickFormulasMenu,
+                        color: Colors.blue,
+                      ),
+                      _buildEditActionButton(
+                        icon: Icons.clear,
+                        label: 'Erase Cell',
+                        onPressed: () => _eraseCell(
+                            _selectedRowIndex!, _selectedColumnIndex!),
+                        color: Colors.red,
+                      ),
+                      _buildEditActionButton(
+                        icon: Icons.color_lens,
+                        label: 'Change Color',
+                        onPressed: () => _showColorPickerDialog(
+                            _selectedRowIndex!,
+                            _selectedColumnIndex!,
+                            _selectedCellValue ?? ''),
+                        color: Colors.purple,
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(width: 16),
+              _buildSaveButton(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return Material(
+      elevation: 2,
+      shadowColor: color.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Material(
+      elevation: 6,
+      shadowColor: AppColors.primary.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: _isLoading ? null : _saveChanges,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isLoading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              else
+                const Icon(Icons.save, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                _isLoading ? 'Saving...' : 'Save Changes',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // Add the missing _showQuickFormulasMenu method
   void _showQuickFormulasMenu() {
     if (_selectedRowIndex == null || _selectedColumnIndex == null) return;
 
-    final currentSheet =
-        _dataSource.currentSheet; // Use current sheet from data source
+    final currentSheet = _dataSource.currentSheet;
     final rowIndex = _selectedRowIndex!;
     final columnIndex = _selectedColumnIndex!;
 
@@ -1235,300 +1534,450 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
     final selectedCellModel = selectedRowModel?.cells
         .firstWhereOrNull((c) => c.columnIndex == columnIndex);
 
-    final colorHex = selectedCellModel?.color ??
-        _selectedCellColorHex; // Prioritize current model's color
+    final colorHex = selectedCellModel?.color ?? _selectedCellColorHex;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Quick Formulas'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.functions, color: AppColors.primary, size: 24),
+              const SizedBox(width: 8),
+              const Text('Quick Formulas'),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildFormulaOption(
+                _buildModernFormulaOption(
                   context,
                   'Subtract Vertical Cells',
                   Icons.remove,
-                  () {
-                    if (rowIndex >= 2) {
-                      // Needs at least two cells above to subtract: (row-2) - (row-1)
-                      // Ensure we are referencing valid row indices
-                      final topRowIndex = rowIndex - 2;
-                      final bottomRowIndex = rowIndex - 1;
-
-                      // Check if these rows actually exist in the sheet
-                      bool topRowExists = currentSheet.rows
-                          .any((r) => r.rowIndex == topRowIndex);
-                      bool bottomRowExists = currentSheet.rows
-                          .any((r) => r.rowIndex == bottomRowIndex);
-
-                      if (topRowExists && bottomRowExists) {
-                        String formula =
-                            '=${_getColumnLetter(columnIndex)}${topRowIndex} - ${_getColumnLetter(columnIndex)}${bottomRowIndex}';
-                        _handleCellSubmit(
-                            rowIndex, columnIndex, formula, colorHex);
-                        Navigator.of(context).pop();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'Not enough valid rows above for subtraction.')),
-                        );
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content:
-                                Text('Not enough rows above for subtraction.')),
-                      );
-                    }
-                  },
+                  'Subtract the cell above from the one two rows above',
+                  Colors.orange,
+                  () => _applySubtractVerticalFormula(
+                      rowIndex, columnIndex, colorHex),
                 ),
-                _buildFormulaOption(
+                const SizedBox(height: 8),
+                _buildModernFormulaOption(
                   context,
                   'Apply Multiply to All Rows',
                   Icons.clear,
-                  () {
-                    if (columnIndex < 2) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Select a cell in column C or higher to use this feature.')),
-                      );
-                      Navigator.of(context).pop(); // Close dialog
-                      return;
-                    }
-
-                    String generateProductFormula(
-                        int rIdx, int cIdx, InventoryRowModel rowModel) {
-                      List<String> terms = [];
-                      bool hasValidValues = false;
-
-                      // Multiply columns from C (index 2) up to the column before the selected one
-                      for (int colToMultiply = 2;
-                          colToMultiply < cIdx;
-                          colToMultiply++) {
-                        // Check if this cell has a value
-                        final cell = rowModel.cells.firstWhereOrNull(
-                          (c) => c.columnIndex == colToMultiply,
-                        );
-
-                        if (cell != null &&
-                            cell.value != null &&
-                            cell.value!.isNotEmpty &&
-                            cell.value != '0') {
-                          try {
-                            // Try parsing to see if it's a numeric value
-                            double.parse(cell.value!);
-                            terms
-                                .add("${_getColumnLetter(colToMultiply)}$rIdx");
-                            hasValidValues = true;
-                          } catch (_) {
-                            // If not numeric, only add if it's a formula
-                            if (cell.formula != null &&
-                                cell.formula!.startsWith('=')) {
-                              terms.add(
-                                  "${_getColumnLetter(colToMultiply)}$rIdx");
-                              hasValidValues = true;
-                            }
-                          }
-                        }
-                      }
-
-                      if (!hasValidValues || terms.isEmpty) {
-                        return ""; // Return empty string when no valid values to multiply
-                      }
-
-                      return "=" + terms.join(" * ");
-                    }
-
-                    // Find the current row model for the selected cell
-                    final selectedRowModel = currentSheet.rows.firstWhereOrNull(
-                      (r) => r.rowIndex == rowIndex,
-                    );
-
-                    if (selectedRowModel == null) {
-                      Navigator.of(context).pop();
-                      return;
-                    }
-
-                    final mainFormula = generateProductFormula(
-                        rowIndex, columnIndex, selectedRowModel);
-
-                    if (mainFormula.isNotEmpty) {
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, mainFormula, colorHex);
-                    }
-
-                    // Apply to all other rows
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      final sortedRows =
-                          List<InventoryRowModel>.from(currentSheet.rows)
-                            ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
-
-                      for (var row in sortedRows) {
-                        if (row.rowIndex == rowIndex)
-                          continue; // Skip the already processed selected row
-
-                        final otherFormula = generateProductFormula(
-                            row.rowIndex, columnIndex, row);
-
-                        // Only apply formula if there are values to multiply
-                        if (otherFormula.isNotEmpty) {
-                          _handleCellSubmit(
-                              row.rowIndex, columnIndex, otherFormula, null);
-                        }
-                      }
-                    });
-
-                    Navigator.of(context).pop();
-                  },
+                  'Multiply all values in previous columns for each row',
+                  Colors.blue,
+                  () => _applyMultiplyToAllRows(
+                      rowIndex, columnIndex, colorHex, currentSheet),
                 ),
-                _buildFormulaOption(
+                const SizedBox(height: 8),
+                _buildModernFormulaOption(
                   context,
                   'Add All Cells Above',
                   Icons.add,
-                  () {
-                    List<String> terms = [];
-
-                    final sortedRows =
-                        List<InventoryRowModel>.from(currentSheet.rows)
-                          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
-
-                    for (var rowIter in sortedRows) {
-                      if (rowIter.rowIndex < rowIndex) {
-                        // Only cells strictly above
-                        final cellInColumn = rowIter.cells.firstWhereOrNull(
-                            (c) => c.columnIndex == columnIndex);
-
-                        if (cellInColumn != null &&
-                            cellInColumn.value != null &&
-                            cellInColumn.value!.isNotEmpty) {
-                          try {
-                            // This check ensures we only include cells that currently hold a numeric value.
-                            // The formula itself will use cell references.
-                            double.parse(cellInColumn.value!);
-                            terms.add(
-                                '${_getColumnLetter(columnIndex)}${rowIter.rowIndex}');
-                          } catch (_) {
-                            // Value is not a plain number (e.g. text, #ERROR)
-                            // Do not include in sum if it's not currently representing a number.
-                          }
-                        }
-                      }
-                    }
-
-                    if (terms.isNotEmpty) {
-                      String formula = '=' + terms.join(' + ');
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, formula, colorHex);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'No numeric cells found above this cell in the column.')),
-                      );
-                    }
-                  },
+                  'Sum all numeric cells above in this column',
+                  Colors.green,
+                  () => _applyAddAllCellsAbove(
+                      rowIndex, columnIndex, colorHex, currentSheet),
                 ),
-                _buildFormulaOption(
+                const SizedBox(height: 8),
+                _buildModernFormulaOption(
                   context,
                   'Apply Addition to All Rows',
                   Icons.add_circle_outline,
-                  () {
-                    if (columnIndex <= 1) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Select a cell in column C or higher to use this feature.')),
-                      );
-                      Navigator.of(context).pop(); // Close dialog
-                      return;
-                    }
+                  'Add all values in previous columns for each row',
+                  Colors.purple,
+                  () => _applyAdditionToAllRows(
+                      rowIndex, columnIndex, colorHex, currentSheet),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-                    String generateSumFormula(
-                        int rIdx, int cIdx, InventoryRowModel rowModel) {
-                      List<String> terms = [];
-                      bool hasValidValues = false;
+  Widget _buildModernFormulaOption(
+    BuildContext context,
+    String title,
+    IconData icon,
+    String description,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).pop();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.05),
+                color.withOpacity(0.02),
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: color, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                      // Sum columns from B (index 1) up to the column before the selected one
-                      // Skip column A (index 0) as it's the row number column
-                      for (int colToSum = 1; colToSum < cIdx; colToSum++) {
-                        // Check if this cell has a value
-                        final cell = rowModel.cells.firstWhereOrNull(
-                          (c) => c.columnIndex == colToSum,
-                        );
+  void _applySubtractVerticalFormula(
+      int rowIndex, int columnIndex, String? colorHex) {
+    if (rowIndex >= 2) {
+      final topRowIndex = rowIndex - 2;
+      final bottomRowIndex = rowIndex - 1;
 
-                        if (cell != null &&
-                            cell.value != null &&
-                            cell.value!.isNotEmpty &&
-                            cell.value != '0') {
-                          try {
-                            // Try parsing to see if it's a numeric value
-                            double.parse(cell.value!);
-                            terms.add("${_getColumnLetter(colToSum)}$rIdx");
-                            hasValidValues = true;
-                          } catch (_) {
-                            // If not numeric, only add if it's a formula
-                            if (cell.formula != null &&
-                                cell.formula!.startsWith('=')) {
-                              terms.add("${_getColumnLetter(colToSum)}$rIdx");
-                              hasValidValues = true;
-                            }
-                          }
-                        }
-                      }
+      // Check if these rows exist
+      final currentSheet = _dataSource.currentSheet;
+      bool topRowExists =
+          currentSheet.rows.any((r) => r.rowIndex == topRowIndex);
+      bool bottomRowExists =
+          currentSheet.rows.any((r) => r.rowIndex == bottomRowIndex);
 
-                      if (!hasValidValues || terms.isEmpty) {
-                        return ""; // Return empty string when no valid values to sum
-                      }
+      if (topRowExists && bottomRowExists) {
+        String formula =
+            '=${_getColumnLetter(columnIndex)}${topRowIndex} - ${_getColumnLetter(columnIndex)}${bottomRowIndex}';
+        _handleCellSubmit(rowIndex, columnIndex, formula, colorHex);
+      } else {
+        _showSnackBar('Not enough valid rows above for subtraction.',
+            isError: true);
+      }
+    } else {
+      _showSnackBar('Not enough rows above for subtraction.', isError: true);
+    }
+  }
 
-                      return "=" + terms.join(" + ");
-                    }
+  void _applyMultiplyToAllRows(int rowIndex, int columnIndex, String? colorHex,
+      InventorySheetModel currentSheet) {
+    if (columnIndex < 2) {
+      _showSnackBar('Select a cell in column C or higher to use this feature.',
+          isError: true);
+      return;
+    }
 
-                    // Find the current row model for the selected cell
-                    final selectedRowModel = currentSheet.rows.firstWhereOrNull(
-                      (r) => r.rowIndex == rowIndex,
-                    );
+    String generateProductFormula(
+        int rIdx, int cIdx, InventoryRowModel rowModel) {
+      // Only multiply the first 2 cells to the left of the selected column
+      int firstColumnIndex = cIdx - 2;
+      int secondColumnIndex = cIdx - 1;
 
-                    if (selectedRowModel == null) {
-                      Navigator.of(context).pop();
-                      return;
-                    }
+      final firstCell = rowModel.cells
+          .firstWhereOrNull((c) => c.columnIndex == firstColumnIndex);
+      final secondCell = rowModel.cells
+          .firstWhereOrNull((c) => c.columnIndex == secondColumnIndex);
 
-                    final mainFormula = generateSumFormula(
-                        rowIndex, columnIndex, selectedRowModel);
+      // Check if both cells have valid values
+      bool firstCellValid = false;
+      bool secondCellValid = false;
 
-                    if (mainFormula.isNotEmpty) {
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, mainFormula, colorHex);
-                    }
+      if (firstCell != null &&
+          firstCell.value != null &&
+          firstCell.value!.isNotEmpty &&
+          firstCell.value != '0') {
+        try {
+          double.parse(firstCell.value!);
+          firstCellValid = true;
+        } catch (_) {
+          if (firstCell.formula != null && firstCell.formula!.startsWith('=')) {
+            firstCellValid = true;
+          }
+        }
+      }
 
-                    // Apply to all other rows
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      final sortedRows =
-                          List<InventoryRowModel>.from(currentSheet.rows)
-                            ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+      if (secondCell != null &&
+          secondCell.value != null &&
+          secondCell.value!.isNotEmpty &&
+          secondCell.value != '0') {
+        try {
+          double.parse(secondCell.value!);
+          secondCellValid = true;
+        } catch (_) {
+          if (secondCell.formula != null &&
+              secondCell.formula!.startsWith('=')) {
+            secondCellValid = true;
+          }
+        }
+      }
 
-                      for (var row in sortedRows) {
-                        if (row.rowIndex == rowIndex)
-                          continue; // Skip the already processed selected row
+      // Both cells must be valid for multiplication
+      if (!firstCellValid || !secondCellValid) {
+        return "";
+      }
 
-                        final otherFormula =
-                            generateSumFormula(row.rowIndex, columnIndex, row);
+      return "=${_getColumnLetter(firstColumnIndex)}$rIdx * ${_getColumnLetter(secondColumnIndex)}$rIdx";
+    }
 
-                        // Only apply formula if there are values to sum
-                        if (otherFormula.isNotEmpty) {
+    final selectedRowModel =
+        currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
+    if (selectedRowModel == null) return;
+
+    final mainFormula =
+        generateProductFormula(rowIndex, columnIndex, selectedRowModel);
+    if (mainFormula.isNotEmpty) {
+      _handleCellSubmit(rowIndex, columnIndex, mainFormula, colorHex);
+    } else {
+      _showSnackBar(
+          'The two cells to the left must contain valid numeric values.',
+          isError: true);
+      return;
+    }
+
+    // Apply to all other rows
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
+        ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+      for (var row in sortedRows) {
+        if (row.rowIndex == rowIndex) continue;
+
+        final otherFormula =
+            generateProductFormula(row.rowIndex, columnIndex, row);
+        if (otherFormula.isNotEmpty) {
+          _handleCellSubmit(row.rowIndex, columnIndex, otherFormula, null);
+        }
+      }
+    });
+  }
+
+  void _applyAddAllCellsAbove(int rowIndex, int columnIndex, String? colorHex,
+      InventorySheetModel currentSheet) {
+    List<String> terms = [];
+
+    final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    for (var rowIter in sortedRows) {
+      if (rowIter.rowIndex < rowIndex) {
+        final cellInColumn =
+            rowIter.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
+
+        if (cellInColumn != null &&
+            cellInColumn.value != null &&
+            cellInColumn.value!.isNotEmpty) {
+          try {
+            double.parse(cellInColumn.value!);
+            terms.add('${_getColumnLetter(columnIndex)}${rowIter.rowIndex}');
+          } catch (_) {
+            // Skip non-numeric values
+          }
+        }
+      }
+    }
+
+    if (terms.isNotEmpty) {
+      String formula = '=' + terms.join(' + ');
+      _handleCellSubmit(rowIndex, columnIndex, formula, colorHex);
+    } else {
+      _showSnackBar('No numeric cells found above this cell in the column.',
+          isError: true);
+    }
+  }
+
+  void _applyAdditionToAllRows(int rowIndex, int columnIndex, String? colorHex,
+      InventorySheetModel currentSheet) {
+    if (columnIndex <= 1) {
+      _showSnackBar('Select a cell in column C or higher to use this feature.',
+          isError: true);
+      return;
+    }
+
+    String generateSumFormula(int rIdx, int cIdx, InventoryRowModel rowModel) {
+      List<String> terms = [];
+      bool hasValidValues = false;
+
+      for (int colToSum = 1; colToSum < cIdx; colToSum++) {
+        final cell =
+            rowModel.cells.firstWhereOrNull((c) => c.columnIndex == colToSum);
+
+        if (cell != null &&
+            cell.value != null &&
+            cell.value!.isNotEmpty &&
+            cell.value != '0') {
+          try {
+            double.parse(cell.value!);
+            terms.add("${_getColumnLetter(colToSum)}$rIdx");
+            hasValidValues = true;
+          } catch (_) {
+            if (cell.formula != null && cell.formula!.startsWith('=')) {
+              terms.add("${_getColumnLetter(colToSum)}$rIdx");
+              hasValidValues = true;
+            }
+          }
+        }
+      }
+
+      if (!hasValidValues || terms.isEmpty) {
+        return "";
+      }
+
+      return "=" + terms.join(" + ");
+    }
+
+    final selectedRowModel =
+        currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
+    if (selectedRowModel == null) return;
+
+    final mainFormula =
+        generateSumFormula(rowIndex, columnIndex, selectedRowModel);
+    if (mainFormula.isNotEmpty) {
+      _handleCellSubmit(rowIndex, columnIndex, mainFormula, colorHex);
+    }
+
+    // Apply to all other rows
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
+        ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+      for (var row in sortedRows) {
+        if (row.rowIndex == rowIndex) continue;
+
+        final otherFormula = generateSumFormula(row.rowIndex, columnIndex, row);
+        if (otherFormula.isNotEmpty) {
+          _handleCellSubmit(row.rowIndex, columnIndex, otherFormula, null);
+        }
+      }
+    });
+  }
+
+  // Add the missing color picker dialog method
+  void _showColorPickerDialog(int rowIndex, int columnIndex, String value) {
+    final existingCell = _findCellInSheet(rowIndex, columnIndex);
+    String? currentColorHex = existingCell?.color;
+
+    // Preserve formula if it exists
+    String valueToKeep = existingCell?.formula ?? value;
+    // If we have a formula, use that, otherwise use the display value
+    if (existingCell?.formula == null && existingCell?.value != null) {
+      valueToKeep = existingCell!.value!;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.color_lens, color: AppColors.primary, size: 24),
+              const SizedBox(width: 8),
+              const Text('Select Cell Color'),
+            ],
+          ),
+          content: Container(
+            width: 320,
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Choose a color for this cell',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: CellColorHandler.colorPalette.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return _buildColorOption(
+                        null,
+                        'Remove Color',
+                        Icons.format_color_reset,
+                        currentColorHex == null,
+                        () {
                           _handleCellSubmit(
-                              row.rowIndex, columnIndex, otherFormula, null);
-                        }
-                      }
-                    });
+                              rowIndex, columnIndex, valueToKeep, null);
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    }
 
-                    Navigator.of(context).pop();
+                    final colorEntry = CellColorHandler.colorPalette.entries
+                        .elementAt(index - 1);
+                    final colorHex =
+                        CellColorHandler.getHexFromColor(colorEntry.value);
+                    final isSelected = currentColorHex == colorHex;
+
+                    return _buildColorOption(
+                      colorEntry.value,
+                      colorEntry.key,
+                      null,
+                      isSelected,
+                      () {
+                        _handleCellSubmit(
+                            rowIndex, columnIndex, valueToKeep, colorHex);
+                        Navigator.of(context).pop();
+                      },
+                    );
                   },
                 ),
               ],
@@ -1545,106 +1994,51 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
     );
   }
 
-  // Helper method to build formula option items
-  Widget _buildFormulaOption(
-      BuildContext context, String title, IconData icon, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(title),
-      onTap: onTap,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-    );
-  }
-
-  // Add a method to show color picker dialog for the selected cell
-  void _showColorPickerDialog(int rowIndex, int columnIndex, String value) {
-    final existingCell = _findCellInSheet(rowIndex, columnIndex);
-    String? currentColorHex = existingCell?.color;
-
-    // Preserve formula if it exists
-    String valueToKeep = existingCell?.formula ?? value;
-    // If we have a formula, use that, otherwise use the display value
-    if (existingCell?.formula == null && existingCell?.value != null) {
-      valueToKeep = existingCell!.value!;
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select Cell Color'),
-          content: SizedBox(
-            width: 300,
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 5,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: CellColorHandler.colorPalette.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return InkWell(
-                    onTap: () {
-                      // Pass the preserved value instead of potentially empty value
-                      _handleCellSubmit(
-                          rowIndex, columnIndex, valueToKeep, null);
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.format_color_reset),
-                      ),
-                    ),
-                  );
-                }
-
-                final colorEntry =
-                    CellColorHandler.colorPalette.entries.elementAt(index - 1);
-
-                return InkWell(
-                  onTap: () {
-                    final colorHex =
-                        CellColorHandler.getHexFromColor(colorEntry.value);
-                    // Pass the preserved value instead of potentially empty value
-                    _handleCellSubmit(
-                        rowIndex, columnIndex, valueToKeep, colorHex);
-                    Navigator.of(context).pop();
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorEntry.value,
-                      border: Border.all(
-                        color: Colors.black,
-                        width: currentColorHex != null &&
-                                CellColorHandler.getHexFromColor(
-                                        colorEntry.value) ==
-                                    currentColorHex
-                            ? 2
-                            : 0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Center(),
-                  ),
-                );
-              },
+  Widget _buildColorOption(
+    Color? color,
+    String label,
+    IconData? icon,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      elevation: isSelected ? 4 : 2,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: color ?? Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color:
+                  isSelected ? AppColors.primary : Colors.grey.withOpacity(0.3),
+              width: isSelected ? 3 : 1,
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
+          child: Center(
+            child: icon != null
+                ? Icon(
+                    icon,
+                    color: Colors.grey[600],
+                    size: 20,
+                  )
+                : Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1664,6 +2058,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet> {
     return null;
   }
 
+  // ...existing code...
   List<GridColumn> _buildColumns() {
     // Use the columns property from SheetModel to determine column count
     int columnCount = widget.sheet.columns;

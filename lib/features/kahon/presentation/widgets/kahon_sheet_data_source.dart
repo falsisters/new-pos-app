@@ -11,7 +11,6 @@ import 'package:falsisters_pos_android/features/kahon/data/models/kahon_item_mod
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
 
 class KahonSheetDataSource extends DataGridSource {
-  // Static field to store the current BuildContext
   static BuildContext? currentContext;
 
   final SheetModel sheet;
@@ -22,13 +21,11 @@ class KahonSheetDataSource extends DataGridSource {
   final Function(int afterRowIndex) addCalculationRowCallback;
   final Function(String rowId) deleteRowCallback;
   final FormulaHandler formulaHandler;
-  // Callback for when a cell is selected in edit mode
   final Function(
           int rowIndex, int columnIndex, String? value, String? colorHex)?
       onCellSelected;
 
   SheetModel get currentSheet => sheet;
-
   List<DataGridRow> _rows = [];
 
   KahonSheetDataSource({
@@ -48,169 +45,220 @@ class KahonSheetDataSource extends DataGridSource {
   List<DataGridRow> get rows => _rows;
 
   List<DataGridRow> _generateRows() {
-    List<DataGridRow> dataRows = [];
-
-    // Sort rows by rowIndex
     final sortedRows = List<RowModel>.from(sheet.rows)
       ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
-    for (var row in sortedRows) {
-      // Create a list for cells that match our columns
-      List<DataGridCell> cells = [];
+    return sortedRows.map((row) {
+      final cells = <DataGridCell>[
+        _buildItemNameCell(row, sortedRows),
+        ..._buildDataCells(row),
+      ];
+      return DataGridRow(cells: cells);
+    }).toList();
+  }
 
-      // Add item name cell (first column)
-      String itemNumber = '';
-      if (row.isItemRow && row.itemId != null) {
-        // Using the index+1 as the item number
-        int itemIndex = sortedRows.indexOf(row);
-        itemNumber = (itemIndex + 1).toString();
-      } else if (!row.isItemRow) {
-        // For non-item rows (headers, totals, etc.)
-        // Using rowName or another existing property from RowModel
-        itemNumber = row.rowIndex.toString();
-      }
-
-      cells.add(DataGridCell<RowCellData>(
-        columnName: 'itemName',
-        value: RowCellData(
-          text: itemNumber,
-          rowId: row.id,
-          rowIndex: row.rowIndex,
-          isItemRow: row.isItemRow,
-        ),
-      ));
-
-      // Create a map for easy access to cell data by column index
-      Map<int, CellModel> cellMap = {};
-      for (var cell in row.cells) {
-        cellMap[cell.columnIndex] = cell;
-      }
-
-      // Add cells for each column based on the sheet's column count
-      for (int i = 0; i < sheet.columns; i++) {
-        final CellModel? cellModel = cellMap[i];
-        cells.add(DataGridCell<CellModel?>(
-          columnName: 'column$i',
-          value: cellModel,
-        ));
-      }
-
-      // Create DataGridRow
-      dataRows.add(DataGridRow(cells: cells));
+  DataGridCell _buildItemNameCell(RowModel row, List<RowModel> sortedRows) {
+    String itemNumber = '';
+    if (row.isItemRow && row.itemId != null) {
+      itemNumber = (sortedRows.indexOf(row) + 1).toString();
+    } else if (!row.isItemRow) {
+      itemNumber = row.rowIndex.toString();
     }
 
-    return dataRows;
+    return DataGridCell<RowCellData>(
+      columnName: 'itemName',
+      value: RowCellData(
+        text: itemNumber,
+        rowId: row.id,
+        rowIndex: row.rowIndex,
+        isItemRow: row.isItemRow,
+      ),
+    );
+  }
+
+  List<DataGridCell> _buildDataCells(RowModel row) {
+    final cellMap = <int, CellModel>{};
+    for (var cell in row.cells) {
+      cellMap[cell.columnIndex] = cell;
+    }
+
+    return List.generate(sheet.columns, (i) {
+      return DataGridCell<CellModel?>(
+        columnName: 'column$i',
+        value: cellMap[i],
+      );
+    });
   }
 
   @override
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
       cells: row.getCells().map<Widget>((cell) {
-        // For item name column
         if (cell.columnName == 'itemName') {
-          final rowData = cell.value as RowCellData;
-          return Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.all(8.0),
-            color: AppColors.secondary.withAlpha(13),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  rowData.text,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.secondary,
-                  ),
-                ),
-                if (isEditable)
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 16, color: AppColors.secondary),
-                    onSelected: (value) {
-                      if (value == 'add_calculation') {
-                        addCalculationRowCallback(rowData.rowIndex);
-                      } else if (value == 'delete') {
-                        deleteRowCallback(rowData.rowId);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<String>(
-                        value: 'add_calculation',
-                        child: Text('Add Calculation Row(s) After'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Delete Row',
-                            style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          );
+          return _buildItemNameWidget(cell.value as RowCellData);
+        } else if (cell.value is CellModel) {
+          return _buildCellWidget(cell.value as CellModel);
+        } else {
+          return _buildEmptyCell();
         }
-        // For cell model columns
-        else if (cell.value is CellModel) {
-          final cellModel = cell.value as CellModel;
+      }).toList(),
+    );
+  }
 
-          // Get background color from cell model
-          Color? backgroundColor;
-          if (cellModel.color != null && cellModel.color!.isNotEmpty) {
-            backgroundColor = CellColorHandler.getColorFromHex(cellModel.color);
-          }
-
-          return GestureDetector(
-            // Handle double tap to toggle edit mode even when not in edit mode
-            onDoubleTap: isEditable
-                ? null
-                : () {
-                    if (currentContext != null) {
-                      // Find the sheet widget and toggle its edit mode
-                      // This is handled in the parent by wrapping the entire sheet in GestureDetector
-                      // but can be extended here to handle specific cell double-taps
-                    }
-                  },
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(8.0),
-              color: backgroundColor ??
-                  (cellModel.isCalculated
-                      ? AppColors.primaryLight.withAlpha(25)
-                      : null),
+  Widget _buildItemNameWidget(RowCellData rowData) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withOpacity(0.05),
+        border: Border(
+          right: BorderSide(
+              color: AppColors.primaryLight.withOpacity(0.3), width: 1),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+              ),
               child: Text(
-                cellModel.value ?? '',
-                style: TextStyle(
-                  color: cellModel.isCalculated
-                      ? AppColors.primary
-                      : Colors.black87,
+                rowData.text,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondary,
+                  fontSize: 13,
                 ),
               ),
             ),
-          );
-        }
-        // For empty cells or null values
-        else {
-          return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
-            child: const Text(''),
-          );
-        }
-      }).toList(),
+            if (isEditable) _buildRowActionMenu(rowData),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRowActionMenu(RowCellData rowData) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: PopupMenuButton<String>(
+        icon: Icon(
+          Icons.more_vert_rounded,
+          size: 18,
+          color: AppColors.secondary.withOpacity(0.7),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onSelected: (value) {
+          if (value == 'add_calculation') {
+            addCalculationRowCallback(rowData.rowIndex);
+          } else if (value == 'delete') {
+            deleteRowCallback(rowData.rowId);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'add_calculation',
+            child: Row(
+              children: const [
+                Icon(Icons.add_circle_outline,
+                    color: AppColors.primary, size: 18),
+                SizedBox(width: 8),
+                Text('Add Calculation Row(s) After'),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: const [
+                Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                SizedBox(width: 8),
+                Text('Delete Row', style: TextStyle(color: Colors.red)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCellWidget(CellModel cellModel) {
+    final backgroundColor =
+        cellModel.color != null && cellModel.color!.isNotEmpty
+            ? CellColorHandler.getColorFromHex(cellModel.color)
+            : (cellModel.isCalculated
+                ? AppColors.primaryLight.withOpacity(0.1)
+                : null);
+
+    return GestureDetector(
+      onDoubleTap: isEditable
+          ? null
+          : () {
+              if (currentContext != null) {
+                // Handle double tap for edit mode toggle
+              }
+            },
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(
+            color: cellModel.isCalculated
+                ? AppColors.primary.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.2),
+            width: 0.5,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Text(
+            cellModel.value ?? '',
+            style: TextStyle(
+              color:
+                  cellModel.isCalculated ? AppColors.primary : Colors.black87,
+              fontWeight:
+                  cellModel.isCalculated ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyCell() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withOpacity(0.2), width: 0.5),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: Text('', textAlign: TextAlign.center),
+      ),
     );
   }
 
   @override
   Widget? buildEditWidget(DataGridRow row, RowColumnIndex rowColumnIndex,
       GridColumn column, CellSubmit submitCell) {
-    if (column.columnName == 'itemName') {
-      return null;
-    }
+    if (column.columnName == 'itemName') return null;
 
     final rowCellData = row.getCells().first.value as RowCellData;
     final rowIndex = rowCellData.rowIndex;
-
     final columnIndex = int.parse(column.columnName.replaceAll('column', ''));
 
     final cell = row
@@ -222,22 +270,14 @@ class KahonSheetDataSource extends DataGridSource {
         )
         .value as CellModel?;
 
-    bool isCalculatedCell = cell != null && cell.isCalculated;
+    final isCalculatedCell = cell?.isCalculated ?? false;
+    final initialValue = cell?.formula ?? cell?.value ?? '';
+    final cellColor = cell?.color;
 
-    String initialValue = '';
-    String? cellColor;
-    if (cell != null) {
-      initialValue = cell.formula ?? cell.value ?? '';
-      cellColor = cell.color;
-    }
-
-    final TextEditingController controller =
-        TextEditingController(text: initialValue);
-
+    final controller = TextEditingController(text: initialValue);
     Color? selectedColor =
         cellColor != null ? CellColorHandler.getColorFromHex(cellColor) : null;
-
-    final FocusNode focusNode = FocusNode();
+    final focusNode = FocusNode();
 
     focusNode.addListener(() {
       if (!focusNode.hasFocus && !isCalculatedCell) {
@@ -253,73 +293,69 @@ class KahonSheetDataSource extends DataGridSource {
       }
     });
 
-    return StatefulBuilder(
-      builder: (context, setInnerState) {
-        currentContext = context;
+    return _buildEditField(controller, focusNode, selectedColor,
+        isCalculatedCell, rowIndex, columnIndex, submitCell);
+  }
 
-        String? colorHex = selectedColor != null
-            ? CellColorHandler.getHexFromColor(selectedColor)
-            : null;
-
-        return Container(
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            children: [
-              RawKeyboardListener(
-                focusNode: FocusNode(),
-                onKey: (event) {
-                  if (event is RawKeyDownEvent &&
-                      event.logicalKey == LogicalKeyboardKey.enter) {
-                    if (!isCalculatedCell) {
-                      cellSubmitCallback(
-                        rowIndex,
-                        columnIndex,
-                        controller.text,
-                        colorHex,
-                      );
-                    }
-                    submitCell();
-                  }
-                },
-                child: TextField(
-                  autofocus: true,
-                  focusNode: focusNode,
-                  controller: controller,
-                  enabled: !isCalculatedCell,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(4),
-                      borderSide:
-                          BorderSide(color: AppColors.primary.withOpacity(0.5)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12, // Reduced padding since no icon
-                    ),
-                    fillColor: selectedColor,
-                    filled: selectedColor != null,
-                  ),
-                  onSubmitted: (value) {
-                    if (!isCalculatedCell) {
-                      cellSubmitCallback(
-                        rowIndex,
-                        columnIndex,
-                        value,
-                        colorHex,
-                      );
-                    }
-                    submitCell();
-                  },
-                  onTapOutside: (_) {
-                    FocusManager.instance.primaryFocus?.unfocus();
-                  },
-                ),
-              ),
-            ],
+  Widget _buildEditField(
+      TextEditingController controller,
+      FocusNode focusNode,
+      Color? selectedColor,
+      bool isCalculatedCell,
+      int rowIndex,
+      int columnIndex,
+      CellSubmit submitCell) {
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        );
-      },
+        ],
+      ),
+      child: TextField(
+        autofocus: true,
+        focusNode: focusNode,
+        controller: controller,
+        enabled: !isCalculatedCell,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide:
+                BorderSide(color: AppColors.primary.withOpacity(0.6), width: 2),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          fillColor: selectedColor ??
+              (isCalculatedCell
+                  ? AppColors.primaryLight.withOpacity(0.1)
+                  : Colors.white),
+          filled: true,
+        ),
+        onSubmitted: (value) {
+          if (!isCalculatedCell) {
+            cellSubmitCallback(
+                rowIndex,
+                columnIndex,
+                value,
+                selectedColor != null
+                    ? CellColorHandler.getHexFromColor(selectedColor)
+                    : null);
+          }
+          submitCell();
+        },
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+      ),
     );
   }
 

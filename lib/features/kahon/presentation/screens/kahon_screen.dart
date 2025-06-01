@@ -44,173 +44,200 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
     final inventoryState = ref.watch(inventoryProvider);
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        // Removed title
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () async {
-              // First pick start date
-              final DateTime? startDate = await showDatePicker(
-                context: context,
-                initialDate: _selectedStartDate ?? DateTime.now(),
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2030),
-              );
-
-              // If start date is selected, pick end date
-              if (startDate != null) {
-                final DateTime? endDate = await showDatePicker(
-                  context: context,
-                  initialDate: startDate.add(const Duration(days: 1)),
-                  firstDate: startDate,
-                  lastDate: DateTime(2030),
-                );
-
-                // Create result object using the built-in DateTimeRange class
-                final result = endDate != null
-                    ? DateTimeRange(start: startDate, end: endDate)
-                    : null;
-
-                if (result != null) {
-                  setState(() {
-                    _selectedStartDate = result.start;
-                    _selectedEndDate = result.end;
-                  });
-                  // Fetch sheet data for selected date range for both tabs
-                  ref
-                      .read(sheetNotifierProvider.notifier)
-                      .getSheetByDate(_selectedStartDate, _selectedEndDate);
-
-                  ref.read(inventoryProvider.notifier).getInventoryByDate(
-                        _selectedStartDate,
-                        _selectedEndDate,
-                      );
-                }
-              }
-            },
-            tooltip: 'Select Date Range',
+          Container(
+            margin: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.date_range, color: Colors.white),
+              onPressed: _selectDateRange,
+              tooltip: 'Select Date Range',
+            ),
           ),
         ],
-        // Using TabBar as the main content in AppBar title area
-        title: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          // Making tabs more prominent
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          indicatorWeight: 3.0,
-          tabs: const [
-            Tab(text: 'KAHON SHEET', icon: Icon(Icons.table_chart)),
-            Tab(text: 'INVENTORY', icon: Icon(Icons.inventory)),
-          ],
+        title: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.table_chart, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Kahon Sheet',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Inventory',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey[50]!, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Date filter display
             if (_selectedStartDate != null && _selectedEndDate != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Chip(
-                  label: Text(
-                    'Showing data from ${_formatDate(_selectedStartDate!)} to ${_formatDate(_selectedEndDate!)}',
-                    style: const TextStyle(color: Colors.white),
+              Container(
+                margin: const EdgeInsets.all(12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.secondary,
+                      AppColors.secondary.withOpacity(0.8)
+                    ],
                   ),
-                  backgroundColor: AppColors.secondary,
-                  deleteIcon: const Icon(Icons.close, color: Colors.white),
-                  onDeleted: () {
-                    setState(() {
-                      _selectedStartDate = null;
-                      _selectedEndDate = null;
-                    });
-                    ref
-                        .read(sheetNotifierProvider.notifier)
-                        .getSheetByDate(null, null);
-                    ref
-                        .read(inventoryProvider.notifier)
-                        .getInventoryByDate(null, null);
-                  },
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        color: Colors.white, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${_formatDate(_selectedStartDate!)} - ${_formatDate(_selectedEndDate!)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedStartDate = null;
+                          _selectedEndDate = null;
+                        });
+                        ref
+                            .read(sheetNotifierProvider.notifier)
+                            .getSheetByDate(null, null);
+                        ref
+                            .read(inventoryProvider.notifier)
+                            .getInventoryByDate(null, null);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-            // Sheet data with tabs
+            // Content area
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Kahon Sheet Tab
-                  sheetState.when(
-                    data: (data) {
-                      if (data.error != null) {
-                        return Center(
-                          child: Text(
-                            'Error: ${data.error}',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        );
-                      }
-
-                      if (data.sheet == null) {
-                        return const Center(
-                          child: Text('No sheet data available'),
-                        );
-                      }
-
-                      return KahonSheet(
-                        sheet: data.sheet!,
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stackTrace) => Center(
-                      child: Text(
-                        'Error: $error',
-                        style: const TextStyle(color: Colors.red),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Kahon Sheet Tab
+                        _buildTabContent(
+                          sheetState,
+                          (data) => data.sheet != null
+                              ? KahonSheet(sheet: data.sheet!)
+                              : _buildEmptyState(
+                                  'No sheet data available', Icons.table_chart),
+                        ),
+
+                        // Inventory Sheet Tab
+                        _buildTabContent(
+                          inventoryState,
+                          (data) => data.sheet != null
+                              ? InventorySheet(sheet: data.sheet!)
+                              : _buildEmptyState('No inventory data available',
+                                  Icons.inventory_2_outlined),
+                        ),
+                      ],
                     ),
                   ),
-
-                  // Inventory Sheet Tab
-                  inventoryState.when(
-                    data: (data) {
-                      if (data.error != null) {
-                        return Center(
-                          child: Text(
-                            'Error: ${data.error}',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        );
-                      }
-
-                      if (data.sheet == null) {
-                        return const Center(
-                          child: Text('No inventory data available'),
-                        );
-                      }
-
-                      return InventorySheet(
-                        sheet: data.sheet!,
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stackTrace) => Center(
-                      child: Text(
-                        'Error: $error',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -219,7 +246,211 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
     );
   }
 
+  Widget _buildTabContent<T>(
+    AsyncValue<T> state,
+    Widget Function(T) contentBuilder,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: state.when(
+        data: (data) {
+          // Handle error in data
+          if (data is Map && data['error'] != null) {
+            return _buildErrorState('Error: ${data['error']}');
+          }
+          return contentBuilder(data);
+        },
+        loading: () => _buildLoadingState(),
+        error: (error, stackTrace) => _buildErrorState('Error: $error'),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.1),
+                  AppColors.primary.withOpacity(0.05)
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Loading data...',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.red.withOpacity(0.1),
+                  Colors.red.withOpacity(0.05)
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            message,
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.withOpacity(0.1),
+                  Colors.grey.withOpacity(0.05)
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.grey[400],
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDateRange() async {
+    final DateTime? startDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedStartDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (startDate != null) {
+      final DateTime? endDate = await showDatePicker(
+        context: context,
+        initialDate: startDate.add(const Duration(days: 1)),
+        firstDate: startDate,
+        lastDate: DateTime(2030),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Colors.black,
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (endDate != null) {
+        setState(() {
+          _selectedStartDate = startDate;
+          _selectedEndDate = endDate;
+        });
+
+        ref
+            .read(sheetNotifierProvider.notifier)
+            .getSheetByDate(_selectedStartDate, _selectedEndDate);
+        ref
+            .read(inventoryProvider.notifier)
+            .getInventoryByDate(_selectedStartDate, _selectedEndDate);
+      }
+    }
+  }
+
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }
