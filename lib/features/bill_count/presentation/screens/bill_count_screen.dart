@@ -8,7 +8,6 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/expense_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
-import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {

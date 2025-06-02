@@ -1,4 +1,3 @@
-import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_model.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/transfer_product_request.dart';
 import 'package:flutter/material.dart';

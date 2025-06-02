@@ -2,7 +2,6 @@
 
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/models/delivery_product_dto_model.dart';
-import 'package:falsisters_pos_android/features/deliveries/data/models/delivery_state_model.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/providers/delivery_provider.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/confirm_delivery_screen.dart';
 import 'package:flutter/material.dart';
@@ -627,12 +626,5 @@ class TruckList extends ConsumerWidget {
         ),
       );
     }
-  }
-
-  int _calculateTotalItems(AsyncValue<DeliveryStateModel> deliveryState) {
-    if (deliveryState.valueOrNull == null) {
-      return 0;
-    }
-    return deliveryState.valueOrNull!.truck.products.length;
   }
 }

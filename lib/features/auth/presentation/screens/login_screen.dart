@@ -238,7 +238,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildFloatingElement(Size size, int index) {
-    final double delay = index * 0.5;
     final double size1 = 20 + (index % 3) * 30;
     final bool isCircle = index % 2 == 0;
 

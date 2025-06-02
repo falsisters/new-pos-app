@@ -3,8 +3,6 @@ import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
-import 'package:falsisters_pos_android/features/sales/data/model/per_kilo_price_dto.dart';
-import 'package:falsisters_pos_android/features/sales/data/model/sack_price_dto.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -186,8 +184,8 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         // Safely get sales with error handling
         List<SaleModel> sales = [];
         try {
-          sales = await _salesRepository.getSales(
-              date: preAsyncState!.selectedDate);
+          sales =
+              await _salesRepository.getSales(date: preAsyncState.selectedDate);
         } catch (e) {
           print('Error fetching sales after submit: $e');
           // Continue with empty sales rather than crashing
@@ -198,7 +196,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
           sales: sales,
           orderId: null,
           error: null,
-          selectedDate: preAsyncState!.selectedDate,
+          selectedDate: preAsyncState.selectedDate,
         );
       } catch (e) {
         print('Error in submitSale: $e');

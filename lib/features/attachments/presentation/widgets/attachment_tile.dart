@@ -1,4 +1,3 @@
-import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/attachments/data/models/attachment_model.dart';
 import 'package:falsisters_pos_android/features/attachments/data/models/attachment_type_enum.dart';
 import 'package:falsisters_pos_android/features/attachments/presentation/screens/attachment_view_screen.dart';
@@ -22,6 +21,7 @@ class _AttachmentTileState extends State<AttachmentTile>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  // ignore: unused_field
   bool _isPressed = false;
 
   @override

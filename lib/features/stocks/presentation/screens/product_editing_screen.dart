@@ -1,6 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
-import 'package:falsisters_pos_android/features/stocks/presentation/widgets/edit_price_form.dart';
 import 'package:falsisters_pos_android/features/stocks/presentation/widgets/transfer_stock_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +24,7 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
@@ -301,17 +300,6 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.attach_money_rounded, size: 20),
-                                  SizedBox(width: 8),
-                                  Text("Edit Price"),
-                                ],
-                              ),
-                            ),
-                            Tab(
-                              height: 50,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
                                   Icon(Icons.swap_horiz_rounded, size: 20),
                                   SizedBox(width: 8),
                                   Text("Transfer Stock"),
@@ -325,13 +313,6 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            // Edit Price Content
-                            SingleChildScrollView(
-                              child: EditPriceForm(
-                                product: widget.product,
-                              ),
-                            ),
-                            // Transfer Stock Content
                             SingleChildScrollView(
                               child: TransferStockForm(
                                 product: widget.product,

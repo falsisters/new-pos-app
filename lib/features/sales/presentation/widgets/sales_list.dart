@@ -348,7 +348,7 @@ class SalesListWidget extends ConsumerWidget {
             child: salesStateAsync.when(
               data: (salesState) {
                 final sales = salesState.sales;
-                if (sales == null || sales.isEmpty) {
+                if (sales.isEmpty) {
                   final selectedDate =
                       salesState.selectedDate ?? DateTime.now();
                   return Center(

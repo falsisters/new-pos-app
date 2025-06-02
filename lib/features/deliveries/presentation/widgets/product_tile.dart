@@ -1,6 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
-import 'package:falsisters_pos_android/features/products/data/models/sack_price_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
 import 'package:flutter/material.dart';
 
