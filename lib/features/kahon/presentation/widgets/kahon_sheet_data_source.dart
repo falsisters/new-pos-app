@@ -204,37 +204,27 @@ class KahonSheetDataSource extends DataGridSource {
                 ? AppColors.primaryLight.withOpacity(0.1)
                 : null);
 
-    return GestureDetector(
-      onDoubleTap: isEditable
-          ? null
-          : () {
-              if (currentContext != null) {
-                // Handle double tap for edit mode toggle
-              }
-            },
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          border: Border.all(
-            color: cellModel.isCalculated
-                ? AppColors.primary.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.2),
-            width: 0.5,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border.all(
+          color: cellModel.isCalculated
+              ? AppColors.primary.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 0.5,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Text(
-            cellModel.value ?? '',
-            style: TextStyle(
-              color:
-                  cellModel.isCalculated ? AppColors.primary : Colors.black87,
-              fontWeight:
-                  cellModel.isCalculated ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Text(
+          cellModel.value ?? '',
+          style: TextStyle(
+            color: cellModel.isCalculated ? AppColors.primary : Colors.black87,
+            fontWeight:
+                cellModel.isCalculated ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 13,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );

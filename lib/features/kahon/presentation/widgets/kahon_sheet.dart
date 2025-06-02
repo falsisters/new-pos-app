@@ -1388,6 +1388,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                           ],
                         ),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.functions_rounded,
@@ -1478,6 +1485,82 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                           } else {
                             _showModernSnackBar(
                               'Not enough rows above for subtraction',
+                              icon: Icons.warning,
+                              color: Colors.orange,
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildFormulaOption(
+                        context,
+                        'Apply Multiply to All Rows',
+                        Icons.close_rounded,
+                        () {
+                          if (columnIndex >= 2) {
+                            // Get the two columns to the left
+                            final firstColumnIndex = columnIndex - 2;
+                            final secondColumnIndex = columnIndex - 1;
+
+                            int formulasApplied = 0;
+
+                            // Get all rows sorted by row index
+                            final sortedRows = List<RowModel>.from(
+                                currentSheet.rows)
+                              ..sort(
+                                  (a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+                            for (var row in sortedRows) {
+                              // Check if cells exist in the two left columns for this row
+                              final firstCell = row.cells.firstWhereOrNull(
+                                  (c) => c.columnIndex == firstColumnIndex);
+                              final secondCell = row.cells.firstWhereOrNull(
+                                  (c) => c.columnIndex == secondColumnIndex);
+
+                              // Only apply formula if both cells exist and have values
+                              if (firstCell != null &&
+                                  secondCell != null &&
+                                  firstCell.value != null &&
+                                  firstCell.value!.isNotEmpty &&
+                                  secondCell.value != null &&
+                                  secondCell.value!.isNotEmpty) {
+                                try {
+                                  // Check if both values are numeric
+                                  double.parse(firstCell.value!);
+                                  double.parse(secondCell.value!);
+
+                                  // Create multiplication formula
+                                  String formula =
+                                      '=${_getColumnLetter(firstColumnIndex)}${row.rowIndex} * ${_getColumnLetter(secondColumnIndex)}${row.rowIndex}';
+
+                                  // Apply the formula to this row in the selected column
+                                  _handleCellSubmit(row.rowIndex, columnIndex,
+                                      formula, _selectedCellColorHex);
+                                  formulasApplied++;
+                                } catch (_) {
+                                  // Skip rows with non-numeric values
+                                }
+                              }
+                            }
+
+                            Navigator.of(context).pop();
+
+                            if (formulasApplied > 0) {
+                              _showModernSnackBar(
+                                'Applied multiplication formula to $formulasApplied rows',
+                                icon: Icons.check_circle,
+                                color: Colors.green,
+                              );
+                            } else {
+                              _showModernSnackBar(
+                                'No valid numeric cells found in the two columns to the left',
+                                icon: Icons.warning,
+                                color: Colors.orange,
+                              );
+                            }
+                          } else {
+                            _showModernSnackBar(
+                              'Need at least 2 columns to the left for multiplication',
                               icon: Icons.warning,
                               color: Colors.orange,
                             );
@@ -1633,6 +1716,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           });
         }
       }
+    }
+  }
+
+  // Handle cell double tap for edit mode activation
+  void _handleCellDoubleTap(DataGridCellDoubleTapDetails details) {
+    if (!_isEditable) {
+      _toggleEditMode();
     }
   }
 
@@ -1792,59 +1882,56 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onDoubleTap: !_isEditable ? _toggleEditMode : null,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_scaleAnimation, _borderColorAnimation]),
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _borderColorAnimation.value ??
-                      AppColors.primaryLight.withOpacity(0.2),
-                  width: _isEditable ? 2 : 1,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_scaleAnimation, _borderColorAnimation]),
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _borderColorAnimation.value ??
+                    AppColors.primaryLight.withValues(alpha: 0.2),
+                width: _isEditable ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  spreadRadius: 0,
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
                 ),
-                boxShadow: [
+                if (_isEditable)
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     spreadRadius: 0,
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 32,
+                    offset: const Offset(0, 0),
                   ),
-                  if (_isEditable)
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.15),
-                      spreadRadius: 0,
-                      blurRadius: 32,
-                      offset: const Offset(0, 0),
-                    ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildModernHeader(),
-                  _buildDivider(),
-                  Expanded(child: _buildDataGrid()),
-                  AnimatedBuilder(
-                    animation: _editModeAnimation,
-                    builder: (context, child) {
-                      return SizeTransition(
-                        sizeFactor: _editModeAnimation,
-                        child: _buildModernEditControls(),
-                      );
-                    },
-                  ),
-                ],
-              ),
+              ],
             ),
-          );
-        },
-      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildModernHeader(),
+                _buildDivider(),
+                Expanded(child: _buildDataGrid()),
+                AnimatedBuilder(
+                  animation: _editModeAnimation,
+                  builder: (context, child) {
+                    return SizeTransition(
+                      sizeFactor: _editModeAnimation,
+                      child: _buildModernEditControls(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2092,6 +2179,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           frozenColumnsCount: 1,
           columns: _buildColumns(),
           onCellTap: _handleCellTap,
+          onCellDoubleTap: _handleCellDoubleTap,
           headerRowHeight: 56,
           rowHeight: 48,
         ),

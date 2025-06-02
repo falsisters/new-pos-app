@@ -92,7 +92,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
             ),
           ),
           Container(
-            width: 100,
+            width: 120,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
@@ -100,20 +100,23 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
             ),
             child: TextField(
               controller: _controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: false),
+              keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               decoration: const InputDecoration(
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 border: InputBorder.none,
                 isDense: true,
+                hintText: "0",
               ),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(7), // Allow up to 1,000,000
+              ],
               onChanged: (value) {
                 final intValue = int.tryParse(value) ?? 0;
                 _updateAmount(intValue);
