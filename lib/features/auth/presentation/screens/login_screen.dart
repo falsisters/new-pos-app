@@ -82,23 +82,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Animated gradient background
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withOpacity(0.8),
-                  AppColors.accent.withOpacity(0.6),
-                  AppColors.primaryLight.withOpacity(0.4),
-                ],
-              ),
-            ),
-          ),
-
           // Animated background elements
           ...List.generate(8, (index) => _buildFloatingElement(size, index)),
 
@@ -120,11 +106,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             child: Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primaryLight
+                                  ],
+                                ),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: AppColors.primary.withOpacity(0.3),
                                     blurRadius: 20,
                                     spreadRadius: 5,
                                   ),
@@ -144,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       // App title with enhanced typography
                       ShaderMask(
                         shaderCallback: (bounds) => LinearGradient(
-                          colors: [Colors.white, Colors.white.withOpacity(0.8)],
+                          colors: [AppColors.primary, AppColors.primaryLight],
                         ).createShader(bounds),
                         child: const Text(
                           'Falsisters POS',
@@ -162,57 +153,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         'Modern Point of Sale System',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
 
                       const SizedBox(height: 60),
 
-                      // Glassmorphism login card
+                      // Clean login card
                       Container(
                         decoration: BoxDecoration(
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(24),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.25),
-                              Colors.white.withOpacity(0.15),
-                            ],
-                          ),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: AppColors.border,
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: AppColors.shadow,
                               blurRadius: 30,
                               spreadRadius: 0,
                               offset: const Offset(0, 10),
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: LoginForm(
-                              nameController: nameController,
-                              accessKeyController: accessKeyController,
-                              isLoading: authState.value!.isLoading,
-                              errorText: authState.value?.error,
-                              onSubmit: (name, accessKey) async {
-                                if (name.isNotEmpty && accessKey.isNotEmpty) {
-                                  await ref.read(authProvider.notifier).login(
-                                        name,
-                                        accessKey,
-                                      );
-                                }
-                              },
-                            ),
-                          ),
+                        child: LoginForm(
+                          nameController: nameController,
+                          accessKeyController: accessKeyController,
+                          isLoading: authState.value!.isLoading,
+                          errorText: authState.value?.error,
+                          onSubmit: (name, accessKey) async {
+                            if (name.isNotEmpty && accessKey.isNotEmpty) {
+                              await ref.read(authProvider.notifier).login(
+                                    name,
+                                    accessKey,
+                                  );
+                            }
+                          },
                         ),
                       ),
 
@@ -222,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       Text(
                         '© 2024 Falsisters. All rights reserved.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: AppColors.textTertiary,
                           fontSize: 12,
                         ),
                       ),
@@ -255,11 +233,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               width: size1,
               height: size1,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: AppColors.primaryLighter.withOpacity(0.6),
                 shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
                 borderRadius: isCircle ? null : BorderRadius.circular(8),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppColors.primary.withOpacity(0.2),
                   width: 1,
                 ),
               ),

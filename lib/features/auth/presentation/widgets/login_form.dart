@@ -59,7 +59,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -68,7 +68,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             'Sign in to your account',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w400,
             ),
             textAlign: TextAlign.center,
@@ -80,12 +80,12 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
               margin: const EdgeInsets.only(bottom: 24),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: AppColors.errorLight,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.1),
+                    color: AppColors.error.withOpacity(0.1),
                     blurRadius: 10,
                     spreadRadius: 0,
                   ),
@@ -95,7 +95,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                 children: [
                   Icon(
                     Icons.error_outline,
-                    color: Colors.red.shade300,
+                    color: AppColors.error,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -103,7 +103,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                     child: Text(
                       widget.errorText!,
                       style: TextStyle(
-                        color: Colors.red.shade200,
+                        color: AppColors.error,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -132,7 +132,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                 _obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: Colors.white.withOpacity(0.7),
+                color: AppColors.textSecondary,
               ),
               onPressed: () {
                 setState(() {
@@ -154,13 +154,13 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: widget.isLoading
-                          ? [Colors.grey.shade400, Colors.grey.shade500]
-                          : [Colors.white, Colors.white.withOpacity(0.9)],
+                          ? [AppColors.textTertiary, AppColors.textSecondary]
+                          : [AppColors.primary, AppColors.primaryLight],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: AppColors.primary.withOpacity(0.3),
                         blurRadius: 15,
                         spreadRadius: 0,
                         offset: const Offset(0, 5),
@@ -190,7 +190,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primary,
+                                    AppColors.white,
                                   ),
                                 ),
                               )
@@ -199,7 +199,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
+                                  color: AppColors.white,
                                 ),
                               ),
                       ),
@@ -229,7 +229,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
+            color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -237,10 +237,10 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withOpacity(0.3),
+              color: AppColors.border,
               width: 1,
             ),
           ),
@@ -249,21 +249,21 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             obscureText: obscureText,
             autofocus: autofocus,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: AppColors.textTertiary,
                 fontSize: 16,
               ),
               prefixIcon: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Icon(
                   icon,
-                  color: Colors.white.withOpacity(0.7),
+                  color: AppColors.textSecondary,
                   size: 24,
                 ),
               ),
