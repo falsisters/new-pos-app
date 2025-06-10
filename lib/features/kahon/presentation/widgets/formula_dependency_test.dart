@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler_new.dart';
 
 class FormulaDependencyTest extends ConsumerStatefulWidget {
   const FormulaDependencyTest({Key? key}) : super(key: key);

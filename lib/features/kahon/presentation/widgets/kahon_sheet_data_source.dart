@@ -1,4 +1,4 @@
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler_new.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -260,60 +260,100 @@ class KahonSheetDataSource extends DataGridSource {
         )
         .value as CellModel?;
 
+    return _buildModernEditWidget(
+      cell,
+      rowIndex,
+      columnIndex,
+      submitCell,
+    );
+  }
+
+  Widget _buildModernEditWidget(
+    CellModel? cell,
+    int rowIndex,
+    int columnIndex,
+    CellSubmit submitCell,
+  ) {
     final isCalculatedCell = cell?.isCalculated ?? false;
     final initialValue = cell?.formula ?? cell?.value ?? '';
     final cellColor = cell?.color;
 
     final controller = TextEditingController(text: initialValue);
-    Color? selectedColor =
-        cellColor != null ? CellColorHandler.getColorFromHex(cellColor) : null;
     final focusNode = FocusNode();
 
+    Color? selectedColor =
+        cellColor != null ? CellColorHandler.getColorFromHex(cellColor) : null;
+
+    // Add focus listener like the working inventory sheet
     focusNode.addListener(() {
       if (!focusNode.hasFocus && !isCalculatedCell) {
-        cellSubmitCallback(
-          rowIndex,
-          columnIndex,
-          controller.text,
-          selectedColor != null
-              ? CellColorHandler.getHexFromColor(selectedColor)
-              : null,
-        );
-        submitCell();
+        _submitCellEdit(
+            controller.text, selectedColor, rowIndex, columnIndex, submitCell);
       }
     });
 
-    return _buildEditField(controller, focusNode, selectedColor,
-        isCalculatedCell, rowIndex, columnIndex, submitCell);
+    return StatefulBuilder(
+      builder: (context, setInnerState) {
+        currentContext = context;
+
+        return Container(
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: _buildEditTextField(
+            controller,
+            focusNode,
+            selectedColor,
+            isCalculatedCell,
+            rowIndex,
+            columnIndex,
+            submitCell,
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildEditField(
-      TextEditingController controller,
-      FocusNode focusNode,
-      Color? selectedColor,
-      bool isCalculatedCell,
-      int rowIndex,
-      int columnIndex,
-      CellSubmit submitCell) {
-    return Container(
-      margin: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _buildEditTextField(
+    TextEditingController controller,
+    FocusNode focusNode,
+    Color? selectedColor,
+    bool isCalculatedCell,
+    int rowIndex,
+    int columnIndex,
+    CellSubmit submitCell,
+  ) {
+    return RawKeyboardListener(
+      focusNode: FocusNode(),
+      onKey: (event) {
+        if (event is RawKeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          if (!isCalculatedCell) {
+            _submitCellEdit(controller.text, selectedColor, rowIndex,
+                columnIndex, submitCell);
+          }
+          submitCell();
+        }
+      },
       child: TextField(
         autofocus: true,
         focusNode: focusNode,
         controller: controller,
         enabled: !isCalculatedCell,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: isCalculatedCell ? AppColors.primary : Colors.black87,
+        ),
         decoration: InputDecoration(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -325,7 +365,7 @@ class KahonSheetDataSource extends DataGridSource {
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
           contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           fillColor: selectedColor ??
               (isCalculatedCell
                   ? AppColors.primaryLight.withOpacity(0.1)
@@ -334,19 +374,30 @@ class KahonSheetDataSource extends DataGridSource {
         ),
         onSubmitted: (value) {
           if (!isCalculatedCell) {
-            cellSubmitCallback(
-                rowIndex,
-                columnIndex,
-                value,
-                selectedColor != null
-                    ? CellColorHandler.getHexFromColor(selectedColor)
-                    : null);
+            _submitCellEdit(
+                value, selectedColor, rowIndex, columnIndex, submitCell);
           }
           submitCell();
         },
-        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        onTapOutside: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
       ),
     );
+  }
+
+  void _submitCellEdit(
+    String value,
+    Color? selectedColor,
+    int rowIndex,
+    int columnIndex,
+    CellSubmit submitCell,
+  ) {
+    final colorHex = selectedColor != null
+        ? CellColorHandler.getHexFromColor(selectedColor)
+        : null;
+
+    cellSubmitCallback(rowIndex, columnIndex, value, colorHex);
   }
 
   List<RowModel> get sortedRows {

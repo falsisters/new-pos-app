@@ -3,7 +3,7 @@
 import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler_new.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_data_source.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
@@ -828,6 +828,34 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     });
   }
 
+  // Helper method to update a cell in the sheet immutably
+  SheetModel _updateCellInSheet(SheetModel sheet, String rowId, String cellId,
+      String newValue, String? formula, String? color) {
+    return sheet.copyWith(
+      rows: sheet.rows.map((row) {
+        if (row.id == rowId) {
+          return row.copyWith(
+            cells: row.cells.map((cell) {
+              if (cell.id == cellId) {
+                return cell.copyWith(
+                  value: newValue,
+                  formula: formula,
+                  color: color,
+                  isCalculated: true,
+                  updatedAt: DateTime.now(),
+                );
+              }
+              return cell;
+            }).toList(),
+            updatedAt: DateTime.now(),
+          );
+        }
+        return row;
+      }).toList(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
   // Process dependent cells recursively
   void _processDependentCells(
       Set<String> cellsToUpdate, Set<String> processedCells, SheetModel sheet) {
@@ -897,32 +925,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
               formula: cellModel.formula,
               color: cellModel.color,
             );
-
             print("Added formula update to pending changes: $changeKey");
 
-            // Find the row and cell index in our working sheet
-            int rowIdx = sheet.rows.indexWhere((r) => r.id == rowModel.id);
-            if (rowIdx >= 0) {
-              int cellIdx = sheet.rows[rowIdx].cells
-                  .indexWhere((c) => c.id == cellModel.id);
+            // Update the working sheet using the helper method
+            sheet = _updateCellInSheet(sheet, rowModel.id, cellModel.id,
+                newValue, cellModel.formula, cellModel.color);
 
-              if (cellIdx >= 0) {
-                // Update the cell in our working copy
-                sheet.rows[rowIdx].cells[cellIdx] = CellModel(
-                  id: cellModel.id,
-                  rowId: cellModel.rowId,
-                  columnIndex: cellModel.columnIndex,
-                  value: newValue,
-                  formula: cellModel.formula,
-                  color: cellModel.color,
-                  isCalculated: true,
-                  createdAt: cellModel.createdAt,
-                  updatedAt: DateTime.now(),
-                );
-
-                print("Updated cell in working copy: $changeKey");
-              }
-            }
+            print("Updated cell in working copy: $changeKey");
 
             // Now, we need to find cells that depend on this updated cell
             Set<String> nextLevelDependents = {};
@@ -998,29 +1007,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                 displayValue: newValue,
                 formula: cell.formula,
                 color: cell.color,
-              );
-
-              // Find cell index and update in our working copy
-              int rowIdx = updatedSheet.rows.indexWhere((r) => r.id == row.id);
-              if (rowIdx >= 0) {
-                int cellIdx = updatedSheet.rows[rowIdx].cells
-                    .indexWhere((c) => c.id == cell.id);
-
-                if (cellIdx >= 0) {
-                  // Update the cell in our working copy
-                  updatedSheet.rows[rowIdx].cells[cellIdx] = CellModel(
-                    id: cell.id,
-                    rowId: cell.rowId,
-                    columnIndex: cell.columnIndex,
-                    value: newValue,
-                    formula: cell.formula,
-                    color: cell.color,
-                    isCalculated: true,
-                    createdAt: cell.createdAt,
-                    updatedAt: DateTime.now(),
-                  );
-                }
-              }
+              ); // Create updated sheet with the new cell value
+              updatedSheet = _updateCellInSheet(updatedSheet, row.id, cell.id,
+                  newValue, cell.formula, cell.color);
 
               formulasProcessed++;
             }
@@ -1173,28 +1162,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                   color: cellModel.color,
                 );
 
-                // Find the row and cell index in our working sheet
-                int rowIdx =
-                    widget.sheet.rows.indexWhere((r) => r.id == rowModel.id);
-                if (rowIdx >= 0) {
-                  int cellIdx = widget.sheet.rows[rowIdx].cells
-                      .indexWhere((c) => c.id == cellModel.id);
-
-                  if (cellIdx >= 0) {
-                    // Update the cell in our working copy
-                    widget.sheet.rows[rowIdx].cells[cellIdx] = CellModel(
-                      id: cellModel.id,
-                      rowId: cellModel.rowId,
-                      columnIndex: cellModel.columnIndex,
-                      value: newValue,
-                      formula: cellModel.formula,
-                      color: cellModel.color,
-                      isCalculated: true,
-                      createdAt: cellModel.createdAt,
-                      updatedAt: DateTime.now(),
-                    );
-                  }
-                }
+                print(
+                    "Marked cell for formula update: ${changeKey} with value: ${newValue}");
               }
             } catch (e) {
               print("Error recalculating formula ${cellModel.formula}: $e");

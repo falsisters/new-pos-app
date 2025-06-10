@@ -11,21 +11,22 @@ class FormulaHandler {
         'Quantity': 0,
         'Name': 1,
         // Add any other custom column names here
-      };
-
-  // Convert column letter to index
+      }; // Convert column letter to index
   int _getColumnIndexFromLetter(String letter) {
     if (_columnNameMap.containsKey(letter)) {
       return _columnNameMap[letter]!;
     }
 
-    // Handle Excel-style column letters (A=0, B=1, ...)
+    // Handle Excel-style column letters starting from index 2 (after Quantity=0, Name=1)
+    // The UI generates: index 2→"A", index 3→"B", index 4→"C", etc.
+    // So when parsing "A" it should return 2, "B" should return 3, "C" should return 4
     int result = 0;
     for (int i = 0; i < letter.length; i++) {
       result *= 26;
       result += letter.codeUnitAt(i) - 'A'.codeUnitAt(0) + 1;
     }
-    return result + 1; // Adding offset for Quantity and Name columns
+    // A=1, B=2, C=3, etc. We need A=2, B=3, C=4, etc.
+    return result + 1; // A→2, B→3, C→4, etc.
   }
 
   // Extracts cell references from a formula
