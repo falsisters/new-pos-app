@@ -15,6 +15,7 @@ import 'package:falsisters_pos_android/features/shift/data/providers/shift_provi
 import 'package:falsisters_pos_android/features/shift/presentation/screens/shift_screen.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/create_shift_dialog.dart';
 import 'package:falsisters_pos_android/features/stocks/presentation/screens/stocks_screen.dart';
+import 'package:falsisters_pos_android/core/services/secure_code_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,18 +52,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _scheduleDialogCheck() {
     if (!_dialogCheckPending) return;
 
-    // Schedule dialog check after the frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Schedule dialog check after the frame is built with a small delay
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Add a small delay to ensure bypass state is properly set
+      await Future.delayed(const Duration(milliseconds: 500));
+
       final isShiftActive = ref.read(isShiftActiveProvider);
       final isDialogVisible = ref.read(dialogStateProvider);
 
-      // Only show dialog if shift is inactive and dialog should be visible
-      if (isShiftActive == false && !isDialogVisible) {
+      // Check if bypass is active before showing dialog
+      final isBypassed = await SecureCodeService.isBypassActive();
+
+      // Only show dialog if shift is inactive, dialog should be visible, and not bypassed
+      if (isShiftActive == false && !isDialogVisible && !isBypassed) {
         // Use the notifier to update the dialog state
         ref.read(dialogStateProvider.notifier).showDialog();
 
-        // Show the actual dialog
-        showCreateShiftDialog(context, ref);
+        // Show the actual dialog (it will handle bypass check internally too)
+        if (context.mounted) {
+          showCreateShiftDialog(context, ref);
+        }
       }
 
       setState(() {

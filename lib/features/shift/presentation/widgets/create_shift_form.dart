@@ -4,6 +4,9 @@ import 'package:falsisters_pos_android/features/shift/data/providers/shift_provi
 import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:falsisters_pos_android/core/services/secure_code_service.dart';
+import 'package:falsisters_pos_android/features/auth/data/providers/auth_provider.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 
 class CreateShiftForm extends ConsumerWidget {
   final TextEditingController employeeController;
@@ -22,6 +25,7 @@ class CreateShiftForm extends ConsumerWidget {
         final isLoading =
             ref.watch(shiftProvider.select((state) => state.isLoading));
         final error = ref.watch(shiftProvider.select((state) => state.error));
+        final cashier = ref.watch(cashierProvider);
 
         return employees.when(
           data: (employeeData) => _ShiftFormContent(
@@ -30,6 +34,7 @@ class CreateShiftForm extends ConsumerWidget {
             error: error?.toString(),
             employeeController: employeeController,
             ref: ref,
+            cashier: cashier,
           ),
           loading: () => Container(
             height: 200,
@@ -99,6 +104,7 @@ class _ShiftFormContent extends StatefulWidget {
   final String? error;
   final TextEditingController employeeController;
   final WidgetRef ref;
+  final dynamic cashier;
 
   const _ShiftFormContent({
     required this.employees,
@@ -106,6 +112,7 @@ class _ShiftFormContent extends StatefulWidget {
     required this.error,
     required this.employeeController,
     required this.ref,
+    required this.cashier,
   });
 
   @override
@@ -115,6 +122,9 @@ class _ShiftFormContent extends StatefulWidget {
 class _ShiftFormContentState extends State<_ShiftFormContent> {
   List<EmployeeModel> selectedEmployees = [];
   String searchQuery = '';
+  bool showSecureCodeField = false;
+  final TextEditingController secureCodeController = TextEditingController();
+  bool secureCodeError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -154,6 +164,127 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
               ],
             ),
           ),
+
+        // Bypass option
+        if (!showSecureCodeField)
+          GestureDetector(
+            onTap: () => setState(() => showSecureCodeField = true),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Text(
+                  'or enter secure code',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // Secure code field
+        if (showSecureCodeField) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: secureCodeError ? Colors.red[300]! : Colors.grey[200]!,
+              ),
+            ),
+            child: TextField(
+              controller: secureCodeController,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'Secure Code',
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                  color: secureCodeError ? Colors.red[400] : AppColors.primary,
+                  size: 22,
+                ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () async {
+                        if (secureCodeController.text.isEmpty) return;
+
+                        if (widget.cashier?.secureCode ==
+                            secureCodeController.text) {
+                          // Set bypass first
+                          await SecureCodeService.setBypass();
+
+                          // Update dialog state to hidden
+                          widget.ref
+                              .read(dialogStateProvider.notifier)
+                              .hideDialog();
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+
+                            // Add a small delay before showing success message
+                            // to ensure dialog state is properly updated
+                            await Future.delayed(
+                                const Duration(milliseconds: 300));
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                      'Shift dialog bypassed for 6 hours'),
+                                  backgroundColor: Colors.green[600],
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          setState(() => secureCodeError = true);
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (mounted)
+                              setState(() => secureCodeError = false);
+                          });
+                        }
+                      },
+                      icon: Icon(
+                        Icons.check,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          showSecureCodeField = false;
+                          secureCodeController.clear();
+                          secureCodeError = false;
+                        });
+                      },
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.grey[600],
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                border: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                labelStyle: TextStyle(
+                  color: secureCodeError ? Colors.red[600] : Colors.grey[600],
+                  fontSize: 16,
+                ),
+                errorText: secureCodeError ? 'Invalid secure code' : null,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // Modern search input
         Container(

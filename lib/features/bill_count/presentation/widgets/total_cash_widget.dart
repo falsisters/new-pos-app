@@ -48,6 +48,15 @@ class TotalCashWidget extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            "(Total Cash from Sales)",
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.7),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             "₱ ${currencyFormat.format(totalCash)}",

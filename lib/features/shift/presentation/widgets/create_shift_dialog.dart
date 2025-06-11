@@ -1,10 +1,26 @@
 // Create a riverpod component showDialog that is a form, there will be a dropdown listing the employees
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/services/secure_code_service.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/create_shift_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void showCreateShiftDialog(BuildContext context, WidgetRef ref) {
+Future<void> showCreateShiftDialog(BuildContext context, WidgetRef ref) async {
+  // Check if bypass is active
+  final bypassed = await SecureCodeService.isBypassActive();
+  if (bypassed) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Shift dialog is currently bypassed'),
+          backgroundColor: Colors.orange[600],
+        ),
+      );
+    }
+    return;
+  }
+
   final employeeController = TextEditingController();
 
   showDialog(
@@ -13,6 +29,12 @@ void showCreateShiftDialog(BuildContext context, WidgetRef ref) {
     builder: (BuildContext context) {
       return PopScope(
         canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          // Update dialog state when dialog is dismissed
+          if (didPop) {
+            ref.read(dialogStateProvider.notifier).hideDialog();
+          }
+        },
         child: Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(20),
@@ -107,5 +129,8 @@ void showCreateShiftDialog(BuildContext context, WidgetRef ref) {
         ),
       );
     },
-  );
+  ).then((_) {
+    // Ensure dialog state is updated when dialog closes
+    ref.read(dialogStateProvider.notifier).hideDialog();
+  });
 }

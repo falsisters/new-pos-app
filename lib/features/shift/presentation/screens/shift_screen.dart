@@ -6,6 +6,7 @@ import 'package:falsisters_pos_android/features/shift/presentation/widgets/edit_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:falsisters_pos_android/core/services/secure_code_service.dart';
 
 class ShiftScreen extends ConsumerWidget {
   const ShiftScreen({super.key});
@@ -615,13 +616,168 @@ class _ModernInfoRow extends StatelessWidget {
   }
 }
 
-class _NoActiveShift extends ConsumerWidget {
+class _NoActiveShift extends ConsumerStatefulWidget {
   final VoidCallback? onRefresh;
 
   const _NoActiveShift({this.onRefresh});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NoActiveShift> createState() => _NoActiveShiftState();
+}
+
+class _NoActiveShiftState extends ConsumerState<_NoActiveShift> {
+  bool isBypassed = false;
+  int? remainingMinutes;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBypassStatus();
+  }
+
+  Future<void> _checkBypassStatus() async {
+    final bypassed = await SecureCodeService.isBypassActive();
+    final remaining = await SecureCodeService.getRemainingBypassMinutes();
+
+    if (mounted) {
+      setState(() {
+        isBypassed = bypassed;
+        remainingMinutes = remaining;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isBypassed) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.withOpacity(0.1),
+                        Colors.green.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(60),
+                  ),
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    size: 60,
+                    color: Colors.green.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Shift Dialog Bypassed',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  remainingMinutes != null
+                      ? 'Bypass active for ${remainingMinutes! ~/ 60}h ${remainingMinutes! % 60}m'
+                      : 'Bypass is currently active',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.green[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red[400]!,
+                        Colors.red[600]!,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await SecureCodeService.clearBypass();
+                      await _checkBypassStatus();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.cancel_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'CLEAR BYPASS',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (widget.onRefresh != null) ...[
+                  const SizedBox(height: 20),
+                  TextButton.icon(
+                    onPressed: () async {
+                      await _checkBypassStatus();
+                      widget.onRefresh?.call();
+                    },
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.grey[600],
+                      size: 20,
+                    ),
+                    label: Text(
+                      'Refresh status',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       child: Center(
@@ -687,8 +843,13 @@ class _NoActiveShift extends ConsumerWidget {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
-                    showCreateShiftDialog(context, ref);
+                  onPressed: () async {
+                    final bypassed = await SecureCodeService.isBypassActive();
+                    if (!bypassed) {
+                      if (context.mounted) {
+                        showCreateShiftDialog(context, ref);
+                      }
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
@@ -720,10 +881,10 @@ class _NoActiveShift extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (onRefresh != null) ...[
+              if (widget.onRefresh != null) ...[
                 const SizedBox(height: 20),
                 TextButton.icon(
-                  onPressed: onRefresh,
+                  onPressed: widget.onRefresh!,
                   icon: Icon(
                     Icons.refresh_rounded,
                     color: Colors.grey[600],

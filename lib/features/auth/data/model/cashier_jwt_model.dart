@@ -8,6 +8,7 @@ sealed class CashierJwtModel with _$CashierJwtModel {
     required String id,
     required String name,
     required String userId,
+    required String secureCode,
     required List<String> permissions,
   }) = _CashierJwtModel;
 

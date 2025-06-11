@@ -18,6 +18,7 @@ mixin _$CashierJwtModel {
   String get id;
   String get name;
   String get userId;
+  String get secureCode;
   List<String> get permissions;
 
   /// Create a copy of CashierJwtModel
@@ -39,18 +40,20 @@ mixin _$CashierJwtModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.secureCode, secureCode) ||
+                other.secureCode == secureCode) &&
             const DeepCollectionEquality()
                 .equals(other.permissions, permissions));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, userId,
+  int get hashCode => Object.hash(runtimeType, id, name, userId, secureCode,
       const DeepCollectionEquality().hash(permissions));
 
   @override
   String toString() {
-    return 'CashierJwtModel(id: $id, name: $name, userId: $userId, permissions: $permissions)';
+    return 'CashierJwtModel(id: $id, name: $name, userId: $userId, secureCode: $secureCode, permissions: $permissions)';
   }
 }
 
@@ -60,7 +63,12 @@ abstract mixin class $CashierJwtModelCopyWith<$Res> {
           CashierJwtModel value, $Res Function(CashierJwtModel) _then) =
       _$CashierJwtModelCopyWithImpl;
   @useResult
-  $Res call({String id, String name, String userId, List<String> permissions});
+  $Res call(
+      {String id,
+      String name,
+      String userId,
+      String secureCode,
+      List<String> permissions});
 }
 
 /// @nodoc
@@ -79,6 +87,7 @@ class _$CashierJwtModelCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? userId = null,
+    Object? secureCode = null,
     Object? permissions = null,
   }) {
     return _then(_self.copyWith(
@@ -93,6 +102,10 @@ class _$CashierJwtModelCopyWithImpl<$Res>
       userId: null == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      secureCode: null == secureCode
+          ? _self.secureCode
+          : secureCode // ignore: cast_nullable_to_non_nullable
               as String,
       permissions: null == permissions
           ? _self.permissions
@@ -109,6 +122,7 @@ class _CashierJwtModel implements CashierJwtModel {
       {required this.id,
       required this.name,
       required this.userId,
+      required this.secureCode,
       required final List<String> permissions})
       : _permissions = permissions;
   factory _CashierJwtModel.fromJson(Map<String, dynamic> json) =>
@@ -120,6 +134,8 @@ class _CashierJwtModel implements CashierJwtModel {
   final String name;
   @override
   final String userId;
+  @override
+  final String secureCode;
   final List<String> _permissions;
   @override
   List<String> get permissions {
@@ -151,18 +167,20 @@ class _CashierJwtModel implements CashierJwtModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.secureCode, secureCode) ||
+                other.secureCode == secureCode) &&
             const DeepCollectionEquality()
                 .equals(other._permissions, _permissions));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, userId,
+  int get hashCode => Object.hash(runtimeType, id, name, userId, secureCode,
       const DeepCollectionEquality().hash(_permissions));
 
   @override
   String toString() {
-    return 'CashierJwtModel(id: $id, name: $name, userId: $userId, permissions: $permissions)';
+    return 'CashierJwtModel(id: $id, name: $name, userId: $userId, secureCode: $secureCode, permissions: $permissions)';
   }
 }
 
@@ -174,7 +192,12 @@ abstract mixin class _$CashierJwtModelCopyWith<$Res>
       __$CashierJwtModelCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, String name, String userId, List<String> permissions});
+  $Res call(
+      {String id,
+      String name,
+      String userId,
+      String secureCode,
+      List<String> permissions});
 }
 
 /// @nodoc
@@ -193,6 +216,7 @@ class __$CashierJwtModelCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? userId = null,
+    Object? secureCode = null,
     Object? permissions = null,
   }) {
     return _then(_CashierJwtModel(
@@ -207,6 +231,10 @@ class __$CashierJwtModelCopyWithImpl<$Res>
       userId: null == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      secureCode: null == secureCode
+          ? _self.secureCode
+          : secureCode // ignore: cast_nullable_to_non_nullable
               as String,
       permissions: null == permissions
           ? _self._permissions

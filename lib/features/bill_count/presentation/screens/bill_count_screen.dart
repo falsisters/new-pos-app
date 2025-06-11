@@ -8,6 +8,7 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/expense_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {
@@ -402,9 +403,74 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        // Total Cash Widget (now Net Cash, no edit button)
+                        // Net Cash Widget (shows only total cash from sales)
                         TotalCashWidget(
                           totalCash: billCount.totalCash,
+                        ),
+
+                        // Subtracted Balance (Net Cash - Expenses if any)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.secondary,
+                                AppColors.secondary.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.secondary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "SUBTRACTED BALANCE",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.9),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                billCount.showExpenses
+                                    ? "(Net Cash - Expenses)"
+                                    : "(Net Cash - No Expenses)",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "₱ ${currencyFormat.format(billCount.totalCash - (billCount.showExpenses ? billCount.expenses : 0))}",
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: (billCount.totalCash -
+                                              (billCount.showExpenses
+                                                  ? billCount.expenses
+                                                  : 0)) <
+                                          0
+                                      ? Colors.red.shade200
+                                      : Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
 
                         // Beginning Balance Display
@@ -775,6 +841,14 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 ),
                             ],
                           ),
+                        ),
+
+                        // Initial Count breakdown with expenses info
+                        InitialCountWidget(
+                          totalCash: billCount.totalCash,
+                          beginningBalance: billCount.beginningBalance,
+                          expenses: billCount.expenses,
+                          showExpenses: billCount.showExpenses,
                         ),
 
                         // Final total
