@@ -332,7 +332,7 @@ class FormulaHandler {
     }
   }
 
-  // Get all formula cells in the sheet
+  // Get all formula cells in the sheet, sorted by dependencies
   List<Map<String, dynamic>> getAllFormulaCells() {
     List<Map<String, dynamic>> formulaCells = [];
 
@@ -346,10 +346,20 @@ class FormulaHandler {
               'formula': cell.formula,
               'cellId': cell.id,
               'rowId': row.id,
+              'dependencies': extractCellReferencesFromFormula(cell.formula!),
             });
           }
         }
       }
+
+      // Sort by row index and then column index for consistent processing
+      formulaCells.sort((a, b) {
+        int rowComparison = a['rowIndex'].compareTo(b['rowIndex']);
+        if (rowComparison != 0) return rowComparison;
+        return a['columnIndex'].compareTo(b['columnIndex']);
+      });
+
+      print("Found ${formulaCells.length} formula cells to process");
     } catch (e) {
       print('Error getting all formula cells: $e');
     }

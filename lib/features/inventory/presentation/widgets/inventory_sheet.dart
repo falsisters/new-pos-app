@@ -61,6 +61,11 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
     _formulaHandler = InventoryFormulaHandler(sheet: widget.sheet);
     _initializeDataSource();
     _buildFormulaDependencyMap();
+
+    // Add this line to recalculate formulas on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recalculateAllFormulasOnLoad();
+    });
   }
 
   void _initializeAnimations() {
@@ -244,6 +249,11 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
       _formulaHandler = InventoryFormulaHandler(sheet: widget.sheet);
       _initializeDataSource();
       _buildFormulaDependencyMap();
+
+      // Add this line to recalculate formulas when sheet data changes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _recalculateAllFormulasOnLoad();
+      });
     }
   }
 
@@ -745,6 +755,131 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
 
     if (cellsToUpdate.isNotEmpty) {
       await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
+    }
+  }
+
+  // Recalculate all formulas when sheet is loaded
+  Future<void> _recalculateAllFormulasOnLoad() async {
+    try {
+      print('Starting formula recalculation on load...');
+
+      // Get all cells with formulas
+      List<Map<String, dynamic>> formulaCells = _getAllFormulaCells();
+
+      if (formulaCells.isEmpty) {
+        print('No formula cells found');
+        return;
+      }
+
+      print('Found ${formulaCells.length} formula cells to recalculate');
+
+      // Multi-pass formula resolution to handle dependencies
+      int maxPasses = 5;
+      bool hasChanges = true;
+      List<Map<String, dynamic>> cellsToUpdate = [];
+
+      for (int pass = 0; pass < maxPasses && hasChanges; pass++) {
+        print('Formula recalculation pass ${pass + 1}');
+        hasChanges = false;
+
+        for (var cellData in formulaCells) {
+          try {
+            String formula = cellData['formula'] as String;
+            int rowIndex = cellData['rowIndex'] as int;
+            int columnIndex = cellData['columnIndex'] as int;
+            String cellId = cellData['cellId'] as String;
+            String? currentValue = cellData['currentValue'] as String?;
+
+            // Recalculate the formula
+            String newValue =
+                _formulaHandler.evaluateFormula(formula, rowIndex, columnIndex);
+
+            // Check if value changed
+            if (newValue != currentValue) {
+              hasChanges = true;
+
+              // Update in our local data
+              cellData['currentValue'] = newValue;
+
+              // Add to cells to update
+              cellsToUpdate.removeWhere((cell) => cell['id'] == cellId);
+              cellsToUpdate.add({
+                'id': cellId,
+                'value': newValue,
+                'formula': formula,
+              });
+
+              print(
+                  'Updated cell ${_getColumnLetter(columnIndex)}$rowIndex: $currentValue -> $newValue');
+            }
+          } catch (e) {
+            print('Error recalculating formula for cell: $e');
+            // Add error value to updates
+            String cellId = cellData['cellId'] as String;
+            cellsToUpdate.removeWhere((cell) => cell['id'] == cellId);
+            cellsToUpdate.add({
+              'id': cellId,
+              'value': '#ERROR',
+              'formula': cellData['formula'],
+            });
+          }
+        }
+      }
+
+      // Auto-save the recalculated values
+      if (cellsToUpdate.isNotEmpty) {
+        print(
+            'Auto-saving ${cellsToUpdate.length} recalculated formula values');
+        await _autoSaveRecalculatedFormulas(cellsToUpdate);
+      }
+
+      print('Formula recalculation completed');
+    } catch (e) {
+      print('Error during formula recalculation on load: $e');
+    }
+  }
+
+  // Get all cells with formulas
+  List<Map<String, dynamic>> _getAllFormulaCells() {
+    List<Map<String, dynamic>> formulaCells = [];
+
+    // Sort rows by index for consistent processing
+    final sortedRows = List<InventoryRowModel>.from(widget.sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    for (var row in sortedRows) {
+      // Sort cells by column index for consistent processing
+      final sortedCells = List<InventoryCellModel>.from(row.cells)
+        ..sort((a, b) => a.columnIndex.compareTo(b.columnIndex));
+
+      for (var cell in sortedCells) {
+        if (cell.formula != null && cell.formula!.startsWith('=')) {
+          formulaCells.add({
+            'cellId': cell.id,
+            'rowIndex': row.rowIndex,
+            'columnIndex': cell.columnIndex,
+            'formula': cell.formula!,
+            'currentValue': cell.value,
+          });
+        }
+      }
+    }
+
+    return formulaCells;
+  }
+
+  // Auto-save recalculated formula values in background
+  Future<void> _autoSaveRecalculatedFormulas(
+      List<Map<String, dynamic>> cellsToUpdate) async {
+    try {
+      // Save to database without showing loading indicators
+      await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
+
+      print(
+          'Successfully auto-saved ${cellsToUpdate.length} recalculated formulas');
+    } catch (e) {
+      print('Error auto-saving recalculated formulas: $e');
+      // Don't show error to user since this is a background operation
     }
   }
 
@@ -2058,7 +2193,6 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
     return null;
   }
 
-  // ...existing code...
   List<GridColumn> _buildColumns() {
     // Use the columns property from SheetModel to determine column count
     int columnCount = widget.sheet.columns;

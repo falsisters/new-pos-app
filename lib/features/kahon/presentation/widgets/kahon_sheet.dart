@@ -102,6 +102,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     _formulaHandler = FormulaHandler(sheet: widget.sheet);
     _initializeDataSource();
     _buildFormulaDependencyMap();
+
+    // Recalculate all formulas on load to ensure consistency
+    _recalculateAllFormulasOnLoad();
   }
 
   @override
@@ -146,6 +149,131 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
 
     print(
         'Formula dependencies built with ${_formulaDependencies.length} entries');
+  }
+
+  // Recalculate all formulas when sheet is loaded
+  void _recalculateAllFormulasOnLoad() {
+    print("Recalculating all formulas on sheet load...");
+
+    // Get all formula cells
+    List<Map<String, dynamic>> formulaCells =
+        _formulaHandler.getAllFormulaCells();
+
+    if (formulaCells.isEmpty) {
+      print("No formula cells found to recalculate");
+      return;
+    }
+
+    // Create a working copy of the sheet for recalculation
+    SheetModel workingSheet = widget.sheet;
+    bool hasChanges = false;
+
+    // Process formulas in multiple passes to handle dependencies
+    int maxPasses = 5; // Prevent infinite loops
+    for (int pass = 0; pass < maxPasses; pass++) {
+      bool changesInThisPass = false;
+
+      print("Formula recalculation pass ${pass + 1}");
+
+      for (var formulaCell in formulaCells) {
+        try {
+          int rowIndex = formulaCell['rowIndex'];
+          int columnIndex = formulaCell['columnIndex'];
+          String formula = formulaCell['formula'];
+          String cellId = formulaCell['cellId'];
+          String rowId = formulaCell['rowId'];
+
+          // Create a fresh formula handler with current working sheet
+          FormulaHandler currentHandler = FormulaHandler(sheet: workingSheet);
+
+          // Evaluate the formula
+          String newValue =
+              currentHandler.evaluateFormula(formula, rowIndex, columnIndex);
+
+          // Find the current cell value
+          final rowModel =
+              workingSheet.rows.firstWhereOrNull((r) => r.id == rowId);
+          if (rowModel != null) {
+            final cellModel =
+                rowModel.cells.firstWhereOrNull((c) => c.id == cellId);
+            if (cellModel != null && cellModel.value != newValue) {
+              print(
+                  "Updating formula cell $rowIndex,$columnIndex: ${cellModel.value} -> $newValue");
+
+              // Update the working sheet
+              workingSheet = _updateCellInSheet(workingSheet, rowId, cellId,
+                  newValue, formula, cellModel.color);
+
+              // Add to pending changes for database update
+              String changeKey = '${rowIndex}_${columnIndex}';
+              _pendingChanges[changeKey] = CellChange(
+                isUpdate: true,
+                cellId: cellId,
+                rowId: rowId,
+                columnIndex: columnIndex,
+                displayValue: newValue,
+                formula: formula,
+                color: cellModel.color,
+              );
+
+              changesInThisPass = true;
+              hasChanges = true;
+            }
+          }
+        } catch (e) {
+          print("Error recalculating formula cell: $e");
+        }
+      }
+
+      // If no changes in this pass, we're done
+      if (!changesInThisPass) {
+        print("No changes in pass ${pass + 1}, recalculation complete");
+        break;
+      }
+    }
+
+    if (hasChanges) {
+      print("Formula recalculation complete with changes. Updating UI...");
+
+      // Update the UI with recalculated values
+      setState(() {
+        _formulaHandler = FormulaHandler(sheet: workingSheet);
+        _dataSource = KahonSheetDataSource(
+          sheet: workingSheet,
+          kahonItems: const [],
+          isEditable: _isEditable,
+          cellSubmitCallback: _handleCellSubmit,
+          addCalculationRowCallback: _addCalculationRow,
+          deleteRowCallback: _deleteRow,
+          formulaHandler: _formulaHandler,
+          onCellSelected: _handleCellSelected,
+        );
+      });
+
+      // Auto-save the recalculated values if there are pending changes
+      if (_pendingChanges.isNotEmpty) {
+        _autoSaveRecalculatedFormulas();
+      }
+    } else {
+      print("No formulas needed recalculation");
+    }
+  }
+
+  // Auto-save recalculated formulas in the background
+  void _autoSaveRecalculatedFormulas() async {
+    try {
+      print(
+          "Auto-saving ${_pendingChanges.length} recalculated formula values...");
+
+      // Save changes in the background without showing loading UI
+      await _applyPendingChanges();
+
+      print("Auto-save of recalculated formulas completed successfully");
+    } catch (e) {
+      print("Error auto-saving recalculated formulas: $e");
+      // Don't show error to user since this is a background operation
+      // The formulas are still displayed correctly in the UI
+    }
   }
 
   void _initializeDataSource() {
@@ -1642,6 +1770,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
       _formulaHandler = FormulaHandler(sheet: widget.sheet);
       _initializeDataSource();
       _buildFormulaDependencyMap();
+      // Recalculate formulas when sheet changes
+      _recalculateAllFormulasOnLoad();
     }
   }
 
