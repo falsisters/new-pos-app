@@ -21,6 +21,8 @@ class InventorySheetDataSource extends DataGridSource {
   final InventoryFormulaHandler formulaHandler;
   final Function(int rowIndex, int columnIndex)? eraseCellCallback;
   final Function()? onDoubleTabHandler;
+  final Function(String rowId, int oldIndex, int newIndex)?
+      onRowReorder; // Add row reorder callback
 
   // Static context for accessing from static methods
   static BuildContext? currentContext;
@@ -39,6 +41,7 @@ class InventorySheetDataSource extends DataGridSource {
     this.eraseCellCallback,
     this.addMultipleCalculationRowsCallback,
     this.onDoubleTabHandler,
+    this.onRowReorder, // Add to constructor
   }) {
     _rows = _generateRows();
   }
@@ -145,86 +148,52 @@ class InventorySheetDataSource extends DataGridSource {
               ),
             ),
           ),
-          if (isEditable) _buildRowActionMenu(rowData),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isEditable && onRowReorder != null)
+                _buildReorderHandle(rowData),
+              if (isEditable) _buildRowActionMenu(rowData),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRowActionMenu(RowCellData rowData) {
-    return Material(
-      color: Colors.transparent,
-      child: PopupMenuButton<String>(
-        icon: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
+  Widget _buildReorderHandle(RowCellData rowData) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          child: const Icon(
-            Icons.more_vert,
+        ],
+      ),
+      child: ReorderableDragStartListener(
+        index: _getRowDisplayIndex(rowData.rowIndex),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            Icons.drag_handle_rounded,
             size: 16,
-            color: AppColors.secondary,
+            color: AppColors.secondary.withOpacity(0.7),
           ),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 8,
-        onSelected: (value) => _handleRowAction(value, rowData),
-        itemBuilder: (context) => [
-          _buildPopupMenuItem(
-            'add_calculation',
-            Icons.add_circle_outline,
-            'Add Calculation Row After',
-            Colors.green,
-          ),
-          _buildPopupMenuItem(
-            'delete',
-            Icons.delete_outline,
-            'Delete Row',
-            Colors.red,
-          ),
-        ],
       ),
     );
   }
 
-  PopupMenuItem<String> _buildPopupMenuItem(
-    String value,
-    IconData icon,
-    String text,
-    Color color,
-  ) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  int _getRowDisplayIndex(int rowIndex) {
+    final sortedRows = List<InventoryRowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
-  void _handleRowAction(String action, RowCellData rowData) {
-    switch (action) {
-      case 'add_calculation':
-        if (addMultipleCalculationRowsCallback != null) {
-          _showAddRowsDialog(rowData.rowIndex);
-        } else {
-          addCalculationRowCallback(rowData.rowIndex);
-        }
-        break;
-      case 'delete':
-        deleteRowCallback(rowData.rowId);
-        break;
-    }
+    return sortedRows.indexWhere((row) => row.rowIndex == rowIndex);
   }
 
   Widget _buildDataCell(InventoryCellModel cellModel) {
@@ -548,5 +517,124 @@ class InventorySheetDataSource extends DataGridSource {
   Future<bool> canSubmitCell(DataGridRow dataGridRow,
       RowColumnIndex rowColumnIndex, GridColumn column) async {
     return isEditable && column.columnName != 'itemName';
+  }
+
+  Widget _buildRowActionMenu(RowCellData rowData) {
+    return Material(
+      color: Colors.transparent,
+      child: PopupMenuButton<String>(
+        icon: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Icon(
+            Icons.more_vert,
+            size: 16,
+            color: AppColors.secondary,
+          ),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 8,
+        onSelected: (value) => _handleRowAction(value, rowData),
+        itemBuilder: (context) => [
+          _buildPopupMenuItem(
+            'move_up',
+            Icons.keyboard_arrow_up,
+            'Move Up',
+            AppColors.primary,
+          ),
+          _buildPopupMenuItem(
+            'move_down',
+            Icons.keyboard_arrow_down,
+            'Move Down',
+            AppColors.primary,
+          ),
+          const PopupMenuDivider(),
+          _buildPopupMenuItem(
+            'add_calculation',
+            Icons.add_circle_outline,
+            'Add Calculation Row After',
+            Colors.green,
+          ),
+          _buildPopupMenuItem(
+            'delete',
+            Icons.delete_outline,
+            'Delete Row',
+            Colors.red,
+          ),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildPopupMenuItem(
+    String value,
+    IconData icon,
+    String text,
+    Color color,
+  ) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleRowAction(String action, RowCellData rowData) {
+    switch (action) {
+      case 'add_calculation':
+        if (addMultipleCalculationRowsCallback != null) {
+          _showAddRowsDialog(rowData.rowIndex);
+        } else {
+          addCalculationRowCallback(rowData.rowIndex);
+        }
+        break;
+      case 'delete':
+        deleteRowCallback(rowData.rowId);
+        break;
+      case 'move_up':
+        _moveRowUp(rowData);
+        break;
+      case 'move_down':
+        _moveRowDown(rowData);
+        break;
+    }
+  }
+
+  void _moveRowUp(RowCellData rowData) {
+    final sortedRows = List<InventoryRowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    final currentIndex =
+        sortedRows.indexWhere((row) => row.id == rowData.rowId);
+
+    if (currentIndex > 0 && onRowReorder != null) {
+      onRowReorder!(rowData.rowId, currentIndex, currentIndex - 1);
+    }
+  }
+
+  void _moveRowDown(RowCellData rowData) {
+    final sortedRows = List<InventoryRowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    final currentIndex =
+        sortedRows.indexWhere((row) => row.id == rowData.rowId);
+
+    if (currentIndex < sortedRows.length - 1 && onRowReorder != null) {
+      onRowReorder!(rowData.rowId, currentIndex, currentIndex + 1);
+    }
   }
 }

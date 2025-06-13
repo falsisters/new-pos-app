@@ -152,4 +152,19 @@ class ExpensesNotifier extends AsyncNotifier<ExpensesState> {
       }
     });
   }
+
+  Future<void> updateRowPosition(String rowId, int newRowIndex) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _inventoryRepository.updateRowPosition(rowId, newRowIndex);
+        final updatedInventory =
+            await _inventoryRepository.getExpensesByDate(null, null);
+        return ExpensesState(sheet: updatedInventory);
+      } catch (e) {
+        return ExpensesState(error: e.toString());
+      }
+    });
+  }
 }

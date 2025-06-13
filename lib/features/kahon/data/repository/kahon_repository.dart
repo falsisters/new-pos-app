@@ -178,4 +178,36 @@ class KahonRepository {
       }
     }
   }
+
+  Future<void> updateRowPosition(String rowId, int newRowIndex) async {
+    try {
+      await _dio.instance.patch('/sheet/user/rows/positions', data: {
+        'updates': [
+          {
+            'rowId': rowId,
+            'newRowIndex': newRowIndex,
+          }
+        ]
+      });
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> updateRowPositions(List<Map<String, dynamic>> updates) async {
+    try {
+      await _dio.instance
+          .patch('/sheet/user/rows/positions', data: {'updates': updates});
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }

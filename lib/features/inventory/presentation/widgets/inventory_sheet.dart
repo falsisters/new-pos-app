@@ -10,6 +10,7 @@ import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet_data_source.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/row_reorder_change.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
@@ -46,6 +47,9 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
 
   // Store pending cell changes
   final Map<String, CellChange> _pendingChanges = {};
+
+  // Store pending row reorder changes
+  final Map<String, RowReorderChange> _pendingRowReorders = {};
 
   // Track currently selected cell
   int? _selectedRowIndex;
@@ -132,6 +136,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
       eraseCellCallback: _eraseCell,
       addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
       onDoubleTabHandler: !_isEditable ? _toggleEditMode : null,
+      onRowReorder: _handleRowReorder, // Add row reorder callback
     );
 
     // Set the static context
@@ -181,57 +186,160 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
     }
   }
 
-  // Apply all pending changes to the database
+  // Handle row reordering
+  void _handleRowReorder(String rowId, int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+
+    print("Row reorder requested: $rowId from $oldIndex to $newIndex");
+
+    // Add to pending row reorders
+    _pendingRowReorders[rowId] = RowReorderChange(
+      rowId: rowId,
+      oldRowIndex: oldIndex,
+      newRowIndex: newIndex,
+    );
+
+    // Update UI immediately with temporary reordering
+    setState(() {
+      _updateRowOrderInUI(oldIndex, newIndex);
+    });
+
+    _showSnackBar('Row position updated (pending save)');
+  }
+
+  // Update row order in UI temporarily
+  void _updateRowOrderInUI(int oldIndex, int newIndex) {
+    // Create a working copy of the sheet with reordered rows
+    final currentSheet = _dataSource.currentSheet;
+    final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    if (oldIndex >= 0 &&
+        oldIndex < sortedRows.length &&
+        newIndex >= 0 &&
+        newIndex < sortedRows.length) {
+      // Remove the row from old position
+      final movedRow = sortedRows.removeAt(oldIndex);
+
+      // Insert at new position
+      sortedRows.insert(newIndex, movedRow);
+
+      // Update all row indexes based on new positions
+      final updatedRows = <InventoryRowModel>[];
+      for (int i = 0; i < sortedRows.length; i++) {
+        final row = sortedRows[i];
+        updatedRows.add(InventoryRowModel(
+          id: row.id,
+          inventorySheetId: row.inventorySheetId,
+          rowIndex: i, // New index based on position
+          isItemRow: row.isItemRow,
+          itemId: row.itemId,
+          cells: row.cells,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        ));
+      }
+
+      // Create updated sheet
+      final updatedSheet = InventorySheetModel(
+        id: currentSheet.id,
+        name: currentSheet.name,
+        columns: currentSheet.columns,
+        inventoryId: currentSheet.inventoryId,
+        createdAt: currentSheet.createdAt,
+        updatedAt: currentSheet.updatedAt,
+        rows: updatedRows,
+      );
+
+      // Update formula handler and data source
+      _formulaHandler = InventoryFormulaHandler(sheet: updatedSheet);
+      _dataSource = InventorySheetDataSource(
+        sheet: updatedSheet,
+        isEditable: _isEditable,
+        cellSubmitCallback: _handleCellSubmit,
+        addCalculationRowCallback: _addCalculationRow,
+        deleteRowCallback: _deleteRow,
+        formulaHandler: _formulaHandler,
+        eraseCellCallback: _eraseCell,
+        addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
+        onDoubleTabHandler: !_isEditable ? _toggleEditMode : null,
+        onRowReorder: _handleRowReorder,
+      );
+
+      // Rebuild formula dependencies after reordering
+      _buildFormulaDependencyMap();
+    }
+  }
+
+  // Apply all pending changes including row reorders
   Future<void> _applyPendingChanges() async {
-    if (_pendingChanges.isEmpty) return;
+    if (_pendingChanges.isEmpty && _pendingRowReorders.isEmpty) return;
 
     try {
-      // Separate changes into updates and creates
-      List<Map<String, dynamic>> cellsToUpdate = [];
-      List<Map<String, dynamic>> cellsToCreate = [];
+      // First, apply row reordering if any
+      if (_pendingRowReorders.isNotEmpty) {
+        print("Applying ${_pendingRowReorders.length} row reorder changes");
 
-      print("Processing ${_pendingChanges.length} pending changes");
+        List<Map<String, dynamic>> rowUpdates = _pendingRowReorders.values
+            .map((change) => {
+                  'rowId': change.rowId,
+                  'newRowIndex': change.newRowIndex,
+                })
+            .toList();
 
-      for (var change in _pendingChanges.values) {
-        if (change.isUpdate) {
-          cellsToUpdate.add({
-            'id': change.cellId,
-            'value': change.displayValue,
-            'formula': change.formula,
-            'color': change.color, // Include color in update
-          });
-          print(
-              "Update cell: id=${change.cellId}, value=${change.displayValue}, color=${change.color}");
-        } else {
-          cellsToCreate.add({
-            'rowId': change.rowId,
-            'columnIndex': change.columnIndex,
-            'value': change.displayValue,
-            'formula': change.formula,
-            'color': change.color, // Include color in create
-          });
-          print(
-              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, color=${change.color}");
+        await ref
+            .read(inventoryProvider.notifier)
+            .updateRowPositions(rowUpdates);
+
+        _pendingRowReorders.clear();
+        print("Row reorder changes applied successfully");
+      }
+
+      // Then apply cell changes as before
+      if (_pendingChanges.isNotEmpty) {
+        // Separate changes into updates and creates
+        List<Map<String, dynamic>> cellsToUpdate = [];
+        List<Map<String, dynamic>> cellsToCreate = [];
+
+        print("Processing ${_pendingChanges.length} pending changes");
+
+        for (var change in _pendingChanges.values) {
+          if (change.isUpdate) {
+            cellsToUpdate.add({
+              'id': change.cellId,
+              'value': change.displayValue,
+              'formula': change.formula,
+              'color': change.color,
+            });
+          } else {
+            cellsToCreate.add({
+              'rowId': change.rowId,
+              'columnIndex': change.columnIndex,
+              'value': change.displayValue,
+              'formula': change.formula,
+              'color': change.color,
+            });
+          }
         }
+
+        // Process updates in bulk if any
+        if (cellsToUpdate.isNotEmpty) {
+          print("Updating ${cellsToUpdate.length} cells");
+          await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
+        }
+
+        // Process creates in bulk if any
+        if (cellsToCreate.isNotEmpty) {
+          print("Creating ${cellsToCreate.length} cells");
+          await ref.read(inventoryProvider.notifier).createCells(cellsToCreate);
+        }
+
+        // Clear pending changes only after successful update
+        _pendingChanges.clear();
+
+        // Recalculate formulas after all changes are applied
+        await _recalculateFormulas();
       }
-
-      // Process updates in bulk if any
-      if (cellsToUpdate.isNotEmpty) {
-        print("Updating ${cellsToUpdate.length} cells");
-        await ref.read(inventoryProvider.notifier).updateCells(cellsToUpdate);
-      }
-
-      // Process creates in bulk if any
-      if (cellsToCreate.isNotEmpty) {
-        print("Creating ${cellsToCreate.length} cells");
-        await ref.read(inventoryProvider.notifier).createCells(cellsToCreate);
-      }
-
-      // Clear pending changes only after successful update
-      _pendingChanges.clear();
-
-      // Recalculate formulas after all changes are applied
-      await _recalculateFormulas();
     } catch (e) {
       print('Error applying pending changes: $e');
       if (mounted) {
@@ -239,6 +347,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
           SnackBar(content: Text('Failed to save changes: ${e.toString()}')),
         );
       }
+      rethrow;
     }
   }
 
@@ -1464,31 +1573,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
       ),
       child: Column(
         children: [
-          if (_pendingChanges.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.pending_actions,
-                      color: Colors.orange, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_pendingChanges.length} unsaved changes',
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _buildPendingChangesIndicator(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1525,6 +1610,49 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
                 ),
               const SizedBox(width: 16),
               _buildSaveButton(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingChangesIndicator() {
+    final totalPendingChanges =
+        _pendingChanges.length + _pendingRowReorders.length;
+    if (totalPendingChanges == 0) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.pending_actions, color: Colors.orange, size: 16),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$totalPendingChanges unsaved change${totalPendingChanges == 1 ? '' : 's'}',
+                style: const TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (_pendingRowReorders.isNotEmpty)
+                Text(
+                  '${_pendingRowReorders.length} row position${_pendingRowReorders.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    color: Colors.orange.shade600,
+                    fontSize: 11,
+                  ),
+                ),
             ],
           ),
         ],

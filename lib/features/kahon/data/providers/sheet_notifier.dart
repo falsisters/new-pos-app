@@ -144,4 +144,32 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
       }
     });
   }
+
+  Future<void> updateRowPosition(String rowId, int newRowIndex) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _kahonRepository.updateRowPosition(rowId, newRowIndex);
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        return SheetState(sheet: updatedSheet);
+      } catch (e) {
+        return SheetState(error: e.toString());
+      }
+    });
+  }
+
+  Future<void> updateRowPositions(List<Map<String, dynamic>> updates) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _kahonRepository.updateRowPositions(updates);
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        return SheetState(sheet: updatedSheet);
+      } catch (e) {
+        return SheetState(error: e.toString());
+      }
+    });
+  }
 }

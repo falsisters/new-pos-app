@@ -153,4 +153,34 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
       }
     });
   }
+
+  Future<void> updateRowPosition(String rowId, int newRowIndex) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _inventoryRepository.updateRowPosition(rowId, newRowIndex);
+        final updatedInventory =
+            await _inventoryRepository.getInventoryByDate(null, null);
+        return InventoryState(sheet: updatedInventory);
+      } catch (e) {
+        return InventoryState(error: e.toString());
+      }
+    });
+  }
+
+  Future<void> updateRowPositions(List<Map<String, dynamic>> updates) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        await _inventoryRepository.updateRowPositions(updates);
+        final updatedInventory =
+            await _inventoryRepository.getInventoryByDate(null, null);
+        return InventoryState(sheet: updatedInventory);
+      } catch (e) {
+        return InventoryState(error: e.toString());
+      }
+    });
+  }
 }

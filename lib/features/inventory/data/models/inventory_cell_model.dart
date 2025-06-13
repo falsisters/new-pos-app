@@ -9,7 +9,7 @@ sealed class InventoryCellModel with _$InventoryCellModel {
     required String id,
     required int columnIndex,
     required String inventoryRowId,
-    String? color, // Add color field as a hex string
+    String? color,
     String? value,
     String? formula,
     required bool isCalculated,

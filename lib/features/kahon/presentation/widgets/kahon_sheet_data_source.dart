@@ -24,6 +24,7 @@ class KahonSheetDataSource extends DataGridSource {
   final Function(
           int rowIndex, int columnIndex, String? value, String? colorHex)?
       onCellSelected;
+  final Function(String rowId, int oldIndex, int newIndex)? onRowReorder;
 
   SheetModel get currentSheet => sheet;
   List<DataGridRow> _rows = [];
@@ -37,6 +38,7 @@ class KahonSheetDataSource extends DataGridSource {
     required this.deleteRowCallback,
     required this.formulaHandler,
     this.onCellSelected,
+    this.onRowReorder,
   }) {
     _rows = _generateRows();
   }
@@ -135,11 +137,53 @@ class KahonSheetDataSource extends DataGridSource {
                 ),
               ),
             ),
-            if (isEditable) _buildRowActionMenu(rowData),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isEditable && onRowReorder != null)
+                  _buildReorderHandle(rowData),
+                if (isEditable) _buildRowActionMenu(rowData),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildReorderHandle(RowCellData rowData) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ReorderableDragStartListener(
+        index: _getRowDisplayIndex(rowData.rowIndex),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            Icons.drag_handle_rounded,
+            size: 16,
+            color: AppColors.secondary.withOpacity(0.7),
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _getRowDisplayIndex(int rowIndex) {
+    final sortedRows = List<RowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    return sortedRows.indexWhere((row) => row.rowIndex == rowIndex);
   }
 
   Widget _buildRowActionMenu(RowCellData rowData) {
@@ -167,9 +211,36 @@ class KahonSheetDataSource extends DataGridSource {
             addCalculationRowCallback(rowData.rowIndex);
           } else if (value == 'delete') {
             deleteRowCallback(rowData.rowId);
+          } else if (value == 'move_up') {
+            _moveRowUp(rowData);
+          } else if (value == 'move_down') {
+            _moveRowDown(rowData);
           }
         },
         itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'move_up',
+            child: Row(
+              children: const [
+                Icon(Icons.keyboard_arrow_up,
+                    color: AppColors.primary, size: 18),
+                SizedBox(width: 8),
+                Text('Move Up'),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'move_down',
+            child: Row(
+              children: const [
+                Icon(Icons.keyboard_arrow_down,
+                    color: AppColors.primary, size: 18),
+                SizedBox(width: 8),
+                Text('Move Down'),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
           PopupMenuItem<String>(
             value: 'add_calculation',
             child: Row(
@@ -194,6 +265,30 @@ class KahonSheetDataSource extends DataGridSource {
         ],
       ),
     );
+  }
+
+  void _moveRowUp(RowCellData rowData) {
+    final sortedRows = List<RowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    final currentIndex =
+        sortedRows.indexWhere((row) => row.id == rowData.rowId);
+
+    if (currentIndex > 0 && onRowReorder != null) {
+      onRowReorder!(rowData.rowId, currentIndex, currentIndex - 1);
+    }
+  }
+
+  void _moveRowDown(RowCellData rowData) {
+    final sortedRows = List<RowModel>.from(sheet.rows)
+      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    final currentIndex =
+        sortedRows.indexWhere((row) => row.id == rowData.rowId);
+
+    if (currentIndex < sortedRows.length - 1 && onRowReorder != null) {
+      onRowReorder!(rowData.rowId, currentIndex, currentIndex + 1);
+    }
   }
 
   Widget _buildCellWidget(CellModel cellModel) {
