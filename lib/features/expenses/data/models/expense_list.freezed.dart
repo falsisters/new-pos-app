@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ExpenseList {
   String get id;
-  String get userId;
+  String? get userId;
+  String? get cashierId;
   @JsonKey(name: 'ExpenseItems')
   List<ExpenseItems> get expenseItems;
   String get createdAt;
@@ -39,6 +40,8 @@ mixin _$ExpenseList {
             other is ExpenseList &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.cashierId, cashierId) ||
+                other.cashierId == cashierId) &&
             const DeepCollectionEquality()
                 .equals(other.expenseItems, expenseItems) &&
             (identical(other.createdAt, createdAt) ||
@@ -49,12 +52,12 @@ mixin _$ExpenseList {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId,
+  int get hashCode => Object.hash(runtimeType, id, userId, cashierId,
       const DeepCollectionEquality().hash(expenseItems), createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'ExpenseList(id: $id, userId: $userId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -66,7 +69,8 @@ abstract mixin class $ExpenseListCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      String userId,
+      String? userId,
+      String? cashierId,
       @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
       String updatedAt});
@@ -85,7 +89,8 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
   @override
   $Res call({
     Object? id = null,
-    Object? userId = null,
+    Object? userId = freezed,
+    Object? cashierId = freezed,
     Object? expenseItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -95,10 +100,14 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
+      userId: freezed == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
+      cashierId: freezed == cashierId
+          ? _self.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String?,
       expenseItems: null == expenseItems
           ? _self.expenseItems
           : expenseItems // ignore: cast_nullable_to_non_nullable
@@ -120,7 +129,8 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
 class _ExpenseList extends ExpenseList {
   const _ExpenseList(
       {required this.id,
-      required this.userId,
+      this.userId,
+      this.cashierId,
       @JsonKey(name: 'ExpenseItems')
       required final List<ExpenseItems> expenseItems,
       required this.createdAt,
@@ -133,7 +143,9 @@ class _ExpenseList extends ExpenseList {
   @override
   final String id;
   @override
-  final String userId;
+  final String? userId;
+  @override
+  final String? cashierId;
   final List<ExpenseItems> _expenseItems;
   @override
   @JsonKey(name: 'ExpenseItems')
@@ -170,6 +182,8 @@ class _ExpenseList extends ExpenseList {
             other is _ExpenseList &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.cashierId, cashierId) ||
+                other.cashierId == cashierId) &&
             const DeepCollectionEquality()
                 .equals(other._expenseItems, _expenseItems) &&
             (identical(other.createdAt, createdAt) ||
@@ -180,12 +194,12 @@ class _ExpenseList extends ExpenseList {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId,
+  int get hashCode => Object.hash(runtimeType, id, userId, cashierId,
       const DeepCollectionEquality().hash(_expenseItems), createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'ExpenseList(id: $id, userId: $userId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -199,7 +213,8 @@ abstract mixin class _$ExpenseListCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      String userId,
+      String? userId,
+      String? cashierId,
       @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
       String updatedAt});
@@ -218,7 +233,8 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   $Res call({
     Object? id = null,
-    Object? userId = null,
+    Object? userId = freezed,
+    Object? cashierId = freezed,
     Object? expenseItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -228,10 +244,14 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
+      userId: freezed == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
+      cashierId: freezed == cashierId
+          ? _self.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String?,
       expenseItems: null == expenseItems
           ? _self._expenseItems
           : expenseItems // ignore: cast_nullable_to_non_nullable

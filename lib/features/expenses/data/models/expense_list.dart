@@ -11,7 +11,8 @@ sealed class ExpenseList with _$ExpenseList {
   const ExpenseList._(); // Add this private constructor
   const factory ExpenseList({
     required String id,
-    required String userId,
+    String? userId,
+    String? cashierId,
     @JsonKey(name: 'ExpenseItems') required List<ExpenseItems> expenseItems,
     required String createdAt,
     required String updatedAt,

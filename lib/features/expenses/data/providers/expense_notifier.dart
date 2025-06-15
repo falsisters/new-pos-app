@@ -87,14 +87,26 @@ class ExpenseNotifier extends AsyncNotifier<ExpenseState> {
     return state.value!;
   }
 
-  Future<void> createExpense(CreateExpenseList expense) async {
+  Future<void> createExpense(CreateExpenseList expense,
+      {DateTime? targetDate}) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
         debugPrint(
             "Creating expense with ${expense.expenseItems.length} items");
-        final expenseLists = await _expenseRepository.createExpense(expense);
+
+        // Add date to expense if provided
+        final expenseWithDate = targetDate != null
+            ? CreateExpenseList(
+                expenseItems: expense.expenseItems,
+                date:
+                    '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}',
+              )
+            : expense;
+
+        final expenseLists =
+            await _expenseRepository.createExpense(expenseWithDate);
 
         if (expenseLists != null) {
           debugPrint(
@@ -118,15 +130,26 @@ class ExpenseNotifier extends AsyncNotifier<ExpenseState> {
     });
   }
 
-  Future<void> updateExpense(String id, CreateExpenseList expense) async {
+  Future<void> updateExpense(String id, CreateExpenseList expense,
+      {DateTime? targetDate}) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
         debugPrint(
             "Updating expense ID: $id with ${expense.expenseItems.length} items");
+
+        // Add date to expense if provided
+        final expenseWithDate = targetDate != null
+            ? CreateExpenseList(
+                expenseItems: expense.expenseItems,
+                date:
+                    '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}',
+              )
+            : expense;
+
         final expenseLists =
-            await _expenseRepository.updateExpense(id, expense);
+            await _expenseRepository.updateExpense(id, expenseWithDate);
 
         if (expenseLists != null) {
           debugPrint(
@@ -142,6 +165,27 @@ class ExpenseNotifier extends AsyncNotifier<ExpenseState> {
         }
       } catch (e) {
         debugPrint("Error updating expense: ${e.toString()}");
+        return ExpenseState(
+          expenseList: null,
+          error: e.toString(),
+        );
+      }
+    });
+  }
+
+  Future<void> deleteExpense(String id) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      try {
+        debugPrint("Deleting expense ID: $id");
+        await _expenseRepository.deleteExpense(id);
+        debugPrint("Successfully deleted expense");
+
+        // Return empty state after deletion
+        return const ExpenseState();
+      } catch (e) {
+        debugPrint("Error deleting expense: ${e.toString()}");
         return ExpenseState(
           expenseList: null,
           error: e.toString(),

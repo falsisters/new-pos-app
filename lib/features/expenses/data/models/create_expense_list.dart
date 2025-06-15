@@ -8,6 +8,7 @@ part 'create_expense_list.g.dart';
 sealed class CreateExpenseList with _$CreateExpenseList {
   const factory CreateExpenseList({
     required List<ExpenseItemDto> expenseItems,
+    String? date, // Optional date field for backend
   }) = _CreateExpenseList;
 
   factory CreateExpenseList.fromJson(Map<String, dynamic> json) =>

@@ -8,7 +8,8 @@ part of 'expense_list.dart';
 
 _ExpenseList _$ExpenseListFromJson(Map<String, dynamic> json) => _ExpenseList(
       id: json['id'] as String,
-      userId: json['userId'] as String,
+      userId: json['userId'] as String?,
+      cashierId: json['cashierId'] as String?,
       expenseItems: (json['ExpenseItems'] as List<dynamic>)
           .map((e) => ExpenseItems.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -20,6 +21,7 @@ Map<String, dynamic> _$ExpenseListToJson(_ExpenseList instance) =>
     <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
+      'cashierId': instance.cashierId,
       'ExpenseItems': instance.expenseItems,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,

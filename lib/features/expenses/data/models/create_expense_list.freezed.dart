@@ -16,6 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CreateExpenseList {
   List<ExpenseItemDto> get expenseItems;
+  String? get date;
 
   /// Create a copy of CreateExpenseList
   /// with the given fields replaced by the non-null parameter values.
@@ -34,17 +35,18 @@ mixin _$CreateExpenseList {
         (other.runtimeType == runtimeType &&
             other is CreateExpenseList &&
             const DeepCollectionEquality()
-                .equals(other.expenseItems, expenseItems));
+                .equals(other.expenseItems, expenseItems) &&
+            (identical(other.date, date) || other.date == date));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, const DeepCollectionEquality().hash(expenseItems));
+      runtimeType, const DeepCollectionEquality().hash(expenseItems), date);
 
   @override
   String toString() {
-    return 'CreateExpenseList(expenseItems: $expenseItems)';
+    return 'CreateExpenseList(expenseItems: $expenseItems, date: $date)';
   }
 }
 
@@ -54,7 +56,7 @@ abstract mixin class $CreateExpenseListCopyWith<$Res> {
           CreateExpenseList value, $Res Function(CreateExpenseList) _then) =
       _$CreateExpenseListCopyWithImpl;
   @useResult
-  $Res call({List<ExpenseItemDto> expenseItems});
+  $Res call({List<ExpenseItemDto> expenseItems, String? date});
 }
 
 /// @nodoc
@@ -71,12 +73,17 @@ class _$CreateExpenseListCopyWithImpl<$Res>
   @override
   $Res call({
     Object? expenseItems = null,
+    Object? date = freezed,
   }) {
     return _then(_self.copyWith(
       expenseItems: null == expenseItems
           ? _self.expenseItems
           : expenseItems // ignore: cast_nullable_to_non_nullable
               as List<ExpenseItemDto>,
+      date: freezed == date
+          ? _self.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -84,7 +91,8 @@ class _$CreateExpenseListCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _CreateExpenseList implements CreateExpenseList {
-  const _CreateExpenseList({required final List<ExpenseItemDto> expenseItems})
+  const _CreateExpenseList(
+      {required final List<ExpenseItemDto> expenseItems, this.date})
       : _expenseItems = expenseItems;
   factory _CreateExpenseList.fromJson(Map<String, dynamic> json) =>
       _$CreateExpenseListFromJson(json);
@@ -96,6 +104,9 @@ class _CreateExpenseList implements CreateExpenseList {
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_expenseItems);
   }
+
+  @override
+  final String? date;
 
   /// Create a copy of CreateExpenseList
   /// with the given fields replaced by the non-null parameter values.
@@ -118,17 +129,18 @@ class _CreateExpenseList implements CreateExpenseList {
         (other.runtimeType == runtimeType &&
             other is _CreateExpenseList &&
             const DeepCollectionEquality()
-                .equals(other._expenseItems, _expenseItems));
+                .equals(other._expenseItems, _expenseItems) &&
+            (identical(other.date, date) || other.date == date));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, const DeepCollectionEquality().hash(_expenseItems));
+      runtimeType, const DeepCollectionEquality().hash(_expenseItems), date);
 
   @override
   String toString() {
-    return 'CreateExpenseList(expenseItems: $expenseItems)';
+    return 'CreateExpenseList(expenseItems: $expenseItems, date: $date)';
   }
 }
 
@@ -140,7 +152,7 @@ abstract mixin class _$CreateExpenseListCopyWith<$Res>
       __$CreateExpenseListCopyWithImpl;
   @override
   @useResult
-  $Res call({List<ExpenseItemDto> expenseItems});
+  $Res call({List<ExpenseItemDto> expenseItems, String? date});
 }
 
 /// @nodoc
@@ -157,12 +169,17 @@ class __$CreateExpenseListCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   $Res call({
     Object? expenseItems = null,
+    Object? date = freezed,
   }) {
     return _then(_CreateExpenseList(
       expenseItems: null == expenseItems
           ? _self._expenseItems
           : expenseItems // ignore: cast_nullable_to_non_nullable
               as List<ExpenseItemDto>,
+      date: freezed == date
+          ? _self.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }

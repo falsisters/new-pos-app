@@ -19,6 +19,7 @@ mixin _$BillCountModel {
   List<BillModel> get bills;
   double get startingAmount;
   double get totalCash;
+  double get totalExpenses;
   double get expenses;
   bool get showExpenses;
   double get beginningBalance;
@@ -51,6 +52,8 @@ mixin _$BillCountModel {
                 other.startingAmount == startingAmount) &&
             (identical(other.totalCash, totalCash) ||
                 other.totalCash == totalCash) &&
+            (identical(other.totalExpenses, totalExpenses) ||
+                other.totalExpenses == totalExpenses) &&
             (identical(other.expenses, expenses) ||
                 other.expenses == expenses) &&
             (identical(other.showExpenses, showExpenses) ||
@@ -78,6 +81,7 @@ mixin _$BillCountModel {
       const DeepCollectionEquality().hash(bills),
       startingAmount,
       totalCash,
+      totalExpenses,
       expenses,
       showExpenses,
       beginningBalance,
@@ -90,7 +94,7 @@ mixin _$BillCountModel {
 
   @override
   String toString() {
-    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
+    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, totalExpenses: $totalExpenses, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
   }
 }
 
@@ -105,6 +109,7 @@ abstract mixin class $BillCountModelCopyWith<$Res> {
       List<BillModel> bills,
       double startingAmount,
       double totalCash,
+      double totalExpenses,
       double expenses,
       bool showExpenses,
       double beginningBalance,
@@ -133,6 +138,7 @@ class _$BillCountModelCopyWithImpl<$Res>
     Object? bills = null,
     Object? startingAmount = null,
     Object? totalCash = null,
+    Object? totalExpenses = null,
     Object? expenses = null,
     Object? showExpenses = null,
     Object? beginningBalance = null,
@@ -159,6 +165,10 @@ class _$BillCountModelCopyWithImpl<$Res>
       totalCash: null == totalCash
           ? _self.totalCash
           : totalCash // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalExpenses: null == totalExpenses
+          ? _self.totalExpenses
+          : totalExpenses // ignore: cast_nullable_to_non_nullable
               as double,
       expenses: null == expenses
           ? _self.expenses
@@ -208,6 +218,7 @@ class _BillCountModel implements BillCountModel {
       final List<BillModel> bills = const [],
       this.startingAmount = 0,
       this.totalCash = 0,
+      this.totalExpenses = 0,
       this.expenses = 0,
       this.showExpenses = false,
       this.beginningBalance = 0,
@@ -239,6 +250,9 @@ class _BillCountModel implements BillCountModel {
   @override
   @JsonKey()
   final double totalCash;
+  @override
+  @JsonKey()
+  final double totalExpenses;
   @override
   @JsonKey()
   final double expenses;
@@ -298,6 +312,8 @@ class _BillCountModel implements BillCountModel {
                 other.startingAmount == startingAmount) &&
             (identical(other.totalCash, totalCash) ||
                 other.totalCash == totalCash) &&
+            (identical(other.totalExpenses, totalExpenses) ||
+                other.totalExpenses == totalExpenses) &&
             (identical(other.expenses, expenses) ||
                 other.expenses == expenses) &&
             (identical(other.showExpenses, showExpenses) ||
@@ -325,6 +341,7 @@ class _BillCountModel implements BillCountModel {
       const DeepCollectionEquality().hash(_bills),
       startingAmount,
       totalCash,
+      totalExpenses,
       expenses,
       showExpenses,
       beginningBalance,
@@ -337,7 +354,7 @@ class _BillCountModel implements BillCountModel {
 
   @override
   String toString() {
-    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
+    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, totalExpenses: $totalExpenses, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
   }
 }
 
@@ -354,6 +371,7 @@ abstract mixin class _$BillCountModelCopyWith<$Res>
       List<BillModel> bills,
       double startingAmount,
       double totalCash,
+      double totalExpenses,
       double expenses,
       bool showExpenses,
       double beginningBalance,
@@ -382,6 +400,7 @@ class __$BillCountModelCopyWithImpl<$Res>
     Object? bills = null,
     Object? startingAmount = null,
     Object? totalCash = null,
+    Object? totalExpenses = null,
     Object? expenses = null,
     Object? showExpenses = null,
     Object? beginningBalance = null,
@@ -408,6 +427,10 @@ class __$BillCountModelCopyWithImpl<$Res>
       totalCash: null == totalCash
           ? _self.totalCash
           : totalCash // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalExpenses: null == totalExpenses
+          ? _self.totalExpenses
+          : totalExpenses // ignore: cast_nullable_to_non_nullable
               as double,
       expenses: null == expenses
           ? _self.expenses

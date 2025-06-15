@@ -103,10 +103,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       return;
     }
 
-    // If _loadedExpenseListId is not null, we are editing an existing list.
-    // Saving with _itemsForSubmission being empty will effectively clear the items for that day.
-    // If _loadedExpenseListId is null and _itemsForSubmission is NOT empty, a new list will be created.
-
     final notifier = ref.read(expenseProvider.notifier);
     final expenseListData =
         CreateExpenseList(expenseItems: _itemsForSubmission);
@@ -118,10 +114,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
       if (_loadedExpenseListId != null) {
         debugPrint("Updating expense list: $_loadedExpenseListId");
-        await notifier.updateExpense(_loadedExpenseListId!, expenseListData);
+        await notifier.updateExpense(_loadedExpenseListId!, expenseListData,
+            targetDate: _selectedDate);
       } else {
         debugPrint("Creating new expense list");
-        await notifier.createExpense(expenseListData);
+        await notifier.createExpense(expenseListData,
+            targetDate: _selectedDate);
       }
 
       // Instead of trying to update state directly, refresh the data from API
@@ -135,6 +133,58 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error saving expenses: ${e.toString()}')),
       );
+    }
+  }
+
+  Future<void> _deleteExpenseList() async {
+    if (_loadedExpenseListId == null) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Expense List'),
+          content: const Text(
+              'Are you sure you want to delete this expense list? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Deleting expense list...')),
+        );
+
+        final notifier = ref.read(expenseProvider.notifier);
+        await notifier.deleteExpense(_loadedExpenseListId!);
+
+        setState(() {
+          _itemsForSubmission = [];
+          _loadedExpenseListId = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Expense list deleted successfully')),
+        );
+      } catch (e) {
+        debugPrint("Exception during delete: ${e.toString()}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error deleting expense list: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -245,6 +295,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             icon: const Icon(Icons.calendar_today_outlined),
             onPressed: () => _selectDate(context),
           ),
+          if (_loadedExpenseListId != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _deleteExpenseList,
+            ),
         ],
       ),
       body: SingleChildScrollView(

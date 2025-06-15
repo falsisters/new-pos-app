@@ -39,7 +39,6 @@ class ExpenseRepository {
 
       debugPrint("Fetching expenses for date: $formattedDate");
 
-      // Using query parameters since @Query('date') is used in the controller
       final response = await _dio.instance.get(
         '/expenses/today',
         queryParameters: {
@@ -59,7 +58,6 @@ class ExpenseRepository {
       if (e is DioException) {
         debugPrint("DioException in getExpenseListByDate: ${e.toString()}");
         debugPrint("Response data: ${e.response?.data}");
-        // No need for alternative approach since we're using the correct method now
         throw Exception(e.message ?? e.error);
       } else {
         debugPrint("Error in getExpenseListByDate: ${e.toString()}");
@@ -118,6 +116,24 @@ class ExpenseRepository {
         throw Exception(e.message ?? e.error);
       } else {
         debugPrint("Error in updateExpense: ${e.toString()}");
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> deleteExpense(String id) async {
+    try {
+      debugPrint("Deleting expense ID: $id");
+
+      final response = await _dio.instance.delete('/expenses/$id');
+      debugPrint("Delete expense response: ${response.statusCode}");
+    } catch (e) {
+      if (e is DioException) {
+        debugPrint("DioException in deleteExpense: ${e.toString()}");
+        debugPrint("Response data: ${e.response?.data}");
+        throw Exception(e.message ?? e.error);
+      } else {
+        debugPrint("Error in deleteExpense: ${e.toString()}");
         throw Exception('An unexpected error occurred: ${e.toString()}');
       }
     }

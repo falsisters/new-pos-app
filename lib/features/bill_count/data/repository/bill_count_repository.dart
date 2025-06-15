@@ -14,7 +14,7 @@ class BillCountRepository {
       final queryParams = date != null ? {'date': date} : null;
       print("Getting bill count with date parameter: $queryParams");
 
-      // Use the /bills endpoint for cashier (not /bills/user)
+      // Use the /bills endpoint for cashier
       final response =
           await _dio.instance.get('/bills', queryParameters: queryParams);
 
@@ -76,7 +76,7 @@ class BillCountRepository {
       print("Starting amount being sent: ${billCount.startingAmount}");
       print("Update payload: $data");
 
-      // Use the /bills/:id endpoint
+      // Use the /bills/:id endpoint for cashiers
       final response = await _dio.instance.put('/bills/$id', data: data);
 
       if (response.data == null) {
@@ -102,7 +102,7 @@ class BillCountRepository {
   // Get specific bill count by ID
   Future<BillCountModel> getBillCountById(String id) async {
     try {
-      // Use the /bills/:id endpoint (not /bills/user/:id)
+      // Use the /bills/:id endpoint for cashiers
       final response = await _dio.instance.get('/bills/$id');
 
       if (response.data == null) {

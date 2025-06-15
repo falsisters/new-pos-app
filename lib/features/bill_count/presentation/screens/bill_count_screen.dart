@@ -5,7 +5,6 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/models/bill_type.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/providers/bill_count_provider.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/bill_entry_widget.dart';
-import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/expense_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
@@ -74,22 +73,6 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
     _loadBillCount();
   }
 
-  void _showExpenseDialog() {
-    final billCountState = ref.read(billCountProvider).value;
-    if (billCountState == null || billCountState.billCount == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => ExpenseDialog(
-        initialValue: billCountState.billCount!.expenses,
-        onSave: (double value) {
-          ref.read(billCountProvider.notifier).updateExpenses(value);
-          // Do not auto-save, let the user decide when to save
-        },
-      ),
-    );
-  }
-
   void _showBeginningBalanceDialog() {
     final billCountState = ref.read(billCountProvider).value;
     if (billCountState == null || billCountState.billCount == null) return;
@@ -104,11 +87,6 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         },
       ),
     );
-  }
-
-  void _toggleExpenses() {
-    ref.read(billCountProvider.notifier).toggleExpensesVisibility();
-    // Do not auto-save, let the user decide when to save
   }
 
   void _toggleBeginningBalance() {
@@ -408,7 +386,64 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                           totalCash: billCount.totalCash,
                         ),
 
-                        // Subtracted Balance (Net Cash - Expenses if any)
+                        // Total Expenses Widget (read-only from backend)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.accent,
+                                AppColors.accent.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "TOTAL EXPENSES",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.9),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "(From expense tracking)",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "₱ ${currencyFormat.format(billCount.totalExpenses)}",
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Net Amount (Cash - Expenses)
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -435,7 +470,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "SUBTRACTED BALANCE",
+                                "NET AMOUNT",
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -445,9 +480,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                billCount.showExpenses
-                                    ? "(Net Cash - Expenses)"
-                                    : "(Net Cash - No Expenses)",
+                                "(Cash + Expenses)",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.7),
@@ -456,17 +489,11 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "₱ ${currencyFormat.format(billCount.totalCash - (billCount.showExpenses ? billCount.expenses : 0))}",
-                                style: TextStyle(
+                                "₱ ${currencyFormat.format(billCount.totalCash + billCount.totalExpenses)}",
+                                style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
-                                  color: (billCount.totalCash -
-                                              (billCount.showExpenses
-                                                  ? billCount.expenses
-                                                  : 0)) <
-                                          0
-                                      ? Colors.red.shade200
-                                      : Colors.white,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -673,116 +700,6 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                           ),
                         ),
 
-                        // Expenses section
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: billCount.showExpenses
-                                  ? AppColors.accent.withOpacity(0.3)
-                                  : Colors.grey.shade200,
-                              width: billCount.showExpenses ? 2 : 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Transform.scale(
-                                    scale: 1.1,
-                                    child: Checkbox(
-                                      value: billCount.showExpenses,
-                                      onChanged: (_) => _toggleExpenses(),
-                                      activeColor: AppColors.accent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      "ADD EXPENSES",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: billCount.showExpenses
-                                            ? AppColors.accent
-                                            : Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                  if (billCount.showExpenses)
-                                    Text(
-                                      "₱ ${currencyFormat.format(billCount.expenses)}",
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.accent,
-                                      ),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accent.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: IconButton(
-                                      icon: const Icon(Icons.edit_rounded),
-                                      color: AppColors.accent,
-                                      iconSize: 20,
-                                      onPressed: _showExpenseDialog,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (billCount.showExpenses)
-                                Column(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 16),
-                                      height: 1,
-                                      color: AppColors.accent.withOpacity(0.2),
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          "TOTAL WITH EXPENSES",
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        Text(
-                                          "₱ ${currencyFormat.format(billCount.totalWithExpenses)}",
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.accent,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-
                         // Beginning Balance to deduct
                         Container(
                           width: double.infinity,
@@ -843,12 +760,14 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                           ),
                         ),
 
-                        // Initial Count breakdown with expenses info
+                        // Updated Initial Count breakdown
                         InitialCountWidget(
                           totalCash: billCount.totalCash,
                           beginningBalance: billCount.beginningBalance,
-                          expenses: billCount.expenses,
-                          showExpenses: billCount.showExpenses,
+                          expenses: billCount
+                              .totalExpenses, // Use totalExpenses from backend
+                          showExpenses:
+                              true, // Always show since it comes from backend
                         ),
 
                         // Final total

@@ -20,7 +20,8 @@ class InitialCountWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat("#,##0.00", "en_US");
     final netAmount = totalCash - beginningBalance;
-    final finalAmount = netAmount + (showExpenses ? expenses : 0);
+    final finalAmount = netAmount +
+        expenses; // Always add expenses since they come from backend
     final isNegative = netAmount < 0;
 
     return Container(
@@ -133,61 +134,59 @@ class InitialCountWidget extends StatelessWidget {
             ],
           ),
 
-          if (showExpenses) ...[
-            const SizedBox(height: 8),
+          const SizedBox(height: 8),
 
-            // Add expenses
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Add: Expenses",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
+          // Add expenses (always show since it comes from backend)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Add: Total Expenses",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
                 ),
-                Text(
-                  "+ ₱ ${currencyFormat.format(expenses)}",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
-                  ),
+              ),
+              Text(
+                "+ ₱ ${currencyFormat.format(expenses)}",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accent,
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
 
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              height: 1,
-              color: Colors.grey.shade300,
-            ),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            height: 1,
+            color: Colors.grey.shade300,
+          ),
 
-            // Final calculation
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Total Amount",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+          // Final calculation
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Total Amount",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
-                Text(
-                  "₱ ${currencyFormat.format(finalAmount)}",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+              ),
+              Text(
+                "₱ ${currencyFormat.format(finalAmount)}",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ],
       ),
     );

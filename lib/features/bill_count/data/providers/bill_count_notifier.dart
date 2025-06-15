@@ -31,6 +31,7 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
         }
 
         print("Loaded bill count: ${billCount.toJson()}");
+        print("Loaded totalExpenses: ${billCount.totalExpenses}");
         return BillCountState(billCount: billCount);
       } catch (e) {
         print("Error loading bill count: $e");
@@ -71,6 +72,7 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
           billsTotal: 0,
           totalWithExpenses: 0,
           finalTotal: 0,
+          totalExpenses: 0, // Initialize totalExpenses
         );
 
         return BillCountState(billCount: newBillCount);
@@ -110,12 +112,10 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
           ));
         }
 
-        // Create the request model with all zero values
+        // Create the request model with all zero values (removed expenses fields)
         final request = CreateBillCountRequestModel(
           date: formattedDate,
           startingAmount: 0.0,
-          expenses: 0.0,
-          showExpenses: false,
           beginningBalance: 0.0,
           showBeginningBalance: false,
           bills: billsList,
@@ -130,6 +130,7 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
 
         print("Bill count created successfully with ID: ${savedBillCount.id}");
         print("Server returned totalCash: ${savedBillCount.totalCash}");
+        print("Server returned totalExpenses: ${savedBillCount.totalExpenses}");
 
         return BillCountState(billCount: savedBillCount);
       } catch (e) {
@@ -137,6 +138,53 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
         return BillCountState(error: e.toString());
       }
     });
+  }
+
+  // Update beginning balance value - only update local state
+  Future<void> updateBeginningBalance(double beginningBalance) async {
+    final currentState = state.value!;
+    final currentBillCount = currentState.billCount ?? const BillCountModel();
+
+    print("Updating beginning balance to: $beginningBalance");
+
+    // Recalculate finalTotal using totalExpenses from backend instead of expenses
+    final totalWithExpenses =
+        currentBillCount.billsTotal + currentBillCount.totalExpenses;
+    final finalTotal = totalWithExpenses -
+        (currentBillCount.showBeginningBalance ? beginningBalance : 0);
+
+    final updatedBillCount = currentBillCount.copyWith(
+      beginningBalance: beginningBalance,
+      totalWithExpenses: totalWithExpenses,
+      finalTotal: finalTotal,
+    );
+
+    // Update local state immediately without async loading
+    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
+  }
+
+  // Toggle beginning balance visibility - only update local state
+  Future<void> toggleBeginningBalanceVisibility() async {
+    final currentState = state.value!;
+    final currentBillCount = currentState.billCount ?? const BillCountModel();
+
+    final showBeginningBalance = !currentBillCount.showBeginningBalance;
+    print("Toggling beginning balance visibility to: $showBeginningBalance");
+
+    // Use totalExpenses from backend instead of local expenses
+    final totalWithExpenses =
+        currentBillCount.billsTotal + currentBillCount.totalExpenses;
+    final finalTotal = totalWithExpenses -
+        (showBeginningBalance ? currentBillCount.beginningBalance : 0);
+
+    final updatedBillCount = currentBillCount.copyWith(
+      showBeginningBalance: showBeginningBalance,
+      totalWithExpenses: totalWithExpenses,
+      finalTotal: finalTotal,
+    );
+
+    // Update local state immediately without async loading
+    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
   }
 
   // Update bill amount - only update local state
@@ -201,9 +249,8 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
       billsTotal += typeAmount * billType.value;
     }
 
-    // Calculate totalWithExpenses
-    final totalWithExpenses = billsTotal +
-        (currentBillCount.showExpenses ? currentBillCount.expenses : 0);
+    // Use totalExpenses from backend instead of local expenses
+    final totalWithExpenses = billsTotal + currentBillCount.totalExpenses;
 
     // Calculate finalTotal
     final finalTotal = totalWithExpenses -
@@ -238,102 +285,6 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     if (value is String) return int.tryParse(value) ?? 0;
     if (value is double) return value.toInt();
     return 0;
-  }
-
-  // Toggle expenses visibility - only update local state
-  Future<void> toggleExpensesVisibility() async {
-    final currentState = state.value!;
-    final currentBillCount = currentState.billCount ?? const BillCountModel();
-
-    final showExpenses = !currentBillCount.showExpenses;
-    print("Toggling expenses visibility to: $showExpenses");
-
-    // Update the total with expenses
-    final totalWithExpenses = currentBillCount.billsTotal +
-        (showExpenses ? currentBillCount.expenses : 0);
-
-    // Update final total
-    final finalTotal = totalWithExpenses -
-        (currentBillCount.showBeginningBalance
-            ? currentBillCount.beginningBalance
-            : 0);
-
-    final updatedBillCount = currentBillCount.copyWith(
-      showExpenses: showExpenses,
-      totalWithExpenses: totalWithExpenses,
-      finalTotal: finalTotal,
-    );
-
-    // Update local state immediately without async loading
-    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
-  }
-
-  // Update expenses value - only update local state
-  Future<void> updateExpenses(double expenses) async {
-    final currentState = state.value!;
-    final currentBillCount = currentState.billCount ?? const BillCountModel();
-
-    print("Updating expenses to: $expenses");
-
-    // Update the total with expenses
-    final totalWithExpenses = currentBillCount.billsTotal +
-        (currentBillCount.showExpenses ? expenses : 0);
-
-    // Update final total
-    final finalTotal = totalWithExpenses -
-        (currentBillCount.showBeginningBalance
-            ? currentBillCount.beginningBalance
-            : 0);
-
-    final updatedBillCount = currentBillCount.copyWith(
-      expenses: expenses,
-      totalWithExpenses: totalWithExpenses,
-      finalTotal: finalTotal,
-    );
-
-    // Update local state immediately without async loading
-    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
-  }
-
-  // Toggle beginning balance visibility - only update local state
-  Future<void> toggleBeginningBalanceVisibility() async {
-    final currentState = state.value!;
-    final currentBillCount = currentState.billCount ?? const BillCountModel();
-
-    final showBeginningBalance = !currentBillCount.showBeginningBalance;
-    print("Toggling beginning balance visibility to: $showBeginningBalance");
-
-    // Update final total
-    final finalTotal = currentBillCount.totalWithExpenses -
-        (showBeginningBalance ? currentBillCount.beginningBalance : 0);
-
-    final updatedBillCount = currentBillCount.copyWith(
-      showBeginningBalance: showBeginningBalance,
-      finalTotal: finalTotal,
-    );
-
-    // Update local state immediately without async loading
-    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
-  }
-
-  // Update beginning balance value - only update local state
-  Future<void> updateBeginningBalance(double beginningBalance) async {
-    final currentState = state.value!;
-    final currentBillCount = currentState.billCount ?? const BillCountModel();
-
-    print("Updating beginning balance to: $beginningBalance");
-
-    // Update final total
-    final finalTotal = currentBillCount.totalWithExpenses -
-        (currentBillCount.showBeginningBalance ? beginningBalance : 0);
-
-    final updatedBillCount = currentBillCount.copyWith(
-      beginningBalance: beginningBalance,
-      finalTotal: finalTotal,
-    );
-
-    // Update local state immediately without async loading
-    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
   }
 
   // Update total cash value - only update local state
@@ -430,13 +381,12 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
                 .format(currentBillCount.date ?? DateTime.now());
 
         // Create the request model with ALL bills including startingAmount
+        // Remove expenses from request since it comes from backend
         final request = CreateBillCountRequestModel(
           date: formattedDate,
           startingAmount: currentBillCount.startingAmount,
-          expenses: currentBillCount.expenses,
-          showExpenses: currentBillCount.showExpenses,
-          beginningBalance: currentBillCount.beginningBalance,
           showBeginningBalance: currentBillCount.showBeginningBalance,
+          beginningBalance: currentBillCount.beginningBalance,
           bills: billsList, // All bills, including zeros
         );
 

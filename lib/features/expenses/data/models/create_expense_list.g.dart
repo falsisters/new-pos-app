@@ -11,9 +11,11 @@ _CreateExpenseList _$CreateExpenseListFromJson(Map<String, dynamic> json) =>
       expenseItems: (json['expenseItems'] as List<dynamic>)
           .map((e) => ExpenseItemDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      date: json['date'] as String?,
     );
 
 Map<String, dynamic> _$CreateExpenseListToJson(_CreateExpenseList instance) =>
     <String, dynamic>{
       'expenseItems': instance.expenseItems,
+      'date': instance.date,
     };

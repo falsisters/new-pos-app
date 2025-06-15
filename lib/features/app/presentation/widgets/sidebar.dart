@@ -180,7 +180,7 @@ class Sidebar extends ConsumerWidget {
                           {ref.read(drawerIndexProvider.notifier).setIndex(4)}),
                 ),
               const SizedBox(height: 2),
-              if (permissions.contains('PROFITS'))
+              if (permissions.contains('BILLS'))
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: SidebarItem(
