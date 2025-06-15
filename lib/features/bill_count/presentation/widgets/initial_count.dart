@@ -3,25 +3,22 @@ import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 
 class InitialCountWidget extends StatelessWidget {
-  final double totalCash;
+  final double netCash;
   final double beginningBalance;
   final double expenses;
-  final bool showExpenses;
 
   const InitialCountWidget({
     Key? key,
-    required this.totalCash,
+    required this.netCash,
     required this.beginningBalance,
     this.expenses = 0.0,
-    this.showExpenses = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat("#,##0.00", "en_US");
-    final netAmount = totalCash - beginningBalance;
-    final finalAmount = netAmount +
-        expenses; // Always add expenses since they come from backend
+    final netAmount = netCash - beginningBalance;
+    final finalAmount = netAmount + expenses;
     final isNegative = netAmount < 0;
 
     return Container(
@@ -70,7 +67,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(totalCash)}",
+                "₱ ${currencyFormat.format(netCash)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -136,7 +133,7 @@ class InitialCountWidget extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Add expenses (always show since it comes from backend)
+          // Add expenses
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

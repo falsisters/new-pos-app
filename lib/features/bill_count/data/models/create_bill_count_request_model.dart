@@ -8,7 +8,6 @@ part 'create_bill_count_request_model.g.dart';
 sealed class CreateBillCountRequestModel with _$CreateBillCountRequestModel {
   const factory CreateBillCountRequestModel({
     String? date,
-    double? startingAmount,
     double? beginningBalance,
     bool? showBeginningBalance,
     List<BillModel>? bills,

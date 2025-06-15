@@ -17,11 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$BillCountModel {
   String? get id;
   List<BillModel> get bills;
-  double get startingAmount;
   double get totalCash;
   double get totalExpenses;
-  double get expenses;
-  bool get showExpenses;
+  double get netCash;
   double get beginningBalance;
   bool get showBeginningBalance;
   Map<String, dynamic> get billsByType;
@@ -29,6 +27,8 @@ mixin _$BillCountModel {
   double get billsTotal;
   double get totalWithExpenses;
   double get finalTotal;
+  double get summaryStep1;
+  double get summaryFinal;
 
   /// Create a copy of BillCountModel
   /// with the given fields replaced by the non-null parameter values.
@@ -48,16 +48,11 @@ mixin _$BillCountModel {
             other is BillCountModel &&
             (identical(other.id, id) || other.id == id) &&
             const DeepCollectionEquality().equals(other.bills, bills) &&
-            (identical(other.startingAmount, startingAmount) ||
-                other.startingAmount == startingAmount) &&
             (identical(other.totalCash, totalCash) ||
                 other.totalCash == totalCash) &&
             (identical(other.totalExpenses, totalExpenses) ||
                 other.totalExpenses == totalExpenses) &&
-            (identical(other.expenses, expenses) ||
-                other.expenses == expenses) &&
-            (identical(other.showExpenses, showExpenses) ||
-                other.showExpenses == showExpenses) &&
+            (identical(other.netCash, netCash) || other.netCash == netCash) &&
             (identical(other.beginningBalance, beginningBalance) ||
                 other.beginningBalance == beginningBalance) &&
             (identical(other.showBeginningBalance, showBeginningBalance) ||
@@ -70,7 +65,11 @@ mixin _$BillCountModel {
             (identical(other.totalWithExpenses, totalWithExpenses) ||
                 other.totalWithExpenses == totalWithExpenses) &&
             (identical(other.finalTotal, finalTotal) ||
-                other.finalTotal == finalTotal));
+                other.finalTotal == finalTotal) &&
+            (identical(other.summaryStep1, summaryStep1) ||
+                other.summaryStep1 == summaryStep1) &&
+            (identical(other.summaryFinal, summaryFinal) ||
+                other.summaryFinal == summaryFinal));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -79,22 +78,22 @@ mixin _$BillCountModel {
       runtimeType,
       id,
       const DeepCollectionEquality().hash(bills),
-      startingAmount,
       totalCash,
       totalExpenses,
-      expenses,
-      showExpenses,
+      netCash,
       beginningBalance,
       showBeginningBalance,
       const DeepCollectionEquality().hash(billsByType),
       date,
       billsTotal,
       totalWithExpenses,
-      finalTotal);
+      finalTotal,
+      summaryStep1,
+      summaryFinal);
 
   @override
   String toString() {
-    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, totalExpenses: $totalExpenses, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
+    return 'BillCountModel(id: $id, bills: $bills, totalCash: $totalCash, totalExpenses: $totalExpenses, netCash: $netCash, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal, summaryStep1: $summaryStep1, summaryFinal: $summaryFinal)';
   }
 }
 
@@ -107,18 +106,18 @@ abstract mixin class $BillCountModelCopyWith<$Res> {
   $Res call(
       {String? id,
       List<BillModel> bills,
-      double startingAmount,
       double totalCash,
       double totalExpenses,
-      double expenses,
-      bool showExpenses,
+      double netCash,
       double beginningBalance,
       bool showBeginningBalance,
       Map<String, dynamic> billsByType,
       DateTime? date,
       double billsTotal,
       double totalWithExpenses,
-      double finalTotal});
+      double finalTotal,
+      double summaryStep1,
+      double summaryFinal});
 }
 
 /// @nodoc
@@ -136,11 +135,9 @@ class _$BillCountModelCopyWithImpl<$Res>
   $Res call({
     Object? id = freezed,
     Object? bills = null,
-    Object? startingAmount = null,
     Object? totalCash = null,
     Object? totalExpenses = null,
-    Object? expenses = null,
-    Object? showExpenses = null,
+    Object? netCash = null,
     Object? beginningBalance = null,
     Object? showBeginningBalance = null,
     Object? billsByType = null,
@@ -148,6 +145,8 @@ class _$BillCountModelCopyWithImpl<$Res>
     Object? billsTotal = null,
     Object? totalWithExpenses = null,
     Object? finalTotal = null,
+    Object? summaryStep1 = null,
+    Object? summaryFinal = null,
   }) {
     return _then(_self.copyWith(
       id: freezed == id
@@ -158,10 +157,6 @@ class _$BillCountModelCopyWithImpl<$Res>
           ? _self.bills
           : bills // ignore: cast_nullable_to_non_nullable
               as List<BillModel>,
-      startingAmount: null == startingAmount
-          ? _self.startingAmount
-          : startingAmount // ignore: cast_nullable_to_non_nullable
-              as double,
       totalCash: null == totalCash
           ? _self.totalCash
           : totalCash // ignore: cast_nullable_to_non_nullable
@@ -170,14 +165,10 @@ class _$BillCountModelCopyWithImpl<$Res>
           ? _self.totalExpenses
           : totalExpenses // ignore: cast_nullable_to_non_nullable
               as double,
-      expenses: null == expenses
-          ? _self.expenses
-          : expenses // ignore: cast_nullable_to_non_nullable
+      netCash: null == netCash
+          ? _self.netCash
+          : netCash // ignore: cast_nullable_to_non_nullable
               as double,
-      showExpenses: null == showExpenses
-          ? _self.showExpenses
-          : showExpenses // ignore: cast_nullable_to_non_nullable
-              as bool,
       beginningBalance: null == beginningBalance
           ? _self.beginningBalance
           : beginningBalance // ignore: cast_nullable_to_non_nullable
@@ -206,6 +197,14 @@ class _$BillCountModelCopyWithImpl<$Res>
           ? _self.finalTotal
           : finalTotal // ignore: cast_nullable_to_non_nullable
               as double,
+      summaryStep1: null == summaryStep1
+          ? _self.summaryStep1
+          : summaryStep1 // ignore: cast_nullable_to_non_nullable
+              as double,
+      summaryFinal: null == summaryFinal
+          ? _self.summaryFinal
+          : summaryFinal // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -216,18 +215,18 @@ class _BillCountModel implements BillCountModel {
   const _BillCountModel(
       {this.id,
       final List<BillModel> bills = const [],
-      this.startingAmount = 0,
       this.totalCash = 0,
       this.totalExpenses = 0,
-      this.expenses = 0,
-      this.showExpenses = false,
+      this.netCash = 0,
       this.beginningBalance = 0,
       this.showBeginningBalance = false,
       final Map<String, dynamic> billsByType = const {},
       this.date,
       this.billsTotal = 0,
       this.totalWithExpenses = 0,
-      this.finalTotal = 0})
+      this.finalTotal = 0,
+      this.summaryStep1 = 0,
+      this.summaryFinal = 0})
       : _bills = bills,
         _billsByType = billsByType;
   factory _BillCountModel.fromJson(Map<String, dynamic> json) =>
@@ -246,19 +245,13 @@ class _BillCountModel implements BillCountModel {
 
   @override
   @JsonKey()
-  final double startingAmount;
-  @override
-  @JsonKey()
   final double totalCash;
   @override
   @JsonKey()
   final double totalExpenses;
   @override
   @JsonKey()
-  final double expenses;
-  @override
-  @JsonKey()
-  final bool showExpenses;
+  final double netCash;
   @override
   @JsonKey()
   final double beginningBalance;
@@ -285,6 +278,12 @@ class _BillCountModel implements BillCountModel {
   @override
   @JsonKey()
   final double finalTotal;
+  @override
+  @JsonKey()
+  final double summaryStep1;
+  @override
+  @JsonKey()
+  final double summaryFinal;
 
   /// Create a copy of BillCountModel
   /// with the given fields replaced by the non-null parameter values.
@@ -308,16 +307,11 @@ class _BillCountModel implements BillCountModel {
             other is _BillCountModel &&
             (identical(other.id, id) || other.id == id) &&
             const DeepCollectionEquality().equals(other._bills, _bills) &&
-            (identical(other.startingAmount, startingAmount) ||
-                other.startingAmount == startingAmount) &&
             (identical(other.totalCash, totalCash) ||
                 other.totalCash == totalCash) &&
             (identical(other.totalExpenses, totalExpenses) ||
                 other.totalExpenses == totalExpenses) &&
-            (identical(other.expenses, expenses) ||
-                other.expenses == expenses) &&
-            (identical(other.showExpenses, showExpenses) ||
-                other.showExpenses == showExpenses) &&
+            (identical(other.netCash, netCash) || other.netCash == netCash) &&
             (identical(other.beginningBalance, beginningBalance) ||
                 other.beginningBalance == beginningBalance) &&
             (identical(other.showBeginningBalance, showBeginningBalance) ||
@@ -330,7 +324,11 @@ class _BillCountModel implements BillCountModel {
             (identical(other.totalWithExpenses, totalWithExpenses) ||
                 other.totalWithExpenses == totalWithExpenses) &&
             (identical(other.finalTotal, finalTotal) ||
-                other.finalTotal == finalTotal));
+                other.finalTotal == finalTotal) &&
+            (identical(other.summaryStep1, summaryStep1) ||
+                other.summaryStep1 == summaryStep1) &&
+            (identical(other.summaryFinal, summaryFinal) ||
+                other.summaryFinal == summaryFinal));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -339,22 +337,22 @@ class _BillCountModel implements BillCountModel {
       runtimeType,
       id,
       const DeepCollectionEquality().hash(_bills),
-      startingAmount,
       totalCash,
       totalExpenses,
-      expenses,
-      showExpenses,
+      netCash,
       beginningBalance,
       showBeginningBalance,
       const DeepCollectionEquality().hash(_billsByType),
       date,
       billsTotal,
       totalWithExpenses,
-      finalTotal);
+      finalTotal,
+      summaryStep1,
+      summaryFinal);
 
   @override
   String toString() {
-    return 'BillCountModel(id: $id, bills: $bills, startingAmount: $startingAmount, totalCash: $totalCash, totalExpenses: $totalExpenses, expenses: $expenses, showExpenses: $showExpenses, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal)';
+    return 'BillCountModel(id: $id, bills: $bills, totalCash: $totalCash, totalExpenses: $totalExpenses, netCash: $netCash, beginningBalance: $beginningBalance, showBeginningBalance: $showBeginningBalance, billsByType: $billsByType, date: $date, billsTotal: $billsTotal, totalWithExpenses: $totalWithExpenses, finalTotal: $finalTotal, summaryStep1: $summaryStep1, summaryFinal: $summaryFinal)';
   }
 }
 
@@ -369,18 +367,18 @@ abstract mixin class _$BillCountModelCopyWith<$Res>
   $Res call(
       {String? id,
       List<BillModel> bills,
-      double startingAmount,
       double totalCash,
       double totalExpenses,
-      double expenses,
-      bool showExpenses,
+      double netCash,
       double beginningBalance,
       bool showBeginningBalance,
       Map<String, dynamic> billsByType,
       DateTime? date,
       double billsTotal,
       double totalWithExpenses,
-      double finalTotal});
+      double finalTotal,
+      double summaryStep1,
+      double summaryFinal});
 }
 
 /// @nodoc
@@ -398,11 +396,9 @@ class __$BillCountModelCopyWithImpl<$Res>
   $Res call({
     Object? id = freezed,
     Object? bills = null,
-    Object? startingAmount = null,
     Object? totalCash = null,
     Object? totalExpenses = null,
-    Object? expenses = null,
-    Object? showExpenses = null,
+    Object? netCash = null,
     Object? beginningBalance = null,
     Object? showBeginningBalance = null,
     Object? billsByType = null,
@@ -410,6 +406,8 @@ class __$BillCountModelCopyWithImpl<$Res>
     Object? billsTotal = null,
     Object? totalWithExpenses = null,
     Object? finalTotal = null,
+    Object? summaryStep1 = null,
+    Object? summaryFinal = null,
   }) {
     return _then(_BillCountModel(
       id: freezed == id
@@ -420,10 +418,6 @@ class __$BillCountModelCopyWithImpl<$Res>
           ? _self._bills
           : bills // ignore: cast_nullable_to_non_nullable
               as List<BillModel>,
-      startingAmount: null == startingAmount
-          ? _self.startingAmount
-          : startingAmount // ignore: cast_nullable_to_non_nullable
-              as double,
       totalCash: null == totalCash
           ? _self.totalCash
           : totalCash // ignore: cast_nullable_to_non_nullable
@@ -432,14 +426,10 @@ class __$BillCountModelCopyWithImpl<$Res>
           ? _self.totalExpenses
           : totalExpenses // ignore: cast_nullable_to_non_nullable
               as double,
-      expenses: null == expenses
-          ? _self.expenses
-          : expenses // ignore: cast_nullable_to_non_nullable
+      netCash: null == netCash
+          ? _self.netCash
+          : netCash // ignore: cast_nullable_to_non_nullable
               as double,
-      showExpenses: null == showExpenses
-          ? _self.showExpenses
-          : showExpenses // ignore: cast_nullable_to_non_nullable
-              as bool,
       beginningBalance: null == beginningBalance
           ? _self.beginningBalance
           : beginningBalance // ignore: cast_nullable_to_non_nullable
@@ -467,6 +457,14 @@ class __$BillCountModelCopyWithImpl<$Res>
       finalTotal: null == finalTotal
           ? _self.finalTotal
           : finalTotal // ignore: cast_nullable_to_non_nullable
+              as double,
+      summaryStep1: null == summaryStep1
+          ? _self.summaryStep1
+          : summaryStep1 // ignore: cast_nullable_to_non_nullable
+              as double,
+      summaryFinal: null == summaryFinal
+          ? _self.summaryFinal
+          : summaryFinal // ignore: cast_nullable_to_non_nullable
               as double,
     ));
   }

@@ -40,7 +40,7 @@ class TotalCashWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "NET CASH",
+            "TOTAL CASH",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

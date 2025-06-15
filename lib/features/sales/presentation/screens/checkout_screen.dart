@@ -617,32 +617,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             }
                           }
 
-                          // Show confirmation dialog
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              title: const Text('Confirm Checkout'),
-                              content: Text(
-                                  'Complete your purchase for ₱${widget.total.toStringAsFixed(2)}?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('CANCEL'),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    salesNotifier.submitSale(
-                                        widget.total, _selectedPaymentMethod);
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('CONFIRM'),
-                                ),
-                              ],
-                            ),
-                          );
+                          // Complete purchase directly
+                          salesNotifier.submitSale(
+                              widget.total, _selectedPaymentMethod);
+                          Navigator.pop(context);
                         }
                       },
                       child: Padding(

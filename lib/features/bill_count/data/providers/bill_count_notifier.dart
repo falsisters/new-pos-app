@@ -72,7 +72,10 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
           billsTotal: 0,
           totalWithExpenses: 0,
           finalTotal: 0,
-          totalExpenses: 0, // Initialize totalExpenses
+          totalExpenses: 0,
+          netCash: 0,
+          summaryStep1: 0,
+          summaryFinal: 0,
         );
 
         return BillCountState(billCount: newBillCount);
@@ -112,10 +115,9 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
           ));
         }
 
-        // Create the request model with all zero values (removed expenses fields)
+        // Create the request model with all zero values
         final request = CreateBillCountRequestModel(
           date: formattedDate,
-          startingAmount: 0.0,
           beginningBalance: 0.0,
           showBeginningBalance: false,
           bills: billsList,
@@ -302,22 +304,6 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
   }
 
-  // Update starting amount (total cash) - only update local state
-  Future<void> updateStartingAmount(double startingAmount) async {
-    final currentState = state.value!;
-    final currentBillCount = currentState.billCount ?? const BillCountModel();
-
-    print("Updating starting amount to: $startingAmount");
-
-    final updatedBillCount = currentBillCount.copyWith(
-      startingAmount: startingAmount,
-      totalCash: startingAmount, // Also update totalCash to match
-    );
-
-    // Update local state immediately without async loading
-    state = AsyncValue.data(BillCountState(billCount: updatedBillCount));
-  }
-
   // Save current bill count to server
   Future<void> saveBillCount({String? date}) async {
     state = const AsyncLoading();
@@ -380,18 +366,13 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
             DateFormat('yyyy-MM-dd')
                 .format(currentBillCount.date ?? DateTime.now());
 
-        // Create the request model with ALL bills including startingAmount
-        // Remove expenses from request since it comes from backend
+        // Create the request model with ALL bills
         final request = CreateBillCountRequestModel(
           date: formattedDate,
-          startingAmount: currentBillCount.startingAmount,
           showBeginningBalance: currentBillCount.showBeginningBalance,
           beginningBalance: currentBillCount.beginningBalance,
           bills: billsList, // All bills, including zeros
         );
-
-        print(
-            "Request payload includes startingAmount: ${request.startingAmount}");
 
         // Choose between update and create based on ID presence
         final BillCountModel savedBillCount;

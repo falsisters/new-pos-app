@@ -443,7 +443,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                           ),
                         ),
 
-                        // Net Amount (Cash - Expenses)
+                        // Net Amount (Cash + Expenses) - using backend calculated values
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -480,7 +480,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "(Cash + Expenses)",
+                                "(Cash - Expenses)",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.7),
@@ -489,7 +489,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "₱ ${currencyFormat.format(billCount.totalCash + billCount.totalExpenses)}",
+                                "₱ ${currencyFormat.format(billCount.netCash)}",
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
@@ -762,15 +762,13 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
 
                         // Updated Initial Count breakdown
                         InitialCountWidget(
-                          totalCash: billCount.totalCash,
+                          netCash: billCount.totalCash,
                           beginningBalance: billCount.beginningBalance,
                           expenses: billCount
                               .totalExpenses, // Use totalExpenses from backend
-                          showExpenses:
-                              true, // Always show since it comes from backend
                         ),
 
-                        // Final total
+                        // Final total - using backend calculated value
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(24),
@@ -805,7 +803,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 ),
                               ),
                               Text(
-                                "₱ ${currencyFormat.format(billCount.finalTotal)}",
+                                "₱ ${currencyFormat.format(billCount.summaryFinal)}",
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,

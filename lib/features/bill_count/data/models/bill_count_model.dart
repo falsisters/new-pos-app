@@ -9,11 +9,9 @@ sealed class BillCountModel with _$BillCountModel {
   const factory BillCountModel({
     String? id,
     @Default([]) List<BillModel> bills,
-    @Default(0) double startingAmount,
     @Default(0) double totalCash,
     @Default(0) double totalExpenses,
-    @Default(0) double expenses,
-    @Default(false) bool showExpenses,
+    @Default(0) double netCash,
     @Default(0) double beginningBalance,
     @Default(false) bool showBeginningBalance,
     @Default({}) Map<String, dynamic> billsByType,
@@ -21,6 +19,8 @@ sealed class BillCountModel with _$BillCountModel {
     @Default(0) double billsTotal,
     @Default(0) double totalWithExpenses,
     @Default(0) double finalTotal,
+    @Default(0) double summaryStep1,
+    @Default(0) double summaryFinal,
   }) = _BillCountModel;
 
   factory BillCountModel.fromJson(Map<String, dynamic> json) =>

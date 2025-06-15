@@ -13,11 +13,9 @@ _BillCountModel _$BillCountModelFromJson(Map<String, dynamic> json) =>
               ?.map((e) => BillModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      startingAmount: (json['startingAmount'] as num?)?.toDouble() ?? 0,
       totalCash: (json['totalCash'] as num?)?.toDouble() ?? 0,
       totalExpenses: (json['totalExpenses'] as num?)?.toDouble() ?? 0,
-      expenses: (json['expenses'] as num?)?.toDouble() ?? 0,
-      showExpenses: json['showExpenses'] as bool? ?? false,
+      netCash: (json['netCash'] as num?)?.toDouble() ?? 0,
       beginningBalance: (json['beginningBalance'] as num?)?.toDouble() ?? 0,
       showBeginningBalance: json['showBeginningBalance'] as bool? ?? false,
       billsByType: json['billsByType'] as Map<String, dynamic>? ?? const {},
@@ -26,17 +24,17 @@ _BillCountModel _$BillCountModelFromJson(Map<String, dynamic> json) =>
       billsTotal: (json['billsTotal'] as num?)?.toDouble() ?? 0,
       totalWithExpenses: (json['totalWithExpenses'] as num?)?.toDouble() ?? 0,
       finalTotal: (json['finalTotal'] as num?)?.toDouble() ?? 0,
+      summaryStep1: (json['summaryStep1'] as num?)?.toDouble() ?? 0,
+      summaryFinal: (json['summaryFinal'] as num?)?.toDouble() ?? 0,
     );
 
 Map<String, dynamic> _$BillCountModelToJson(_BillCountModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'bills': instance.bills,
-      'startingAmount': instance.startingAmount,
       'totalCash': instance.totalCash,
       'totalExpenses': instance.totalExpenses,
-      'expenses': instance.expenses,
-      'showExpenses': instance.showExpenses,
+      'netCash': instance.netCash,
       'beginningBalance': instance.beginningBalance,
       'showBeginningBalance': instance.showBeginningBalance,
       'billsByType': instance.billsByType,
@@ -44,4 +42,6 @@ Map<String, dynamic> _$BillCountModelToJson(_BillCountModel instance) =>
       'billsTotal': instance.billsTotal,
       'totalWithExpenses': instance.totalWithExpenses,
       'finalTotal': instance.finalTotal,
+      'summaryStep1': instance.summaryStep1,
+      'summaryFinal': instance.summaryFinal,
     };
