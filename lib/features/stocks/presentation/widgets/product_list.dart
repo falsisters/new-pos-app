@@ -331,20 +331,48 @@ class _StockProductListState extends ConsumerState<StockProductList> {
                         const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final product = products[index];
+                      final hasStock =
+                          (product.sackPrice.any((sack) => sack.stock > 0)) ||
+                              (product.perKiloPrice != null &&
+                                  product.perKiloPrice!.stock > 0);
+
                       return StockProductTile(
                         title: product.name,
-                        perKiloPrice: product.perKiloPrice?.price,
+                        perKiloPrice: product.perKiloPrice,
                         sackPrices: product.sackPrice,
                         lastUpdated: product.updatedAt,
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductEditingScreen(
-                                  product: product,
-                                ),
-                              ));
-                        },
+                        onTap: hasStock
+                            ? () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ProductEditingScreen(
+                                        product: product,
+                                      ),
+                                    ));
+                              }
+                            : () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.warning_rounded,
+                                            color: Colors.white, size: 20),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                            'This product is out of stock and cannot be transferred'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              },
                       );
                     },
                   ),

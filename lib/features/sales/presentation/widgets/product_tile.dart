@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:flutter/material.dart';
 
 class ProductTile extends StatefulWidget {
@@ -6,6 +7,7 @@ class ProductTile extends StatefulWidget {
   final String imageUrl;
   final VoidCallback onTap;
   final double? price;
+  final Product? product; // Add product parameter for stock checking
 
   const ProductTile({
     super.key,
@@ -13,6 +15,7 @@ class ProductTile extends StatefulWidget {
     required this.imageUrl,
     required this.onTap,
     this.price,
+    this.product,
   });
 
   @override
@@ -43,39 +46,81 @@ class _ProductTileState extends State<ProductTile>
     super.dispose();
   }
 
+  bool _isOutOfStock() {
+    if (widget.product == null) return false;
+
+    // Check per kilo stock
+    bool perKiloOutOfStock = widget.product!.perKiloPrice != null &&
+        widget.product!.perKiloPrice!.stock <= 0;
+
+    // Check sack stock
+    bool allSacksOutOfStock = widget.product!.sackPrice.isNotEmpty &&
+        widget.product!.sackPrice.every((sack) => sack.stock <= 0);
+
+    // If has per kilo and sacks, both must be out of stock
+    if (widget.product!.perKiloPrice != null &&
+        widget.product!.sackPrice.isNotEmpty) {
+      return perKiloOutOfStock && allSacksOutOfStock;
+    }
+
+    // If only per kilo
+    if (widget.product!.perKiloPrice != null &&
+        widget.product!.sackPrice.isEmpty) {
+      return perKiloOutOfStock;
+    }
+
+    // If only sacks
+    if (widget.product!.perKiloPrice == null &&
+        widget.product!.sackPrice.isNotEmpty) {
+      return allSacksOutOfStock;
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isOutOfStock = _isOutOfStock();
+
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: isOutOfStock ? null : widget.onTap,
       child: MouseRegion(
-        onEnter: (_) {
-          setState(() => _isHovering = true);
-          _animationController.forward();
-        },
-        onExit: (_) {
-          setState(() => _isHovering = false);
-          _animationController.reverse();
-        },
+        onEnter: isOutOfStock
+            ? null
+            : (_) {
+                setState(() => _isHovering = true);
+                _animationController.forward();
+              },
+        onExit: isOutOfStock
+            ? null
+            : (_) {
+                setState(() => _isHovering = false);
+                _animationController.reverse();
+              },
         child: AnimatedBuilder(
           animation: _scaleAnimation,
           builder: (context, child) {
             return Transform.scale(
-              scale: _scaleAnimation.value,
+              scale: isOutOfStock ? 1.0 : _scaleAnimation.value,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isOutOfStock ? Colors.grey[100] : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _isHovering
-                        ? AppColors.secondary
-                        : Colors.grey.withOpacity(0.2),
+                    color: isOutOfStock
+                        ? Colors.grey[300]!
+                        : _isHovering
+                            ? AppColors.secondary
+                            : Colors.grey.withOpacity(0.2),
                     width: _isHovering ? 2 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: _isHovering
-                          ? AppColors.secondary.withOpacity(0.25)
-                          : Colors.black.withOpacity(0.08),
+                      color: isOutOfStock
+                          ? Colors.transparent
+                          : _isHovering
+                              ? AppColors.secondary.withOpacity(0.25)
+                              : Colors.black.withOpacity(0.08),
                       spreadRadius: _isHovering ? 2 : 0,
                       blurRadius: _isHovering ? 15 : 8,
                       offset: Offset(0, _isHovering ? 6 : 2),
@@ -102,6 +147,12 @@ class _ProductTileState extends State<ProductTile>
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: double.infinity,
+                                    color: isOutOfStock
+                                        ? Colors.grey.withOpacity(0.5)
+                                        : null,
+                                    colorBlendMode: isOutOfStock
+                                        ? BlendMode.saturation
+                                        : null,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         decoration: BoxDecoration(
@@ -186,8 +237,54 @@ class _ProductTileState extends State<ProductTile>
                               ),
                             ),
 
-                            // Enhanced hover overlay
-                            if (_isHovering)
+                            // Out of stock overlay
+                            if (isOutOfStock)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.block,
+                                              color: Colors.white, size: 14),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Out of Stock',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Enhanced hover overlay (only if not out of stock)
+                            if (_isHovering && !isOutOfStock)
                               Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
@@ -254,9 +351,11 @@ class _ProductTileState extends State<ProductTile>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: _isHovering
-                                ? AppColors.secondary
-                                : AppColors.primary,
+                            color: isOutOfStock
+                                ? Colors.grey[500]
+                                : _isHovering
+                                    ? AppColors.secondary
+                                    : AppColors.primary,
                             height: 1.3,
                           ),
                         ),
@@ -269,7 +368,9 @@ class _ProductTileState extends State<ProductTile>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.1),
+                            color: isOutOfStock
+                                ? Colors.grey[200]
+                                : AppColors.accent.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -278,7 +379,12 @@ class _ProductTileState extends State<ProductTile>
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.accent,
+                              color: isOutOfStock
+                                  ? Colors.grey[500]
+                                  : AppColors.accent,
+                              decoration: isOutOfStock
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                           ),
                         ),

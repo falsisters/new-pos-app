@@ -210,18 +210,60 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     });
   }
 
+  bool _isOutOfStock() {
+    if (_selectedSackPriceId != null) {
+      final sackPrice = widget.product.sackPrice
+          .firstWhere((sp) => sp.id == _selectedSackPriceId);
+      final requestedQuantity = int.tryParse(_sackQuantityController.text) ?? 0;
+      return sackPrice.stock < requestedQuantity;
+    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      final requestedQuantity =
+          double.tryParse(_perKiloQuantityController.text) ?? 0.0;
+      return widget.product.perKiloPrice!.stock < requestedQuantity;
+    }
+    return false;
+  }
+
+  bool _hasStock() {
+    if (_selectedSackPriceId != null) {
+      final sackPrice = widget.product.sackPrice
+          .firstWhere((sp) => sp.id == _selectedSackPriceId);
+      return sackPrice.stock > 0;
+    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      return widget.product.perKiloPrice!.stock > 0;
+    }
+    return false;
+  }
+
+  double _getAvailableStock() {
+    if (_selectedSackPriceId != null) {
+      final sackPrice = widget.product.sackPrice
+          .firstWhere((sp) => sp.id == _selectedSackPriceId);
+      return sackPrice.stock.toDouble();
+    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      return widget.product.perKiloPrice!.stock;
+    }
+    return 0.0;
+  }
+
   void _increaseQuantity() {
     setState(() {
       if (_selectedSackPriceId != null) {
+        final sackPrice = widget.product.sackPrice
+            .firstWhere((sp) => sp.id == _selectedSackPriceId);
         int currentQuantity = int.tryParse(_sackQuantityController.text) ?? 1;
-        currentQuantity++;
-        _sackQuantityController.text = currentQuantity.toString();
+        if (currentQuantity < sackPrice.stock) {
+          currentQuantity++;
+          _sackQuantityController.text = currentQuantity.toString();
+        }
       } else if (_isPerKiloSelected) {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
-        currentQuantity = ((currentQuantity * 10) + 1) / 10; // Add 0.1
-        _perKiloQuantityController.text = currentQuantity.toStringAsFixed(1);
-        _updatePerKiloTotalPriceFromQuantity();
+        double newQuantity = ((currentQuantity * 10) + 1) / 10; // Add 0.1
+        if (newQuantity <= widget.product.perKiloPrice!.stock) {
+          _perKiloQuantityController.text = newQuantity.toStringAsFixed(1);
+          _updatePerKiloTotalPriceFromQuantity();
+        }
       }
     });
   }
@@ -254,6 +296,28 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   void _addToCart() {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check stock before adding to cart
+    if (!_hasStock()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('This item is out of stock'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_isOutOfStock()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Insufficient stock. Available: ${_getAvailableStock().toStringAsFixed(_selectedSackPriceId != null ? 0 : 1)} ${_selectedSackPriceId != null ? 'sacks' : 'kg'}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final salesNotifier = ref.read(salesProvider.notifier);
     ProductDto productDto;
@@ -332,6 +396,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasStock = _hasStock();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -610,36 +676,46 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary,
-                        AppColors.primary.withOpacity(0.8)
-                      ],
-                    ),
+                    gradient: hasStock
+                        ? LinearGradient(
+                            colors: [
+                              AppColors.primary,
+                              AppColors.primary.withOpacity(0.8)
+                            ],
+                          )
+                        : LinearGradient(
+                            colors: [Colors.grey[400]!, Colors.grey[300]!],
+                          ),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: hasStock
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: _addToCart,
+                      onTap: hasStock ? _addToCart : null,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.shopping_cart_rounded,
-                                color: Colors.white, size: 20),
+                            Icon(
+                                hasStock
+                                    ? Icons.shopping_cart_rounded
+                                    : Icons.block,
+                                color: Colors.white,
+                                size: 20),
                             const SizedBox(width: 12),
                             Text(
-                              'Add to Cart',
+                              hasStock ? 'Add to Cart' : 'Out of Stock',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -760,19 +836,40 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     required String stock,
     required Color color,
   }) {
+    // Determine if this option is out of stock
+    bool isOutOfStock = false;
+    if (title == 'Per Kilogram' && widget.product.perKiloPrice != null) {
+      isOutOfStock = widget.product.perKiloPrice!.stock <= 0;
+    } else {
+      // For sack prices, find the matching sack by title
+      final matchingSack = widget.product.sackPrice.firstWhere(
+        (sack) => parseSackType(sack.type) == title,
+        orElse: () => widget.product.sackPrice.first,
+      );
+      isOutOfStock = matchingSack.stock <= 0;
+    }
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: isOutOfStock ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey[50],
+          color: isOutOfStock
+              ? Colors.grey[100]
+              : isSelected
+                  ? color.withOpacity(0.1)
+                  : Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
+            color: isOutOfStock
+                ? Colors.grey[300]!
+                : isSelected
+                    ? color
+                    : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
+          boxShadow: isSelected && !isOutOfStock
               ? [
                   BoxShadow(
                     color: color.withOpacity(0.2),
@@ -813,8 +910,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (isSelected)
+                if (isSelected && !isOutOfStock)
                   Icon(Icons.check_circle_rounded, color: color, size: 16),
+                if (isOutOfStock)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red[100],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'OUT',
+                      style: TextStyle(
+                        color: Colors.red[700],
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -823,7 +937,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? color.withOpacity(0.8) : Colors.grey[600],
+                color: isOutOfStock
+                    ? Colors.grey[500]
+                    : isSelected
+                        ? color.withOpacity(0.8)
+                        : Colors.grey[600],
+                decoration: isOutOfStock ? TextDecoration.lineThrough : null,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -832,7 +951,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               stock,
               style: TextStyle(
                 fontSize: 9,
-                color: isSelected ? color.withOpacity(0.7) : Colors.grey[500],
+                color: isOutOfStock
+                    ? Colors.red[600]
+                    : isSelected
+                        ? color.withOpacity(0.7)
+                        : Colors.grey[500],
+                fontWeight: isOutOfStock ? FontWeight.w600 : FontWeight.normal,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -844,8 +968,63 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   Widget _buildQuantityInput() {
+    final bool hasStock = _hasStock();
+    final double availableStock = _getAvailableStock();
+
     return Column(
       children: [
+        if (!hasStock)
+          Container(
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.red[700], size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Out of Stock',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (hasStock && _isOutOfStock())
+          Container(
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.inventory_2, color: Colors.orange[700], size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Only ${availableStock.toStringAsFixed(_selectedSackPriceId != null ? 0 : 1)} ${_selectedSackPriceId != null ? 'sacks' : 'kg'} available',
+                    style: TextStyle(
+                      color: Colors.orange[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (_selectedSackPriceId != null)
           Container(
             decoration: BoxDecoration(
@@ -861,24 +1040,30 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               controller: _sackQuantityController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              enabled: hasStock,
               decoration: _inputDecoration(
                 labelText: 'Sacks',
-                suffixIcon: _buildQuantityControls(),
+                suffixIcon: hasStock ? _buildQuantityControls() : null,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Enter quantity';
                 final qty = int.tryParse(value);
                 if (qty == null || qty <= 0) return 'Valid quantity > 0';
+
+                final sackPrice = widget.product.sackPrice
+                    .firstWhere((sp) => sp.id == _selectedSackPriceId);
+
+                if (qty > sackPrice.stock) {
+                  return 'Only ${sackPrice.stock} available';
+                }
+
                 if (_isSpecialPrice) {
-                  final sackPrice = widget.product.sackPrice
-                      .firstWhere((sp) => sp.id == _selectedSackPriceId);
                   if (qty < (sackPrice.specialPrice?.minimumQty ?? 0)) {
                     return 'Min qty is ${sackPrice.specialPrice?.minimumQty}';
                   }
                 }
                 return null;
               },
-              // Remove onChanged to prevent focus loss
             ),
           ),
         if (_isPerKiloSelected) ...[
@@ -900,17 +1085,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
+              enabled: hasStock,
               decoration: _inputDecoration(
                 labelText: 'Kg',
-                suffixIcon: _buildQuantityControls(),
+                suffixIcon: hasStock ? _buildQuantityControls() : null,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Enter quantity';
                 final qty = double.tryParse(value);
                 if (qty == null || qty <= 0) return 'Valid quantity > 0';
+
+                if (widget.product.perKiloPrice != null &&
+                    qty > widget.product.perKiloPrice!.stock) {
+                  return 'Only ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg available';
+                }
+
                 return null;
               },
-              // Remove onChanged to prevent focus loss - listeners handle updates
             ),
           ),
           const SizedBox(height: 8),
@@ -932,6 +1123,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
+              enabled: hasStock,
               decoration: _inputDecoration(
                 labelText: 'Total ₱',
                 prefixText: '₱ ',
@@ -942,7 +1134,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
                 return null;
               },
-              // Remove onChanged to prevent focus loss - listeners handle updates
             ),
           ),
         ],

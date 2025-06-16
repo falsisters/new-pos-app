@@ -312,6 +312,7 @@ class _ProductListState extends ConsumerState<ProductList> {
                         return ProductTile(
                           title: product.name,
                           imageUrl: product.picture,
+                          product: product, // Pass the product object
                           onTap: () {
                             Navigator.of(context).push(MaterialPageRoute(
                                 builder: (context) =>
