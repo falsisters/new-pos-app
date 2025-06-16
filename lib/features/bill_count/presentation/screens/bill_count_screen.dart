@@ -762,57 +762,14 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
 
                         // Updated Initial Count breakdown
                         InitialCountWidget(
-                          netCash: billCount.totalCash,
+                          billsSubtotal: billCount.billsTotal,
                           beginningBalance: billCount.beginningBalance,
-                          expenses: billCount
-                              .totalExpenses, // Use totalExpenses from backend
+                          totalSales: billCount
+                              .totalCash, // Total Sales is the Net Cash
+                          totalExpenses: billCount.totalExpenses,
                         ),
 
                         // Final total - using backend calculated value
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primary,
-                                AppColors.primary.withOpacity(0.8),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "FINAL TOTAL",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Text(
-                                "₱ ${currencyFormat.format(billCount.summaryFinal)}",
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
 
                         // Prominent save button
                         _buildSaveButton(),

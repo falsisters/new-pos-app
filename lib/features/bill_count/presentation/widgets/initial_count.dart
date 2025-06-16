@@ -3,23 +3,26 @@ import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 
 class InitialCountWidget extends StatelessWidget {
-  final double netCash;
+  final double billsSubtotal;
   final double beginningBalance;
-  final double expenses;
+  final double totalSales;
+  final double totalExpenses;
 
   const InitialCountWidget({
     Key? key,
-    required this.netCash,
+    required this.billsSubtotal,
     required this.beginningBalance,
-    this.expenses = 0.0,
+    required this.totalSales,
+    required this.totalExpenses,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat("#,##0.00", "en_US");
-    final netAmount = netCash - beginningBalance;
-    final finalAmount = netAmount + expenses;
-    final isNegative = netAmount < 0;
+    final afterBeginningBalance = billsSubtotal - beginningBalance;
+    final afterTotalSales = afterBeginningBalance;
+    final finalAmount = afterTotalSales + totalExpenses;
+    final isNegativeStep1 = afterBeginningBalance < 0;
 
     return Container(
       width: double.infinity,
@@ -29,8 +32,8 @@ class InitialCountWidget extends StatelessWidget {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isNegative ? Colors.red.shade300 : Colors.grey.shade200,
-          width: isNegative ? 2 : 1,
+          color: isNegativeStep1 ? Colors.red.shade300 : Colors.grey.shade200,
+          width: isNegativeStep1 ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -54,12 +57,12 @@ class InitialCountWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Net Cash from Sales
+          // Step 1: Bills Subtotal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Net Cash (from Sales)",
+                "Bills Subtotal",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -67,7 +70,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(netCash)}",
+                "₱ ${currencyFormat.format(billsSubtotal)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -79,7 +82,7 @@ class InitialCountWidget extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Beginning Balance (subtract)
+          // Step 2: Less Beginning Balance
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -108,24 +111,24 @@ class InitialCountWidget extends StatelessWidget {
             color: Colors.grey.shade300,
           ),
 
-          // Net Amount after Beginning Balance
+          // Subtotal after Beginning Balance
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Net Amount",
+                "Subtotal",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: isNegative ? Colors.red : Colors.black87,
+                  color: isNegativeStep1 ? Colors.red : Colors.black87,
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(netAmount)}",
+                "₱ ${currencyFormat.format(afterBeginningBalance)}",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isNegative ? Colors.red : AppColors.primary,
+                  color: isNegativeStep1 ? Colors.red : Colors.black87,
                 ),
               ),
             ],
@@ -133,7 +136,32 @@ class InitialCountWidget extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Add expenses
+          // Step 3: Add Total Sales
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Cash from Total Sales",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              Text(
+                "₱ ${currencyFormat.format(totalSales)}",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Step 4: Add Total Expenses
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -146,7 +174,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "+ ₱ ${currencyFormat.format(expenses)}",
+                "+ ₱ ${currencyFormat.format(totalExpenses)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -162,12 +190,12 @@ class InitialCountWidget extends StatelessWidget {
             color: Colors.grey.shade300,
           ),
 
-          // Final calculation
+          // Final Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Total Amount",
+                "Final Total",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
