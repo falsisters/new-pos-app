@@ -15,6 +15,21 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/enhanced_row_reorder_handler.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_reference_updater.dart';
+
+// Define RowReorderOperation class
+class RowReorderOperation {
+  final String sheetId;
+  final List<Map<String, dynamic>> rowMappings;
+  final List<Map<String, dynamic>> formulaUpdates;
+
+  RowReorderOperation({
+    required this.sheetId,
+    required this.rowMappings,
+    required this.formulaUpdates,
+  });
+}
 
 class KahonSheet extends ConsumerStatefulWidget {
   final SheetModel sheet;
@@ -45,13 +60,22 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   // State management
   final Map<String, Set<String>> _formulaDependencies = {};
   final Map<String, CellChange> _pendingChanges = {};
-
-  // Cell selection state
   int? _selectedRowIndex;
   int? _selectedColumnIndex;
   String? _selectedCellValue;
   String? _selectedCellColorHex;
   final TextEditingController _cellValueController = TextEditingController();
+  List<RowReorderOperation> _pendingRowReorderOperations =
+      []; // New state for pending row reorders
+
+  // Helper getter for pending changes
+  bool get _hasPendingChanges =>
+      _pendingChanges.isNotEmpty || _pendingRowReorderOperations.isNotEmpty;
+  int get _totalPendingChangesCount {
+    // Each reorder operation is counted as one, regardless of how many rows/formulas it affects.
+    // This might need refinement based on desired UX for the count.
+    return _pendingChanges.length + _pendingRowReorderOperations.length;
+  }
 
   @override
   void initState() {
@@ -164,8 +188,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
       return;
     }
 
-    // Create a working copy of the sheet for recalculation
-    SheetModel workingSheet = widget.sheet;
+    // Start with a copy of the current sheet from the widget (provider's state)
+    SheetModel workingSheet = widget.sheet.copyWith();
     bool hasChanges = false;
 
     // Process formulas in multiple passes to handle dependencies
@@ -175,6 +199,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
 
       print("Formula recalculation pass ${pass + 1}");
 
+      // Create a fresh formula handler with the current state of workingSheet for this pass
+      FormulaHandler passHandler = FormulaHandler(sheet: workingSheet);
+
       for (var formulaCell in formulaCells) {
         try {
           int rowIndex = formulaCell['rowIndex'];
@@ -183,14 +210,11 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           String cellId = formulaCell['cellId'];
           String rowId = formulaCell['rowId'];
 
-          // Create a fresh formula handler with current working sheet
-          FormulaHandler currentHandler = FormulaHandler(sheet: workingSheet);
-
-          // Evaluate the formula
+          // Evaluate the formula using the passHandler (which has the latest workingSheet)
           String newValue =
-              currentHandler.evaluateFormula(formula, rowIndex, columnIndex);
+              passHandler.evaluateFormula(formula, rowIndex, columnIndex);
 
-          // Find the current cell value
+          // Find the current cell in the workingSheet to compare its value
           final rowModel =
               workingSheet.rows.firstWhereOrNull((r) => r.id == rowId);
           if (rowModel != null) {
@@ -225,54 +249,67 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         }
       }
 
-      // If no changes in this pass, we're done
       if (!changesInThisPass) {
-        print("No changes in pass ${pass + 1}, recalculation complete");
+        print(
+            "No changes in pass ${pass + 1}, recalculation complete for this loop.");
         break;
+      }
+      if (pass == maxPasses - 1 && changesInThisPass) {
+        print(
+            "Max passes reached in formula recalculation. There might be circular dependencies or an issue.");
       }
     }
 
     if (hasChanges) {
-      print("Formula recalculation complete with changes. Updating UI...");
+      print(
+          "Formula recalculation on load complete with changes. Updating UI...");
 
-      // Update the UI with recalculated values
-      setState(() {
-        _formulaHandler = FormulaHandler(sheet: workingSheet);
-        _dataSource = KahonSheetDataSource(
-          sheet: workingSheet,
-          kahonItems: const [],
-          isEditable: _isEditable,
-          cellSubmitCallback: _handleCellSubmit,
-          addCalculationRowCallback: _addCalculationRow,
-          deleteRowCallback: _deleteRow,
-          formulaHandler: _formulaHandler,
-          onCellSelected: _handleCellSelected,
-        );
-      });
-
-      // Auto-save the recalculated values if there are pending changes
-      if (_pendingChanges.isNotEmpty) {
-        _autoSaveRecalculatedFormulas();
+      if (mounted) {
+        setState(() {
+          _formulaHandler = FormulaHandler(sheet: workingSheet);
+          _dataSource = KahonSheetDataSource(
+            sheet: workingSheet,
+            kahonItems: const [],
+            isEditable: _isEditable,
+            cellSubmitCallback: _handleCellSubmit,
+            addCalculationRowCallback: _addCalculationRow,
+            deleteRowCallback: _deleteRow,
+            formulaHandler: _formulaHandler,
+            onCellSelected: _handleCellSelected,
+            onRowReorder: _isEditable ? _handleRowReorder : null,
+          );
+        });
       }
+      // Removed _autoSaveRecalculatedFormulas() call to prevent the loop.
+      // Changes are now in _pendingChanges and will be saved when the user clicks "Save Changes".
+      print(
+          "Pending changes populated due to on-load recalculation. User needs to save manually.");
     } else {
-      print("No formulas needed recalculation");
+      print("No formulas needed recalculation on load, or no values changed.");
     }
   }
 
   // Auto-save recalculated formulas in the background
   void _autoSaveRecalculatedFormulas() async {
+    // This method is no longer called by _recalculateAllFormulasOnLoad.
+    // If it's triggered from elsewhere, ensure it's safe.
+    if (!_hasPendingChanges) {
+      // Updated to use helper
+      print("Auto-save triggered, but no pending changes.");
+      return;
+    }
+    print(
+        "Attempting to auto-save ${_pendingChanges.length} recalculated formula values...");
+
     try {
-      print(
-          "Auto-saving ${_pendingChanges.length} recalculated formula values...");
-
-      // Save changes in the background without showing loading UI
       await _applyPendingChanges();
-
-      print("Auto-save of recalculated formulas completed successfully");
+      print("Auto-save of recalculated formulas completed successfully.");
     } catch (e) {
       print("Error auto-saving recalculated formulas: $e");
-      // Don't show error to user since this is a background operation
-      // The formulas are still displayed correctly in the UI
+    } finally {
+      if (mounted) {
+        // Any UI updates after auto-save can go here, if necessary.
+      }
     }
   }
 
@@ -286,6 +323,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
       deleteRowCallback: _deleteRow,
       formulaHandler: _formulaHandler,
       onCellSelected: _handleCellSelected,
+      onRowReorder: _isEditable ? _handleRowReorder : null, // Add this
     );
     KahonSheetDataSource.currentContext = context;
   }
@@ -412,6 +450,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
               deleteRowCallback: _deleteRow,
               formulaHandler: _formulaHandler,
               onCellSelected: _handleCellSelected,
+              onRowReorder: _isEditable ? _handleRowReorder : null, // Add this
             );
 
             // Clear the selected cell data
@@ -610,9 +649,18 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   void _toggleEditMode() {
     HapticFeedback.mediumImpact();
 
+    if (_isEditable && _hasPendingChanges) {
+      // If turning off edit mode and there are pending changes, prompt to save.
+      // For simplicity, we can call _saveChanges directly.
+      // If save is successful, mode will be toggled. If not, it stays in edit mode.
+      _saveChanges(); // _saveChanges will handle toggling edit mode on success.
+      return; // Avoid double toggling
+    }
+
     setState(() {
       _isEditable = !_isEditable;
       _clearSelectedCell();
+      // Re-initialize data source to update onRowReorder callback
       _initializeDataSource();
 
       if (_isEditable) {
@@ -623,6 +671,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         _editModeController.reverse();
         _scaleController.reverse();
         _borderController.reverse();
+        // If toggling off and no pending changes, or save was handled, clear them.
+        // _pendingChanges.clear(); // Already cleared by _saveChanges on success
+        // _pendingRowReorderOperations.clear(); // Already cleared by _saveChanges on success
       }
     });
 
@@ -634,35 +685,77 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   }
 
   void _saveChanges() async {
-    if (_pendingChanges.isEmpty) return;
+    if (!_hasPendingChanges) {
+      _showModernSnackBar(
+        'No changes to save.',
+        icon: Icons.info_outline,
+        color: AppColors.secondary,
+      );
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
     HapticFeedback.selectionClick();
 
     try {
-      await _applyPendingChanges();
+      // Process row reorders first
+      if (_pendingRowReorderOperations.isNotEmpty) {
+        print(
+            "Processing ${_pendingRowReorderOperations.length} pending row reorder operations");
+        for (var operation in _pendingRowReorderOperations) {
+          bool success =
+              await ref.read(sheetNotifierProvider.notifier).enhancedRowReorder(
+                    sheetId: operation.sheetId,
+                    rowMappings: operation.rowMappings,
+                    formulaUpdates: operation.formulaUpdates,
+                  );
+          if (!success) {
+            // If one operation fails, we might want to stop or collect errors
+            throw Exception(
+                "Failed to save one or more row reorder operations.");
+          }
+        }
+        _pendingRowReorderOperations
+            .clear(); // Clear after successful processing
+        // It's expected that the provider will update the sheet state,
+        // so subsequent cell changes operate on the reordered sheet.
+        // A short delay or a re-fetch might be needed if the provider update isn't immediate
+        // enough for cell changes, but typically Riverpod updates are synchronous for the UI.
+      }
 
-      _showModernSnackBar(
-        'Changes saved successfully!',
-        icon: Icons.check_circle,
-        color: Colors.green,
-      );
+      // Then process cell changes
+      if (_pendingChanges.isNotEmpty) {
+        await _applyPendingChanges(); // This method already handles _pendingChanges
+      }
 
-      setState(() {
-        _isEditable = false;
-        _initializeDataSource();
-        _editModeController.reverse();
-        _scaleController.reverse();
-        _borderController.reverse();
-      });
+      if (mounted) {
+        _showModernSnackBar(
+          'Changes saved successfully!',
+          icon: Icons.check_circle,
+          color: Colors.green,
+        );
+
+        setState(() {
+          _isEditable = false;
+          _editModeController.reverse();
+          _scaleController.reverse();
+          _borderController.reverse();
+        });
+      }
     } catch (e) {
-      _showModernSnackBar(
-        'Failed to save changes',
-        icon: Icons.error,
-        color: Colors.red,
-      );
+      if (mounted) {
+        _showModernSnackBar(
+          'Failed to save changes: ${e.toString()}',
+          icon: Icons.error,
+          color: Colors.red,
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -866,6 +959,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           deleteRowCallback: _deleteRow,
           formulaHandler: _formulaHandler,
           onCellSelected: _handleCellSelected,
+          onRowReorder: _isEditable ? _handleRowReorder : null, // Add this
         );
 
         // Important - rebuild formula dependency map BEFORE updating dependents
@@ -952,6 +1046,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         deleteRowCallback: _deleteRow,
         formulaHandler: _formulaHandler,
         onCellSelected: _handleCellSelected,
+        onRowReorder: _isEditable ? _handleRowReorder : null, // Add this
       );
     });
   }
@@ -1105,24 +1200,24 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     print("Starting full formula recalculation...");
 
     // Create a mutable copy of the sheet
-    SheetModel updatedSheet = SheetModel(
-      id: currentSheet.id,
-      name: currentSheet.name,
-      columns: currentSheet.columns,
-      kahonId: currentSheet.kahonId,
-      createdAt: currentSheet.createdAt,
-      updatedAt: currentSheet.updatedAt,
-      rows: [...currentSheet.rows],
-    );
+    SheetModel updatedSheet =
+        currentSheet.copyWith(); // Use copyWith for proper copying
 
     // Process all cells with formulas
     int formulasProcessed = 0;
+    // Create a new formula handler based on the potentially modified currentSheet
+    // to ensure it evaluates against the latest data before this full recalculation pass.
+    FormulaHandler localFormulaHandler = FormulaHandler(sheet: updatedSheet);
+
     for (var row in updatedSheet.rows) {
       for (var cell in row.cells) {
         if (cell.formula != null && cell.formula!.startsWith('=')) {
           try {
-            String newValue = _formulaHandler.evaluateFormula(
-                cell.formula!, row.rowIndex, cell.columnIndex);
+            String newValue = localFormulaHandler.evaluateFormula(
+                // Use localFormulaHandler
+                cell.formula!,
+                row.rowIndex,
+                cell.columnIndex);
 
             // Only update if value changed
             if (newValue != cell.value) {
@@ -1135,7 +1230,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                 displayValue: newValue,
                 formula: cell.formula,
                 color: cell.color,
-              ); // Create updated sheet with the new cell value
+              );
               updatedSheet = _updateCellInSheet(updatedSheet, row.id, cell.id,
                   newValue, cell.formula, cell.color);
 
@@ -1152,25 +1247,30 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         "Formula recalculation complete. Updated $formulasProcessed formulas.");
 
     if (formulasProcessed > 0) {
-      // Update the data source with our recalculated sheet
-      setState(() {
-        _formulaHandler = FormulaHandler(sheet: updatedSheet);
-        _dataSource = KahonSheetDataSource(
-          sheet: updatedSheet,
-          kahonItems: const [],
-          isEditable: _isEditable,
-          cellSubmitCallback: _handleCellSubmit,
-          addCalculationRowCallback: _addCalculationRow,
-          deleteRowCallback: _deleteRow,
-          formulaHandler: _formulaHandler,
-          onCellSelected: _handleCellSelected,
-        );
-      });
+      if (mounted) {
+        // Guard setState with mounted check
+        setState(() {
+          // Update the main _formulaHandler and _dataSource with the fully recalculated sheet
+          _formulaHandler = FormulaHandler(sheet: updatedSheet);
+          _dataSource = KahonSheetDataSource(
+            sheet: updatedSheet,
+            kahonItems: const [],
+            isEditable: _isEditable,
+            cellSubmitCallback: _handleCellSubmit,
+            addCalculationRowCallback: _addCalculationRow,
+            deleteRowCallback: _deleteRow,
+            formulaHandler: _formulaHandler,
+            onCellSelected: _handleCellSelected,
+            onRowReorder: _isEditable ? _handleRowReorder : null,
+          );
+        });
+      }
     }
   }
 
   // Apply all pending changes to the database
   Future<void> _applyPendingChanges() async {
+    // This method now only handles cell changes. Row reorders are handled in _saveChanges.
     if (_pendingChanges.isEmpty) return;
 
     try {
@@ -1206,24 +1306,26 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
       // Process updates in bulk if any
       if (cellsToUpdate.isNotEmpty) {
         print("Updating ${cellsToUpdate.length} cells");
-        await ref
+        await Future(() => ref
             .read(sheetNotifierProvider.notifier)
-            .updateCells(cellsToUpdate);
+            .updateCells(cellsToUpdate));
       }
 
       // Process creates in bulk if any
       if (cellsToCreate.isNotEmpty) {
         print("Creating ${cellsToCreate.length} cells");
-        await ref
+        await Future(() => ref
             .read(sheetNotifierProvider.notifier)
-            .createCells(cellsToCreate);
+            .createCells(cellsToCreate));
       }
 
       // Clear pending changes only after successful update
       _pendingChanges.clear();
 
       // Recalculate formulas after all changes are applied
-      await _recalculateFormulas();
+      // This might be redundant if _saveChanges also triggers a refresh or recalculation
+      // For now, keeping it as it was part of the original _applyPendingChanges logic
+      // await _recalculateFormulas(); // Consider if this is still needed here or if _saveChanges handles overall refresh
     } catch (e) {
       print('Error applying pending changes: $e');
       if (mounted) {
@@ -1310,8 +1412,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   Future<void> _addCalculationRow(int afterRowIdx) async {
     try {
       // First save any pending changes
-      if (_pendingChanges.isNotEmpty) {
-        await _applyPendingChanges();
+      if (_hasPendingChanges) {
+        // Updated to use helper
+        _saveChanges(); // Use _saveChanges to handle both types
       }
 
       // Add the calculation row
@@ -1390,8 +1493,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     if (numberOfRows != null && numberOfRows > 0) {
       try {
         // First save any pending changes
-        if (_pendingChanges.isNotEmpty) {
-          await _applyPendingChanges();
+        if (_hasPendingChanges) {
+          // Updated to use helper
+          _saveChanges(); // Use _saveChanges to handle both types
         }
 
         // Create a list of row indexes to add
@@ -1430,6 +1534,10 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   Future<void> _deleteRow(String rowId) async {
     try {
       await ref.read(sheetNotifierProvider.notifier).deleteRow(rowId);
+      // After deletion, the sheet will update via provider,
+      // which will trigger didUpdateWidget and re-initialize things.
+      // Ensure formula dependencies are rebuilt if not handled by didUpdateWidget fully.
+      // _buildFormulaDependencyMap(); // May not be needed if didUpdateWidget handles it
     } catch (e) {
       print('Error deleting row: $e');
       if (mounted) {
@@ -1438,6 +1546,118 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         );
       }
     }
+  }
+
+  // Handle row reordering
+  Future<void> _handleRowReorder(
+      String movedRowId, int oldDisplayIndex, int newDisplayIndex) async {
+    print(
+        "Handling row reorder: $movedRowId from $oldDisplayIndex to $newDisplayIndex");
+    HapticFeedback.mediumImpact();
+
+    final List<RowModel> currentDisplayOrderedRows =
+        List<RowModel>.from(widget.sheet.rows)
+          ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+
+    final List<RowMapping> rowMappings =
+        EnhancedRowReorderHandler.calculateSequentialMappings(
+      currentDisplayOrderedRows,
+      movedRowId,
+      oldDisplayIndex,
+      newDisplayIndex,
+    );
+
+    if (rowMappings.isEmpty) {
+      print("No row mappings generated, reorder resulted in no change.");
+      return;
+    }
+
+    final Map<int, int> actualRowIndexChangesMap = {
+      for (var mapping in rowMappings) mapping.oldRowIndex: mapping.newRowIndex
+    };
+
+    final List<FormulaReferenceUpdate> formulaUpdates =
+        FormulaReferenceUpdater.calculateFormulaUpdates(
+            widget.sheet, actualRowIndexChangesMap);
+
+    // Optimistic UI Update (remains the same)
+    SheetModel optimisticSheet = widget.sheet;
+    List<RowModel> updatedRowsOptimistic = optimisticSheet.rows.map((row) {
+      final mapping = rowMappings.firstWhereOrNull((m) => m.rowId == row.id);
+      if (mapping != null) {
+        return row.copyWith(rowIndex: mapping.newRowIndex);
+      }
+      return row;
+    }).toList();
+    optimisticSheet = optimisticSheet.copyWith(rows: updatedRowsOptimistic);
+
+    List<RowModel> finalRowsOptimistic = optimisticSheet.rows.map((row) {
+      List<CellModel> updatedCells = row.cells.map((cell) {
+        final formulaUpdate =
+            formulaUpdates.firstWhereOrNull((fu) => fu.cellId == cell.id);
+        if (formulaUpdate != null) {
+          return cell.copyWith(
+            formula: formulaUpdate.newFormula,
+            value: formulaUpdate.newValue,
+            isCalculated: formulaUpdate.newFormula.startsWith('='),
+            updatedAt: DateTime.now(),
+          );
+        }
+        return cell;
+      }).toList();
+      return row.copyWith(cells: updatedCells);
+    }).toList();
+    optimisticSheet = optimisticSheet.copyWith(rows: finalRowsOptimistic);
+
+    final mutableRows = List<RowModel>.from(optimisticSheet.rows);
+    mutableRows.sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+    optimisticSheet = optimisticSheet.copyWith(rows: mutableRows);
+
+    setState(() {
+      _formulaHandler = FormulaHandler(sheet: optimisticSheet);
+      _dataSource = KahonSheetDataSource(
+        sheet: optimisticSheet,
+        kahonItems: const [],
+        isEditable: _isEditable,
+        cellSubmitCallback: _handleCellSubmit,
+        addCalculationRowCallback: _addCalculationRow,
+        deleteRowCallback: _deleteRow,
+        formulaHandler: _formulaHandler,
+        onCellSelected: _handleCellSelected,
+        onRowReorder: _isEditable ? _handleRowReorder : null,
+      );
+      _buildFormulaDependencyMap();
+    });
+
+    // Queue the reorder operation instead of persisting immediately
+    final List<Map<String, dynamic>> rowMappingsForNotifier =
+        rowMappings.map((m) => m.toJson()).toList();
+
+    final List<Map<String, dynamic>> formulaUpdatesForNotifier = formulaUpdates
+        .map((fu) => {
+              'cellId': fu.cellId,
+              'newFormula': fu.newFormula,
+              'newValue': fu.newValue,
+              'rowIndex': fu.rowIndex,
+              'columnIndex': fu.columnIndex,
+            })
+        .toList();
+
+    final reorderOperation = RowReorderOperation(
+      sheetId: widget.sheet.id,
+      rowMappings: rowMappingsForNotifier,
+      formulaUpdates: formulaUpdatesForNotifier,
+    );
+
+    setState(() {
+      _pendingRowReorderOperations.add(reorderOperation);
+    });
+
+    _showModernSnackBar(
+      'Row reorder queued. Save changes to apply.',
+      icon: Icons.pending_actions_rounded,
+      color: Colors.orange,
+    );
   }
 
   // Show quick formulas menu
@@ -1767,10 +1987,10 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   void didUpdateWidget(KahonSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sheet != widget.sheet) {
+      print("KahonSheet didUpdateWidget: Sheet has changed. Re-initializing.");
       _formulaHandler = FormulaHandler(sheet: widget.sheet);
       _initializeDataSource();
       _buildFormulaDependencyMap();
-      // Recalculate formulas when sheet changes
       _recalculateAllFormulasOnLoad();
     }
   }
@@ -2218,13 +2438,15 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
               ? Colors.transparent
               : AppColors.primaryLight.withOpacity(0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (gradient?.first ?? Colors.black).withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: (gradient?.first ?? Colors.black).withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -2328,7 +2550,9 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   }
 
   Widget _buildPendingChangesIndicator() {
-    if (_pendingChanges.isEmpty) return const SizedBox.shrink();
+    if (!_hasPendingChanges) return const SizedBox.shrink(); // Use helper
+
+    final count = _totalPendingChangesCount; // Use helper for count
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -2367,7 +2591,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           ),
           const SizedBox(width: 10),
           Text(
-            '${_pendingChanges.length} unsaved change${_pendingChanges.length == 1 ? '' : 's'}',
+            '$count unsaved change${count == 1 ? '' : 's'}', // Updated text
             style: TextStyle(
               color: Colors.orange.shade700,
               fontWeight: FontWeight.w600,
@@ -2484,10 +2708,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
                 else
                   Icon(
                     icon,
-                    size: 16,
-                    color: onPressed != null
-                        ? (isPrimary ? Colors.white : color)
-                        : Colors.grey,
+                    color: isPrimary ? Colors.white : color,
+                    size: 20,
                   ),
                 const SizedBox(width: 8),
                 Text(

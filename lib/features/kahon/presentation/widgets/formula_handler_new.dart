@@ -342,10 +342,10 @@ class FormulaHandler {
           if (cell.formula != null && cell.formula!.startsWith('=')) {
             formulaCells.add({
               'rowIndex': row.rowIndex,
-              'columnIndex': cell.columnIndex,
-              'formula': cell.formula,
-              'cellId': cell.id,
-              'rowId': row.id,
+              'columnIndex': cell.columnIndex, // Added
+              'formula': cell.formula!, // Added
+              'cellId': cell.id, // Added
+              'rowId': row.id, // Added
               'dependencies': extractCellReferencesFromFormula(cell.formula!),
             });
           }

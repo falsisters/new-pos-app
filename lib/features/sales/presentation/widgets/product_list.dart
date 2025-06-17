@@ -107,7 +107,7 @@ class _ProductListState extends ConsumerState<ProductList> {
                     icon:
                         Icon(Icons.refresh, color: AppColors.primary, size: 20),
                     onPressed: () {
-                      ref.refresh(productsProvider);
+                      ref.read(productProvider.notifier).getProducts();
                     },
                   ),
                 ),
@@ -188,67 +188,6 @@ class _ProductListState extends ConsumerState<ProductList> {
           ),
 
           // Product count with enhanced styling
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.widgets, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${products.length} products',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_searchQuery.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: AppColors.secondary.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.search,
-                            size: 16, color: AppColors.secondary),
-                        const SizedBox(width: 6),
-                        Text(
-                          'for "$_searchQuery"',
-                          style: TextStyle(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
 
           // Enhanced Product Grid
           Expanded(
@@ -301,8 +240,9 @@ class _ProductListState extends ConsumerState<ProductList> {
                     child: GridView.builder(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 0.85,
+                        crossAxisCount: 4, // Changed from 5 to 4
+                        childAspectRatio:
+                            0.8, // Adjusted for better proportions
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),

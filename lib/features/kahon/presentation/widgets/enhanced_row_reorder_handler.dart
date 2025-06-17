@@ -1,5 +1,5 @@
-import 'package:falsisters_pos_android/features/inventory/data/models/inventory_row_model.dart';
-import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
+import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
+import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
 
 class RowMapping {
   final String rowId;
@@ -52,13 +52,13 @@ class FormulaUpdate {
 
 class EnhancedRowReorderHandler {
   static List<RowMapping> calculateSequentialMappings(
-    List<InventoryRowModel> currentRows,
+    List<RowModel> currentRows,
     String movedRowId,
     int oldIndex,
     int newIndex,
   ) {
     // Create a working copy and sort by current row index
-    final sortedRows = List<InventoryRowModel>.from(currentRows)
+    final sortedRows = List<RowModel>.from(currentRows)
       ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
     // Remove the moved row and insert at new position
@@ -88,7 +88,7 @@ class EnhancedRowReorderHandler {
 
   static ValidationResult validateRowMappings(
     List<RowMapping> mappings,
-    List<InventoryRowModel> allRows,
+    List<RowModel> allRows,
   ) {
     final errors = <String>[];
 
@@ -139,7 +139,7 @@ class EnhancedRowReorderHandler {
   }
 
   static List<FormulaUpdate> calculateFormulaUpdates(
-    InventorySheetModel sheet,
+    SheetModel sheet,
     List<RowMapping> rowMappings,
   ) {
     final updates = <FormulaUpdate>[];
@@ -177,7 +177,7 @@ class EnhancedRowReorderHandler {
     String formula,
     Map<int, int> indexMappings,
   ) {
-    // Pattern to match cell references like A1, B2, AA34
+    // Pattern to match cell references like A1, B2, AA34, Quantity1, Name2
     final cellReferencePattern = RegExp(r'([A-Za-z]+)(\d+)');
 
     return formula.replaceAllMapped(cellReferencePattern, (match) {
@@ -203,12 +203,16 @@ class EnhancedRowReorderHandler {
   }
 
   static String _getColumnLetter(int index) {
-    String columnLetter = '';
-    int tempIndex = index;
+    // Match the UI's _getColumnLetter method
+    if (index == 0) return "Quantity";
+    if (index == 1) return "Name";
 
-    while (tempIndex >= 0) {
-      columnLetter = String.fromCharCode((tempIndex % 26) + 65) + columnLetter;
-      tempIndex = (tempIndex ~/ 26) - 1;
+    String columnLetter = '';
+    int adjustedIndex = index - 2;
+    while (adjustedIndex >= 0) {
+      columnLetter =
+          String.fromCharCode((adjustedIndex % 26) + 65) + columnLetter;
+      adjustedIndex = (adjustedIndex ~/ 26) - 1;
     }
     return columnLetter;
   }

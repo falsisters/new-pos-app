@@ -267,4 +267,46 @@ class KahonRepository {
       }
     }
   }
+
+  Future<Map<String, dynamic>> enhancedRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowMappings,
+    required List<Map<String, dynamic>> formulaUpdates,
+  }) async {
+    try {
+      final response =
+          await _dio.instance.post('/sheet/reorder/comprehensive', data: {
+        'sheetId': sheetId,
+        'rowReorders': rowMappings,
+        'affectedFormulas': formulaUpdates,
+      });
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> validateRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowMappings,
+  }) async {
+    try {
+      final response =
+          await _dio.instance.post('/sheet/reorder/validate', data: {
+        'sheetId': sheetId,
+        'rowMappings': rowMappings,
+      });
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }

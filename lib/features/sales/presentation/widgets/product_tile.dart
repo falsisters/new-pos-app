@@ -132,8 +132,9 @@ class _ProductTileState extends State<ProductTile>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Enhanced Image Container
-                      Expanded(
+                      // Enhanced Image Container with fixed square dimensions
+                      Container(
+                        height: 120, // Fixed height for uniformity
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -142,80 +143,84 @@ class _ProductTileState extends State<ProductTile>
                               borderRadius: BorderRadius.circular(12),
                               child: Stack(
                                 children: [
-                                  Image.network(
-                                    widget.imageUrl,
-                                    fit: BoxFit.cover,
+                                  Container(
                                     width: double.infinity,
                                     height: double.infinity,
-                                    color: isOutOfStock
-                                        ? Colors.grey.withOpacity(0.5)
-                                        : null,
-                                    colorBlendMode: isOutOfStock
-                                        ? BlendMode.saturation
-                                        : null,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              AppColors.primaryLight
-                                                  .withOpacity(0.3),
-                                              AppColors.primaryLight
-                                                  .withOpacity(0.1),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
+                                    child: Image.network(
+                                      widget.imageUrl,
+                                      fit: BoxFit.cover,
+                                      color: isOutOfStock
+                                          ? Colors.grey.withOpacity(0.5)
+                                          : null,
+                                      colorBlendMode: isOutOfStock
+                                          ? BlendMode.saturation
+                                          : null,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                AppColors.primaryLight
+                                                    .withOpacity(0.3),
+                                                AppColors.primaryLight
+                                                    .withOpacity(0.1),
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
                                           ),
-                                        ),
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons
-                                                    .image_not_supported_outlined,
-                                                size: 32,
-                                                color: AppColors.primary
-                                                    .withOpacity(0.7),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'No Image',
-                                                style: TextStyle(
-                                                  fontSize: 10,
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons
+                                                      .image_not_supported_outlined,
+                                                  size: 32,
                                                   color: AppColors.primary
                                                       .withOpacity(0.7),
                                                 ),
-                                              ),
-                                            ],
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'No Image',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: AppColors.primary
+                                                        .withOpacity(0.7),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[100],
-                                        ),
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            value: loadingProgress
-                                                        .expectedTotalBytes !=
-                                                    null
-                                                ? loadingProgress
-                                                        .cumulativeBytesLoaded /
-                                                    loadingProgress
-                                                        .expectedTotalBytes!
-                                                : null,
-                                            strokeWidth: 2,
-                                            color: AppColors.primary,
+                                        );
+                                      },
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
                                           ),
-                                        ),
-                                      );
-                                    },
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                              strokeWidth: 2,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                   // Subtle gradient overlay
                                   Positioned.fill(
@@ -340,55 +345,65 @@ class _ProductTileState extends State<ProductTile>
 
                       const SizedBox(height: 12),
 
-                      // Enhanced Title
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          widget.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isOutOfStock
-                                ? Colors.grey[500]
-                                : _isHovering
-                                    ? AppColors.secondary
-                                    : AppColors.primary,
-                            height: 1.3,
+                      // Enhanced Title with flex layout
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Center(
+                                  child: Text(
+                                    widget.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isOutOfStock
+                                          ? Colors.grey[500]
+                                          : _isHovering
+                                              ? AppColors.secondary
+                                              : AppColors.primary,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Enhanced Price (if available)
+                              if (widget.price != null) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isOutOfStock
+                                        ? Colors.grey[200]
+                                        : AppColors.accent.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '₱${widget.price!.toStringAsFixed(2)}',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: isOutOfStock
+                                          ? Colors.grey[500]
+                                          : AppColors.accent,
+                                      decoration: isOutOfStock
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
-
-                      // Enhanced Price (if available)
-                      if (widget.price != null) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isOutOfStock
-                                ? Colors.grey[200]
-                                : AppColors.accent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '₱${widget.price!.toStringAsFixed(2)}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: isOutOfStock
-                                  ? Colors.grey[500]
-                                  : AppColors.accent,
-                              decoration: isOutOfStock
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

@@ -216,4 +216,47 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
       return false;
     }
   }
+
+  Future<bool> enhancedRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowMappings,
+    required List<Map<String, dynamic>> formulaUpdates,
+  }) async {
+    try {
+      final result = await _kahonRepository.enhancedRowReorder(
+        sheetId: sheetId,
+        rowMappings: rowMappings,
+        formulaUpdates: formulaUpdates,
+      );
+
+      if (result['success'] == true) {
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        state = AsyncValue.data(SheetState(sheet: updatedSheet));
+        return true;
+      } else {
+        state = AsyncValue.data(SheetState(error: result['error']));
+        return false;
+      }
+    } catch (e) {
+      state = AsyncValue.data(SheetState(error: e.toString()));
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> validateRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowMappings,
+  }) async {
+    try {
+      return await _kahonRepository.validateRowReorder(
+        sheetId: sheetId,
+        rowMappings: rowMappings,
+      );
+    } catch (e) {
+      return {
+        'valid': false,
+        'errors': [e.toString()],
+      };
+    }
+  }
 }
