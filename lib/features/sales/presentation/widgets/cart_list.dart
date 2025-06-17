@@ -319,7 +319,7 @@ class CartList extends ConsumerWidget {
                                               color: AppColors.secondary),
                                           const SizedBox(width: 4),
                                           Text(
-                                            'Discounted: ₱${product.discountedPrice!.toInt()}',
+                                            'Discounted: ₱${product.discountedPrice!.toStringAsFixed(2)} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
                                             style: TextStyle(
                                               color: AppColors.secondary,
                                               fontWeight: FontWeight.bold,
@@ -600,7 +600,14 @@ class CartList extends ConsumerWidget {
 
   String _calculateItemTotal(ProductDto product) {
     if (product.isDiscounted == true && product.discountedPrice != null) {
-      return product.discountedPrice!.toInt().toString();
+      // Apply discount per quantity
+      double quantity = 1.0;
+      if (product.perKiloPrice != null) {
+        quantity = product.perKiloPrice!.quantity;
+      } else if (product.sackPrice != null) {
+        quantity = product.sackPrice!.quantity;
+      }
+      return (product.discountedPrice! * quantity).toInt().toString();
     }
 
     double total = 0.0;
@@ -626,7 +633,14 @@ class CartList extends ConsumerWidget {
     double total = 0.0;
     for (final product in salesState.valueOrNull!.cart.products) {
       if (product.isDiscounted == true && product.discountedPrice != null) {
-        total += product.discountedPrice!;
+        // Apply discount per quantity
+        double quantity = 1.0;
+        if (product.perKiloPrice != null) {
+          quantity = product.perKiloPrice!.quantity;
+        } else if (product.sackPrice != null) {
+          quantity = product.sackPrice!.quantity;
+        }
+        total += product.discountedPrice! * quantity;
       } else if (product.perKiloPrice != null) {
         double itemTotal =
             (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)

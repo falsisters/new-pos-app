@@ -172,4 +172,48 @@ class SheetNotifier extends AsyncNotifier<SheetState> {
       }
     });
   }
+
+  Future<bool> batchUpdateRowPositions(
+      List<Map<String, dynamic>> updates) async {
+    try {
+      final result = await _kahonRepository.batchUpdateRowPositions(updates);
+      if (result['success'] == true) {
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        state = AsyncValue.data(SheetState(sheet: updatedSheet));
+        return true;
+      } else {
+        state = AsyncValue.data(SheetState(error: result['error']));
+        return false;
+      }
+    } catch (e) {
+      state = AsyncValue.data(SheetState(error: e.toString()));
+      return false;
+    }
+  }
+
+  Future<bool> comprehensiveRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowReorders,
+    required List<Map<String, dynamic>> affectedFormulas,
+  }) async {
+    try {
+      final result = await _kahonRepository.comprehensiveRowReorder(
+        sheetId: sheetId,
+        rowReorders: rowReorders,
+        affectedFormulas: affectedFormulas,
+      );
+
+      if (result['success'] == true) {
+        final updatedSheet = await _kahonRepository.getSheetByDate(null, null);
+        state = AsyncValue.data(SheetState(sheet: updatedSheet));
+        return true;
+      } else {
+        state = AsyncValue.data(SheetState(error: result['error']));
+        return false;
+      }
+    } catch (e) {
+      state = AsyncValue.data(SheetState(error: e.toString()));
+      return false;
+    }
+  }
 }

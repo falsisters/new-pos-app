@@ -15,7 +15,6 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_reorder_change.dart';
 
 class KahonSheet extends ConsumerStatefulWidget {
   final SheetModel sheet;
@@ -46,7 +45,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   // State management
   final Map<String, Set<String>> _formulaDependencies = {};
   final Map<String, CellChange> _pendingChanges = {};
-  final Map<String, RowReorderChange> _pendingRowReorders = {};
 
   // Cell selection state
   int? _selectedRowIndex;
@@ -288,7 +286,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
       deleteRowCallback: _deleteRow,
       formulaHandler: _formulaHandler,
       onCellSelected: _handleCellSelected,
-      onRowReorder: _handleRowReorder,
     );
     KahonSheetDataSource.currentContext = context;
   }
@@ -636,180 +633,8 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     );
   }
 
-  // Handle row reordering
-  void _handleRowReorder(String rowId, int oldIndex, int newIndex) {
-    if (oldIndex == newIndex) return;
-
-    print("Row reorder requested: $rowId from $oldIndex to $newIndex");
-
-    // Add to pending row reorders
-    _pendingRowReorders[rowId] = RowReorderChange(
-      rowId: rowId,
-      oldRowIndex: oldIndex,
-      newRowIndex: newIndex,
-    );
-
-    // Update UI immediately with temporary reordering
-    setState(() {
-      _updateRowOrderInUI(oldIndex, newIndex);
-    });
-
-    _showModernSnackBar(
-      'Row position updated (pending save)',
-      icon: Icons.reorder,
-      color: Colors.orange,
-    );
-  }
-
-  // Update row order in UI temporarily
-  void _updateRowOrderInUI(int oldIndex, int newIndex) {
-    // Create a working copy of the sheet with reordered rows
-    final currentSheet = _dataSource.currentSheet;
-    final sortedRows = List<RowModel>.from(currentSheet.rows)
-      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
-
-    if (oldIndex >= 0 &&
-        oldIndex < sortedRows.length &&
-        newIndex >= 0 &&
-        newIndex < sortedRows.length) {
-      // Remove the row from old position
-      final movedRow = sortedRows.removeAt(oldIndex);
-
-      // Insert at new position
-      sortedRows.insert(newIndex, movedRow);
-
-      // Update all row indexes based on new positions
-      final updatedRows = <RowModel>[];
-      for (int i = 0; i < sortedRows.length; i++) {
-        final row = sortedRows[i];
-        updatedRows.add(RowModel(
-          id: row.id,
-          sheetId: row.sheetId,
-          rowIndex: i, // New index based on position
-          isItemRow: row.isItemRow,
-          itemId: row.itemId,
-          cells: row.cells,
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt,
-        ));
-      }
-
-      // Create updated sheet
-      final updatedSheet = SheetModel(
-        id: currentSheet.id,
-        name: currentSheet.name,
-        columns: currentSheet.columns,
-        kahonId: currentSheet.kahonId,
-        createdAt: currentSheet.createdAt,
-        updatedAt: currentSheet.updatedAt,
-        rows: updatedRows,
-      );
-
-      // Update formula handler and data source
-      _formulaHandler = FormulaHandler(sheet: updatedSheet);
-      _dataSource = KahonSheetDataSource(
-        sheet: updatedSheet,
-        kahonItems: const [],
-        isEditable: _isEditable,
-        cellSubmitCallback: _handleCellSubmit,
-        addCalculationRowCallback: _addCalculationRow,
-        deleteRowCallback: _deleteRow,
-        formulaHandler: _formulaHandler,
-        onCellSelected: _handleCellSelected,
-        onRowReorder: _handleRowReorder,
-      );
-
-      // Rebuild formula dependencies after reordering
-      _buildFormulaDependencyMap();
-    }
-  }
-
-  // Apply all pending changes including row reorders
-  Future<void> _applyPendingChanges() async {
-    if (_pendingChanges.isEmpty && _pendingRowReorders.isEmpty) return;
-
-    try {
-      // First, apply row reordering if any
-      if (_pendingRowReorders.isNotEmpty) {
-        print("Applying ${_pendingRowReorders.length} row reorder changes");
-
-        List<Map<String, dynamic>> rowUpdates = _pendingRowReorders.values
-            .map((change) => {
-                  'rowId': change.rowId,
-                  'newRowIndex': change.newRowIndex,
-                })
-            .toList();
-
-        await ref
-            .read(sheetNotifierProvider.notifier)
-            .updateRowPositions(rowUpdates);
-
-        _pendingRowReorders.clear();
-        print("Row reorder changes applied successfully");
-      }
-
-      // Then apply cell changes as before
-      if (_pendingChanges.isNotEmpty) {
-        // Separate changes into updates and creates
-        List<Map<String, dynamic>> cellsToUpdate = [];
-        List<Map<String, dynamic>> cellsToCreate = [];
-
-        print("Processing ${_pendingChanges.length} pending cell changes");
-
-        for (var change in _pendingChanges.values) {
-          if (change.isUpdate) {
-            cellsToUpdate.add({
-              'id': change.cellId,
-              'value': change.displayValue,
-              'formula': change.formula,
-              'color': change.color,
-            });
-          } else {
-            cellsToCreate.add({
-              'rowId': change.rowId,
-              'columnIndex': change.columnIndex,
-              'value': change.displayValue,
-              'formula': change.formula,
-              'color': change.color,
-            });
-          }
-        }
-
-        // Process updates in bulk if any
-        if (cellsToUpdate.isNotEmpty) {
-          print("Updating ${cellsToUpdate.length} cells");
-          await ref
-              .read(sheetNotifierProvider.notifier)
-              .updateCells(cellsToUpdate);
-        }
-
-        // Process creates in bulk if any
-        if (cellsToCreate.isNotEmpty) {
-          print("Creating ${cellsToCreate.length} cells");
-          await ref
-              .read(sheetNotifierProvider.notifier)
-              .createCells(cellsToCreate);
-        }
-
-        // Clear pending changes only after successful update
-        _pendingChanges.clear();
-
-        // Recalculate formulas after all changes are applied
-        await _recalculateFormulas();
-      }
-    } catch (e) {
-      print('Error applying pending changes: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save changes: ${e.toString()}')),
-        );
-      }
-      rethrow;
-    }
-  }
-
   void _saveChanges() async {
-    if (_pendingChanges.isEmpty && _pendingRowReorders.isEmpty) return;
+    if (_pendingChanges.isEmpty) return;
 
     setState(() => _isLoading = true);
     HapticFeedback.selectionClick();
@@ -1041,7 +866,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           deleteRowCallback: _deleteRow,
           formulaHandler: _formulaHandler,
           onCellSelected: _handleCellSelected,
-          onRowReorder: _handleRowReorder,
         );
 
         // Important - rebuild formula dependency map BEFORE updating dependents
@@ -1128,7 +952,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         deleteRowCallback: _deleteRow,
         formulaHandler: _formulaHandler,
         onCellSelected: _handleCellSelected,
-        onRowReorder: _handleRowReorder,
       );
     });
   }
@@ -1343,6 +1166,71 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
           onCellSelected: _handleCellSelected,
         );
       });
+    }
+  }
+
+  // Apply all pending changes to the database
+  Future<void> _applyPendingChanges() async {
+    if (_pendingChanges.isEmpty) return;
+
+    try {
+      // Separate changes into updates and creates
+      List<Map<String, dynamic>> cellsToUpdate = [];
+      List<Map<String, dynamic>> cellsToCreate = [];
+
+      print("Processing ${_pendingChanges.length} pending changes");
+
+      for (var change in _pendingChanges.values) {
+        if (change.isUpdate) {
+          cellsToUpdate.add({
+            'id': change.cellId,
+            'value': change.displayValue,
+            'formula': change.formula,
+            'color': change.color,
+          });
+          print(
+              "Update cell: id=${change.cellId}, value=${change.displayValue}, color=${change.color}");
+        } else {
+          cellsToCreate.add({
+            'rowId': change.rowId,
+            'columnIndex': change.columnIndex,
+            'value': change.displayValue,
+            'formula': change.formula,
+            'color': change.color,
+          });
+          print(
+              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, color=${change.color}");
+        }
+      }
+
+      // Process updates in bulk if any
+      if (cellsToUpdate.isNotEmpty) {
+        print("Updating ${cellsToUpdate.length} cells");
+        await ref
+            .read(sheetNotifierProvider.notifier)
+            .updateCells(cellsToUpdate);
+      }
+
+      // Process creates in bulk if any
+      if (cellsToCreate.isNotEmpty) {
+        print("Creating ${cellsToCreate.length} cells");
+        await ref
+            .read(sheetNotifierProvider.notifier)
+            .createCells(cellsToCreate);
+      }
+
+      // Clear pending changes only after successful update
+      _pendingChanges.clear();
+
+      // Recalculate formulas after all changes are applied
+      await _recalculateFormulas();
+    } catch (e) {
+      print('Error applying pending changes: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save changes: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -2330,20 +2218,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
               ? Colors.transparent
               : AppColors.primaryLight.withOpacity(0.3),
         ),
-        boxShadow: isActive && onPressed != null
-            ? [
-                BoxShadow(
-                  color: gradient!.first.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-                BoxShadow(
-                  color: gradient.first.withOpacity(0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : null,
+        boxShadow: [
+          BoxShadow(
+            color: (gradient?.first ?? Colors.black).withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -2447,9 +2328,7 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
   }
 
   Widget _buildPendingChangesIndicator() {
-    final totalPendingChanges =
-        _pendingChanges.length + _pendingRowReorders.length;
-    if (totalPendingChanges == 0) return const SizedBox.shrink();
+    if (_pendingChanges.isEmpty) return const SizedBox.shrink();
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -2487,26 +2366,13 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$totalPendingChanges unsaved change${totalPendingChanges == 1 ? '' : 's'}',
-                style: TextStyle(
-                  color: Colors.orange.shade700,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-              if (_pendingRowReorders.isNotEmpty)
-                Text(
-                  '${_pendingRowReorders.length} row position${_pendingRowReorders.length == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    color: Colors.orange.shade600,
-                    fontSize: 11,
-                  ),
-                ),
-            ],
+          Text(
+            '${_pendingChanges.length} unsaved change${_pendingChanges.length == 1 ? '' : 's'}',
+            style: TextStyle(
+              color: Colors.orange.shade700,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

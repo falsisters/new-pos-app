@@ -75,11 +75,11 @@ class InventoryRepository {
   }
 
   Future<List<InventoryRowModel>> createInventoryRows(
-      String sheetId, List<int> rowIndexes) async {
+      String inventoryId, List<int> rowIndexes) async {
     try {
       final response =
           await _dio.instance.post('/inventory/calculation-rows', data: {
-        'inventoryId': sheetId,
+        'inventoryId': inventoryId,
         'rowIndexes': rowIndexes,
       });
       return (response.data as List)
@@ -232,6 +232,55 @@ class InventoryRepository {
     try {
       await _dio.instance
           .patch('/inventory/user/rows/positions', data: {'updates': updates});
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> batchUpdateRowPositions(
+      List<Map<String, dynamic>> mappings) async {
+    try {
+      final response = await _dio.instance.patch(
+          '/inventory/rows/positions/batch',
+          data: {'mappings': mappings});
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> batchUpdateCellFormulas(
+      List<Map<String, dynamic>> updates) async {
+    try {
+      final response = await _dio.instance
+          .patch('/inventory/cells/formulas/batch', data: {'updates': updates});
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> validateRowMappings(
+      String sheetId, List<Map<String, dynamic>> mappings) async {
+    try {
+      final response =
+          await _dio.instance.post('/inventory/rows/validate', data: {
+        'sheetId': sheetId,
+        'mappings': mappings,
+      });
+      return response.data;
     } catch (e) {
       if (e is DioException) {
         throw Exception(e.error);

@@ -622,7 +622,11 @@ class InventorySheetDataSource extends DataGridSource {
         sortedRows.indexWhere((row) => row.id == rowData.rowId);
 
     if (currentIndex > 0 && onRowReorder != null) {
+      print(
+          'Moving row up: ${rowData.rowId} from $currentIndex to ${currentIndex - 1}');
       onRowReorder!(rowData.rowId, currentIndex, currentIndex - 1);
+    } else {
+      print('Cannot move row up - already at top or no reorder handler');
     }
   }
 
@@ -634,7 +638,11 @@ class InventorySheetDataSource extends DataGridSource {
         sortedRows.indexWhere((row) => row.id == rowData.rowId);
 
     if (currentIndex < sortedRows.length - 1 && onRowReorder != null) {
+      print(
+          'Moving row down: ${rowData.rowId} from $currentIndex to ${currentIndex + 1}');
       onRowReorder!(rowData.rowId, currentIndex, currentIndex + 1);
+    } else {
+      print('Cannot move row down - already at bottom or no reorder handler');
     }
   }
 }

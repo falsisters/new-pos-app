@@ -46,12 +46,13 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
     });
   }
 
-  Future<void> createInventoryRows(String sheetId, List<int> rowIndexes) async {
+  Future<void> createInventoryRows(
+      String inventoryId, List<int> rowIndexes) async {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
       try {
-        await _inventoryRepository.createInventoryRows(sheetId, rowIndexes);
+        await _inventoryRepository.createInventoryRows(inventoryId, rowIndexes);
         final updatedInventory =
             await _inventoryRepository.getInventoryByDate(null, null);
         return InventoryState(sheet: updatedInventory);
@@ -182,5 +183,32 @@ class InventoryNotifier extends AsyncNotifier<InventoryState> {
         return InventoryState(error: e.toString());
       }
     });
+  }
+
+  Future<Map<String, dynamic>> batchUpdateRowPositions(
+      List<Map<String, dynamic>> mappings) async {
+    try {
+      return await _inventoryRepository.batchUpdateRowPositions(mappings);
+    } catch (e) {
+      throw Exception('Failed to batch update row positions: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> batchUpdateCellFormulas(
+      List<Map<String, dynamic>> updates) async {
+    try {
+      return await _inventoryRepository.batchUpdateCellFormulas(updates);
+    } catch (e) {
+      throw Exception('Failed to batch update cell formulas: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> validateRowMappings(
+      String sheetId, List<Map<String, dynamic>> mappings) async {
+    try {
+      return await _inventoryRepository.validateRowMappings(sheetId, mappings);
+    } catch (e) {
+      throw Exception('Failed to validate row mappings: ${e.toString()}');
+    }
   }
 }

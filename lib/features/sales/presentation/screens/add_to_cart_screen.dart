@@ -1221,38 +1221,69 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           ),
         ),
         if (_isDiscounted)
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
                 ),
-              ],
-            ),
-            child: TextFormField(
-              controller: _discountedPriceController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              decoration: _inputDecoration(
-                labelText: 'Price ₱',
-                prefixText: '₱ ',
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        color: Colors.orange[700], size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Price per ${_selectedSackPriceId != null ? 'sack' : 'kg'}',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              validator: (value) {
-                if (_isDiscounted) {
-                  if (value == null || value.isEmpty)
-                    return 'Enter discounted price';
-                  final priceVal = double.tryParse(value);
-                  if (priceVal == null || priceVal <= 0)
-                    return 'Valid price > 0';
-                }
-                return null;
-              },
-            ),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _discountedPriceController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
+                  decoration: _inputDecoration(
+                    labelText: 'Unit Price ₱',
+                    prefixText: '₱ ',
+                  ),
+                  validator: (value) {
+                    if (_isDiscounted) {
+                      if (value == null || value.isEmpty)
+                        return 'Enter discounted price';
+                      final priceVal = double.tryParse(value);
+                      if (priceVal == null || priceVal <= 0)
+                        return 'Valid price > 0';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
           ),
       ],
     );

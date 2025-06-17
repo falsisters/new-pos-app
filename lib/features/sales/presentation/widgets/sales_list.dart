@@ -40,7 +40,8 @@ class SalesListWidget extends ConsumerWidget {
         unitPrice = item.discountedPrice! / item.quantity;
       }
       String type = item.isDiscounted ? "Discounted" : "Special";
-      if (unitPrice > 0) return "$type: @ ₱${unitPrice.toStringAsFixed(2)}";
+      if (unitPrice > 0)
+        return "$type: @ ₱${unitPrice.toStringAsFixed(2)} per ${item.sackPrice != null ? _formatSackType(item.sackType) : item.isGantang ? 'gantang' : 'kg'}";
       return type;
     }
     if (item.sackPrice != null) {

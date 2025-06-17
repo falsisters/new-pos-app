@@ -210,4 +210,61 @@ class KahonRepository {
       }
     }
   }
+
+  Future<Map<String, dynamic>> batchUpdateRowPositions(
+      List<Map<String, dynamic>> updates) async {
+    try {
+      final response = await _dio.instance
+          .patch('/sheet/rows/positions/batch', data: {'updates': updates});
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> batchUpdateCellsWithFormulas({
+    required List<Map<String, dynamic>> cellUpdates,
+    required List<Map<String, dynamic>> rowMappings,
+  }) async {
+    try {
+      final response =
+          await _dio.instance.patch('/sheet/cells/formulas/batch', data: {
+        'cellUpdates': cellUpdates,
+        'rowMappings': rowMappings,
+      });
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> comprehensiveRowReorder({
+    required String sheetId,
+    required List<Map<String, dynamic>> rowReorders,
+    required List<Map<String, dynamic>> affectedFormulas,
+  }) async {
+    try {
+      final response =
+          await _dio.instance.post('/sheet/reorder/comprehensive', data: {
+        'sheetId': sheetId,
+        'rowReorders': rowReorders,
+        'affectedFormulas': affectedFormulas,
+      });
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }

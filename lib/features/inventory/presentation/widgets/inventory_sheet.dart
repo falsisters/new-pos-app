@@ -11,6 +11,7 @@ import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet_data_source.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/row_reorder_change.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/enhanced_row_reorder_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
@@ -186,8 +187,115 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
     }
   }
 
-  // Handle row reordering
-  void _handleRowReorder(String rowId, int oldIndex, int newIndex) {
+  // Enhanced row reordering with validation and formula updates
+  void _handleRowReorder(String rowId, int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+
+    print("Enhanced row reorder requested: $rowId from $oldIndex to $newIndex");
+
+    try {
+      // Step 1: Calculate sequential mappings for all affected rows
+      final mappings = EnhancedRowReorderHandler.calculateSequentialMappings(
+        widget.sheet.rows,
+        rowId,
+        oldIndex,
+        newIndex,
+      );
+
+      if (mappings.isEmpty) {
+        print("No row mappings needed - positions already correct");
+        return;
+      }
+
+      // Step 2: Validate mappings
+      final validation = EnhancedRowReorderHandler.validateRowMappings(
+        mappings,
+        widget.sheet.rows,
+      );
+
+      if (!validation.isValid) {
+        _showSnackBar(
+          'Cannot reorder rows: ${validation.errors.join(", ")}',
+          isError: true,
+        );
+        return;
+      }
+
+      // Step 3: Calculate formula updates for moved rows
+      final formulaUpdates = EnhancedRowReorderHandler.calculateFormulaUpdates(
+        widget.sheet,
+        mappings,
+      );
+
+      // Step 4: Show loading state
+      setState(() => _isLoading = true);
+
+      // Step 5: Apply changes atomically
+      await _applyEnhancedRowReorder(mappings, formulaUpdates);
+
+      _showSnackBar('Rows reordered successfully!');
+    } catch (e) {
+      print('Error in enhanced row reorder: $e');
+      _showSnackBar('Failed to reorder rows: ${e.toString()}', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _applyEnhancedRowReorder(
+    List<RowMapping> mappings,
+    List<FormulaUpdate> formulaUpdates,
+  ) async {
+    try {
+      // Step 1: Apply row position updates
+      if (mappings.isNotEmpty) {
+        print('Applying ${mappings.length} row position updates');
+        final rowResults = await ref
+            .read(inventoryProvider.notifier)
+            .batchUpdateRowPositions(mappings.map((m) => m.toJson()).toList());
+
+        if (rowResults['errors'] != null && rowResults['errors'].isNotEmpty) {
+          throw Exception(
+              'Row position update errors: ${rowResults['errors']}');
+        }
+      }
+
+      // Step 2: Apply formula updates if any
+      if (formulaUpdates.isNotEmpty) {
+        print('Applying ${formulaUpdates.length} formula updates');
+        final formulaResults = await ref
+            .read(inventoryProvider.notifier)
+            .batchUpdateCellFormulas(
+                formulaUpdates.map((u) => u.toJson()).toList());
+
+        if (formulaResults['errors'] != null &&
+            formulaResults['errors'].isNotEmpty) {
+          throw Exception('Formula update errors: ${formulaResults['errors']}');
+        }
+      }
+
+      // Step 3: Refresh data to get updated state
+      await ref.read(inventoryProvider.notifier).getInventoryByDate(null, null);
+
+      print('Enhanced row reorder completed successfully');
+    } catch (e) {
+      print('Error applying enhanced row reorder: $e');
+
+      // Try to refresh data to recover from any partial updates
+      try {
+        await ref
+            .read(inventoryProvider.notifier)
+            .getInventoryByDate(null, null);
+      } catch (refreshError) {
+        print('Error refreshing data after failed reorder: $refreshError');
+      }
+
+      rethrow;
+    }
+  }
+
+  // Handle row reordering (deprecated)
+  void _handleRowReorderDeprecated(String rowId, int oldIndex, int newIndex) {
     if (oldIndex == newIndex) return;
 
     print("Row reorder requested: $rowId from $oldIndex to $newIndex");
@@ -1000,10 +1108,10 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
         await _applyPendingChanges();
       }
 
-      // Add the row
+      // Add the row using inventoryId instead of sheet.id
       await ref
           .read(inventoryProvider.notifier)
-          .createInventoryRow(widget.sheet.id, afterRowIndex + 1);
+          .createInventoryRow(widget.sheet.inventoryId, afterRowIndex + 1);
 
       // Ensure we stay in edit mode
       if (!_isEditable) {
@@ -1052,7 +1160,7 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
 
       await ref
           .read(inventoryProvider.notifier)
-          .createInventoryRows(widget.sheet.id, rowIndexes);
+          .createInventoryRows(widget.sheet.inventoryId, rowIndexes);
 
       // Ensure we stay in edit mode
       if (!_isEditable) {
