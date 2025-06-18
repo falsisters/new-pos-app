@@ -20,7 +20,6 @@ class DeliveryProductList extends ConsumerStatefulWidget {
 
 class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
   String _searchQuery = '';
-  String _stockFilter = 'all'; // 'all', 'available', 'out_of_stock'
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -29,37 +28,15 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
     super.dispose();
   }
 
-  bool _hasAvailableStock(Product product) {
-    final hasPerKiloStock =
-        product.perKiloPrice != null && product.perKiloPrice!.stock > 0;
-    final hasSackStock = product.sackPrice.any((sack) => sack.stock > 0);
-    return hasPerKiloStock || hasSackStock;
-  }
-
   @override
   Widget build(BuildContext context) {
     final allProducts = ref.watch(productsProvider);
 
-    // Apply filters
+    // Apply search filter only
     var filteredProducts = allProducts
         .where((product) =>
             product.name.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
-
-    // Apply stock filter
-    if (_stockFilter == 'available') {
-      filteredProducts = filteredProducts
-          .where((product) => _hasAvailableStock(product))
-          .toList();
-    } else if (_stockFilter == 'out_of_stock') {
-      filteredProducts = filteredProducts
-          .where((product) => !_hasAvailableStock(product))
-          .toList();
-    }
-
-    final availableCount =
-        allProducts.where((product) => _hasAvailableStock(product)).length;
-    final outOfStockCount = allProducts.length - availableCount;
 
     return Container(
       decoration: BoxDecoration(
@@ -115,7 +92,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                           ),
                         ],
                       ),
-                      child: Icon(Icons.inventory_2_outlined,
+                      child: Icon(Icons.local_shipping_outlined,
                           color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
@@ -124,7 +101,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Product Inventory',
+                            'Delivery Products',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
@@ -134,7 +111,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Select products to add to delivery truck',
+                            'Add incoming stock to delivery truck',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -160,7 +137,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                         icon: Icon(Icons.refresh_rounded,
                             color: AppColors.primary, size: 24),
                         onPressed: () {
-                          ref.read(productProvider.notifier).getProducts();
+                          ref.read(productProvider.notifier).refresh();
                         },
                         tooltip: 'Refresh products',
                       ),
@@ -237,35 +214,6 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Stock Filter Chips
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildFilterChip('All Products', 'all',
-                                Icons.widgets_rounded, AppColors.primary),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                                'Available ($availableCount)',
-                                'available',
-                                Icons.check_circle_rounded,
-                                Colors.green),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                                'Out of Stock ($outOfStockCount)',
-                                'out_of_stock',
-                                Icons.warning_rounded,
-                                Colors.red),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -275,32 +223,6 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Row(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(25),
-                    border:
-                        Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.widgets_rounded,
-                          size: 18, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${filteredProducts.length} products ${_stockFilter == 'all' ? 'total' : _stockFilter == 'available' ? 'available' : 'out of stock'}',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 if (_searchQuery.isNotEmpty) ...[
                   const SizedBox(width: 12),
                   Container(
@@ -348,7 +270,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            _searchQuery.isNotEmpty || _stockFilter != 'all'
+                            _searchQuery.isNotEmpty
                                 ? Icons.search_off_rounded
                                 : Icons.inventory_2_outlined,
                             size: 64,
@@ -357,7 +279,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          _searchQuery.isNotEmpty || _stockFilter != 'all'
+                          _searchQuery.isNotEmpty
                               ? 'No products found'
                               : 'No products available',
                           style: TextStyle(
@@ -369,7 +291,7 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                         const SizedBox(height: 8),
                         Text(
                           _searchQuery.isNotEmpty
-                              ? 'Try searching with different keywords or adjust filters'
+                              ? 'Try searching with different keywords'
                               : 'Products will appear here when available',
                           style: TextStyle(
                             fontSize: 14,
@@ -404,58 +326,6 @@ class _DeliveryProductListState extends ConsumerState<DeliveryProductList> {
                   ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(
-      String label, String value, IconData icon, Color color) {
-    final isSelected = _stockFilter == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _stockFilter = value;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? color : Colors.grey[600],
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? color : Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -259,10 +259,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       } else if (_isPerKiloSelected) {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
-        double newQuantity = ((currentQuantity * 10) + 1) / 10; // Add 0.1
+        double newQuantity = currentQuantity + 0.1;
         if (newQuantity <= widget.product.perKiloPrice!.stock) {
           _perKiloQuantityController.text = newQuantity.toStringAsFixed(1);
-          _updatePerKiloTotalPriceFromQuantity();
         }
       }
     });
@@ -286,9 +285,33 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
         if (currentQuantity > 0.1) {
-          currentQuantity = ((currentQuantity * 10) - 1) / 10; // Subtract 0.1
-          _perKiloQuantityController.text = currentQuantity.toStringAsFixed(1);
-          _updatePerKiloTotalPriceFromQuantity();
+          double newQuantity = currentQuantity - 0.1;
+          if (newQuantity < 0.1) newQuantity = 0.1;
+          _perKiloQuantityController.text = newQuantity.toStringAsFixed(1);
+        }
+      }
+    });
+  }
+
+  void _setQuickQuantity(double quantity) {
+    setState(() {
+      if (_selectedSackPriceId != null) {
+        final sackPrice = widget.product.sackPrice
+            .firstWhere((sp) => sp.id == _selectedSackPriceId);
+        int intQuantity = quantity.toInt();
+        if (intQuantity <= sackPrice.stock) {
+          if (_isSpecialPrice) {
+            final minQty = sackPrice.specialPrice?.minimumQty ?? 1;
+            if (intQuantity >= minQty) {
+              _sackQuantityController.text = intQuantity.toString();
+            }
+          } else {
+            _sackQuantityController.text = intQuantity.toString();
+          }
+        }
+      } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+        if (quantity <= widget.product.perKiloPrice!.stock) {
+          _perKiloQuantityController.text = quantity.toStringAsFixed(1);
         }
       }
     });
@@ -973,6 +996,30 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
     return Column(
       children: [
+        // Quick Action Buttons - mobile-friendly size
+        if (hasStock) ...[
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _buildQuickActionButton('1', 1.0)),
+                  const SizedBox(width: 4),
+                  Expanded(child: _buildQuickActionButton('2', 2.0)),
+                  const SizedBox(width: 4),
+                  Expanded(child: _buildQuickActionButton('3', 3.0)),
+                  const SizedBox(width: 4),
+                  Expanded(child: _buildQuickActionButton('4', 4.0)),
+                  const SizedBox(width: 4),
+                  Expanded(child: _buildQuickActionButton('5', 5.0)),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ],
+
         if (!hasStock)
           Container(
             padding: const EdgeInsets.all(8),
@@ -1286,6 +1333,81 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             ],
           ),
       ],
+    );
+  }
+
+  Widget _buildQuickActionButton(String label, double quantity) {
+    bool isEnabled = true;
+    String unit = _selectedSackPriceId != null ? 'sack' : 'kg';
+
+    // Check if quantity is available
+    if (_selectedSackPriceId != null) {
+      final sackPrice = widget.product.sackPrice
+          .firstWhere((sp) => sp.id == _selectedSackPriceId);
+      isEnabled = quantity.toInt() <= sackPrice.stock;
+
+      if (_isSpecialPrice) {
+        final minQty = sackPrice.specialPrice?.minimumQty ?? 1;
+        isEnabled = isEnabled && quantity.toInt() >= minQty;
+      }
+    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      isEnabled = quantity <= widget.product.perKiloPrice!.stock;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? () => _setQuickQuantity(quantity) : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: isEnabled
+                ? AppColors.primary.withOpacity(0.1)
+                : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isEnabled
+                  ? AppColors.primary.withOpacity(0.3)
+                  : Colors.grey[300]!,
+              width: 1.5,
+            ),
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isEnabled ? AppColors.primary : Colors.grey[500],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                unit,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isEnabled
+                      ? AppColors.primary.withOpacity(0.7)
+                      : Colors.grey[400],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

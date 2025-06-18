@@ -69,16 +69,12 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
 
   @override
   Widget build(BuildContext context) {
-    final hasStock = _hasAvailableStock();
-
     return GestureDetector(
-      onTap: hasStock ? widget.onTap : null,
+      onTap: widget.onTap,
       child: MouseRegion(
         onEnter: (_) {
-          if (hasStock) {
-            setState(() => _isHovering = true);
-            _animationController.forward();
-          }
+          setState(() => _isHovering = true);
+          _animationController.forward();
         },
         onExit: (_) {
           setState(() => _isHovering = false);
@@ -94,20 +90,16 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: !hasStock
-                        ? Colors.red.withOpacity(0.3)
-                        : _isHovering
-                            ? AppColors.secondary
-                            : Colors.grey.withOpacity(0.15),
-                    width: _isHovering || !hasStock ? 2 : 1,
+                    color: _isHovering
+                        ? AppColors.secondary
+                        : Colors.grey.withOpacity(0.15),
+                    width: _isHovering ? 2 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: !hasStock
-                          ? Colors.red.withOpacity(0.1)
-                          : _isHovering
-                              ? AppColors.secondary.withOpacity(0.15)
-                              : Colors.black.withOpacity(0.04),
+                      color: _isHovering
+                          ? AppColors.secondary.withOpacity(0.15)
+                          : Colors.black.withOpacity(0.04),
                       spreadRadius: 0,
                       blurRadius: _shadowAnimation.value,
                       offset: Offset(0, _shadowAnimation.value * 0.3),
@@ -123,20 +115,15 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: !hasStock
+                            colors: _isHovering
                                 ? [
-                                    Colors.red.withOpacity(0.2),
-                                    Colors.red.withOpacity(0.1),
+                                    AppColors.secondary.withOpacity(0.2),
+                                    AppColors.secondary.withOpacity(0.1),
                                   ]
-                                : _isHovering
-                                    ? [
-                                        AppColors.secondary.withOpacity(0.2),
-                                        AppColors.secondary.withOpacity(0.1),
-                                      ]
-                                    : [
-                                        AppColors.primary.withOpacity(0.15),
-                                        AppColors.primary.withOpacity(0.08),
-                                      ],
+                                : [
+                                    AppColors.primary.withOpacity(0.15),
+                                    AppColors.primary.withOpacity(0.08),
+                                  ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -145,11 +132,9 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                         child: Icon(
                           Icons.inventory_2_rounded,
                           size: 28,
-                          color: !hasStock
-                              ? Colors.red
-                              : _isHovering
-                                  ? AppColors.secondary
-                                  : AppColors.primary,
+                          color: _isHovering
+                              ? AppColors.secondary
+                              : AppColors.primary,
                         ),
                       ),
 
@@ -160,59 +145,24 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Product Name with Stock Status
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.product.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: !hasStock
-                                          ? Colors.red
-                                          : _isHovering
-                                              ? AppColors.secondary
-                                              : AppColors.primary,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                ),
-                                if (!hasStock)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Colors.red.withOpacity(0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.warning_rounded,
-                                            size: 12, color: Colors.red),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Out of Stock',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
+                            // Product Name
+                            Text(
+                              widget.product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: _isHovering
+                                    ? AppColors.secondary
+                                    : AppColors.primary,
+                                letterSpacing: -0.2,
+                              ),
                             ),
 
                             const SizedBox(height: 8),
 
-                            // Stock Information Row
+                            // Current Stock Information Row
                             Row(
                               children: [
                                 // Per Kilo Stock
@@ -221,39 +171,23 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color:
-                                          widget.product.perKiloPrice!.stock > 0
-                                              ? Colors.green.withOpacity(0.1)
-                                              : Colors.red.withOpacity(0.1),
+                                      color: Colors.blue.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                          color: widget.product.perKiloPrice!
-                                                      .stock >
-                                                  0
-                                              ? Colors.green.withOpacity(0.2)
-                                              : Colors.red.withOpacity(0.2)),
+                                          color: Colors.blue.withOpacity(0.2)),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.scale_rounded,
-                                            size: 12,
-                                            color: widget.product.perKiloPrice!
-                                                        .stock >
-                                                    0
-                                                ? Colors.green[700]
-                                                : Colors.red),
+                                            size: 12, color: Colors.blue[700]),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            color: widget.product.perKiloPrice!
-                                                        .stock >
-                                                    0
-                                                ? Colors.green[700]
-                                                : Colors.red,
+                                            color: Colors.blue[700],
                                           ),
                                         ),
                                       ],
@@ -268,37 +202,24 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: widget.product.sackPrice
-                                              .any((s) => s.stock > 0)
-                                          ? AppColors.accent.withOpacity(0.1)
-                                          : Colors.red.withOpacity(0.1),
+                                      color: AppColors.accent.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                          color: widget.product.sackPrice
-                                                  .any((s) => s.stock > 0)
-                                              ? AppColors.accent
-                                                  .withOpacity(0.2)
-                                              : Colors.red.withOpacity(0.2)),
+                                          color: AppColors.accent
+                                              .withOpacity(0.2)),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.inventory_rounded,
-                                            size: 12,
-                                            color: widget.product.sackPrice
-                                                    .any((s) => s.stock > 0)
-                                                ? AppColors.accent
-                                                : Colors.red),
+                                            size: 12, color: AppColors.accent),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${widget.product.sackPrice.fold<int>(0, (sum, sack) => sum + sack.stock)} sacks',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            color: widget.product.sackPrice
-                                                    .any((s) => s.stock > 0)
-                                                ? AppColors.accent
-                                                : Colors.red,
+                                            color: AppColors.accent,
                                           ),
                                         ),
                                       ],
@@ -337,54 +258,46 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                           Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: !hasStock
-                                    ? [Colors.grey[300]!, Colors.grey[200]!]
-                                    : _isHovering
-                                        ? [
-                                            AppColors.secondary,
-                                            AppColors.secondary.withOpacity(0.8)
-                                          ]
-                                        : [
-                                            AppColors.primary.withOpacity(0.1),
-                                            AppColors.primary.withOpacity(0.05)
-                                          ],
+                                colors: _isHovering
+                                    ? [
+                                        AppColors.secondary,
+                                        AppColors.secondary.withOpacity(0.8)
+                                      ]
+                                    : [
+                                        AppColors.primary.withOpacity(0.1),
+                                        AppColors.primary.withOpacity(0.05)
+                                      ],
                               ),
                               borderRadius: BorderRadius.circular(10),
-                              boxShadow: !hasStock
-                                  ? []
-                                  : _isHovering
-                                      ? [
-                                          BoxShadow(
-                                            color: AppColors.secondary
-                                                .withOpacity(0.3),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ]
-                                      : [],
+                              boxShadow: _isHovering
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.secondary
+                                            .withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : [],
                             ),
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(10),
-                                onTap: hasStock ? widget.onTap : null,
+                                onTap: widget.onTap,
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        !hasStock
-                                            ? Icons.block_rounded
-                                            : Icons.local_shipping_outlined,
+                                        Icons.local_shipping_outlined,
                                         size: 18,
-                                        color: !hasStock
-                                            ? Colors.grey[600]
-                                            : _isHovering
-                                                ? Colors.white
-                                                : AppColors.primary,
+                                        color: _isHovering
+                                            ? Colors.white
+                                            : AppColors.primary,
                                       ),
-                                      if (_isHovering && hasStock) ...[
+                                      if (_isHovering) ...[
                                         const SizedBox(width: 6),
                                         Text(
                                           'Add to Truck',
@@ -402,7 +315,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                             ),
                           ),
 
-                          if (_isHovering && hasStock) ...[
+                          if (_isHovering) ...[
                             const SizedBox(height: 8),
                             // Stock Preview (when hovering)
                             Container(
@@ -415,6 +328,15 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text(
+                                    'Current Stock:',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
                                   if (widget.product.perKiloPrice != null)
                                     Text(
                                       'Per kg: ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg',
@@ -425,7 +347,6 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                       ),
                                     ),
                                   ...widget.product.sackPrice
-                                      .where((sack) => sack.stock > 0)
                                       .take(2)
                                       .map((sackPrice) {
                                     return Text(

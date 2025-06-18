@@ -46,6 +46,23 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
     return state.value!;
   }
 
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final products = await _productRepository.getProducts();
+
+      // Preload images after getting products
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _preloadProductImages(products);
+      });
+
+      return ProductState(
+        products: products,
+      );
+    });
+  }
+
   void _preloadProductImages(List<dynamic> products) {
     for (final product in products) {
       if (product.picture != null && product.picture.isNotEmpty) {

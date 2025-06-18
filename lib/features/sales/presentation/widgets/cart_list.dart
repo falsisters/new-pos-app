@@ -221,49 +221,9 @@ class CartList extends ConsumerWidget {
                                     icon: Icon(Icons.delete_outline,
                                         color: Colors.red[600], size: 20),
                                     onPressed: () {
-                                      // Show enhanced confirmation dialog
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                          title: Row(
-                                            children: [
-                                              Icon(Icons.warning,
-                                                  color: Colors.orange,
-                                                  size: 24),
-                                              const SizedBox(width: 8),
-                                              const Text('Remove Item'),
-                                            ],
-                                          ),
-                                          content: Text(
-                                              'Remove ${product.name} from cart?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                              child: const Text('CANCEL'),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                ref
-                                                    .read(
-                                                        salesProvider.notifier)
-                                                    .removeProductFromCart(
-                                                        product);
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                foregroundColor: Colors.white,
-                                              ),
-                                              child: const Text('REMOVE'),
-                                            ),
-                                          ],
-                                        ),
-                                      );
+                                      ref
+                                          .read(salesProvider.notifier)
+                                          .removeProductFromCart(product);
                                     },
                                   ),
                                 ),

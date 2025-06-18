@@ -73,10 +73,24 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   void _increaseQuantity() {
     setState(() {
       if (_selectedSackPriceId != null) {
-        _quantity = (_quantity as int) + 1;
+        // Ensure _quantity is int before incrementing
+        int qty = 1;
+        if (_quantity is int) {
+          qty = _quantity as int;
+        } else if (_quantity is double) {
+          qty = (_quantity as double).toInt();
+        }
+        _quantity = qty + 1;
       } else {
         // Per kilo price, allow decimal
-        _quantity = ((_quantity as double) * 10 + 1) / 10;
+        double qty = 1.0;
+        if (_quantity is double) {
+          qty = _quantity as double;
+        } else if (_quantity is int) {
+          qty = (_quantity as int).toDouble();
+        }
+        _quantity = ((qty * 10 + 1) / 10);
+        _quantity = double.parse(_quantity.toStringAsFixed(2));
       }
       _quantityController.text = _quantity.toString();
     });
@@ -85,13 +99,25 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   void _decreaseQuantity() {
     setState(() {
       if (_selectedSackPriceId != null) {
-        if (_quantity > 1) {
-          _quantity = (_quantity as int) - 1;
+        int qty = 1;
+        if (_quantity is int) {
+          qty = _quantity as int;
+        } else if (_quantity is double) {
+          qty = (_quantity as double).toInt();
+        }
+        if (qty > 1) {
+          _quantity = qty - 1;
         }
       } else {
-        // Per kilo price, allow decimal
-        if (_quantity > 0.1) {
-          _quantity = ((_quantity as double) * 10 - 1) / 10;
+        double qty = 1.0;
+        if (_quantity is double) {
+          qty = _quantity as double;
+        } else if (_quantity is int) {
+          qty = (_quantity as int).toDouble();
+        }
+        if (qty > 0.1) {
+          _quantity = ((qty * 10 - 1) / 10);
+          _quantity = double.parse(_quantity.toStringAsFixed(2));
         }
       }
       _quantityController.text = _quantity.toString();
@@ -657,96 +683,179 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   }
 
   Widget _buildQuantitySection() {
+    final hasValidSelection =
+        _selectedSackPriceId != null || _isPerKiloSelected;
+
     return Column(
       children: [
+        // Quick Actions for both sack and per kilo quantities
+        if (hasValidSelection) ...[
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _selectedSackPriceId != null
+                  ? [
+                      _buildQuickActionButton('1', 1),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('2', 2),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('5', 5),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('10', 10),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('25', 25),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('50', 50),
+                    ]
+                  : [
+                      _buildQuickActionButton('0.5', 0.5),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('1', 1.0),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('2.5', 2.5),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('5', 5.0),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('10', 10.0),
+                      const SizedBox(width: 8),
+                      _buildQuickActionButton('25', 25.0),
+                    ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
         // Quantity Input Field
         Expanded(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Manual Input Field
-                TextFormField(
-                  controller: _quantityController,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                // Manual Input Field with enhanced design
+                Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  keyboardType: _selectedSackPriceId != null
-                      ? TextInputType.number
-                      : const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: _selectedSackPriceId != null
-                      ? [FilteringTextInputFormatter.digitsOnly]
-                      : [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                  child: TextFormField(
+                    controller: _quantityController,
+                    textAlign: TextAlign.center,
+                    enabled: hasValidSelection,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: hasValidSelection
+                          ? AppColors.primary
+                          : Colors.grey[500],
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.primary, width: 2),
+                    keyboardType: _selectedSackPriceId != null
+                        ? TextInputType.number
+                        : const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: _selectedSackPriceId != null
+                        ? [FilteringTextInputFormatter.digitsOnly]
+                        : [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'))
+                          ],
+                    decoration: InputDecoration(
+                      labelText: _isPerKiloSelected ? 'Kg' : 'Sacks',
+                      labelStyle: TextStyle(
+                        color: hasValidSelection
+                            ? AppColors.primary
+                            : Colors.grey[500],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red, width: 2),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red, width: 2),
+                      ),
+                      filled: true,
+                      fillColor:
+                          hasValidSelection ? Colors.white : Colors.grey[100],
+                      suffixIcon:
+                          hasValidSelection ? _buildQuantityControls() : null,
+                      helperText: hasValidSelection
+                          ? 'Enter the quantity to add to inventory'
+                          : 'Please select a loading option first',
+                      helperStyle:
+                          TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
                     ),
-                    filled: true,
-                    fillColor: AppColors.primary.withOpacity(0.05),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    suffixText: _isPerKiloSelected ? 'kg' : 'sacks',
-                    suffixStyle: TextStyle(
-                      color: AppColors.primary.withOpacity(0.7),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter quantity';
-                    }
-                    final qty = double.tryParse(value);
-                    if (qty == null || qty <= 0) {
-                      return 'Invalid quantity';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    if (_selectedSackPriceId != null) {
-                      final qty = int.tryParse(value);
-                      if (qty != null && qty > 0) {
-                        _quantity = qty;
+                    validator: (value) {
+                      if (!hasValidSelection) {
+                        return 'Please select a loading option';
                       }
-                    } else {
+
+                      if (value == null || value.isEmpty) {
+                        return 'Enter quantity';
+                      }
+
                       final qty = double.tryParse(value);
-                      if (qty != null && qty > 0) {
-                        _quantity = qty;
+                      if (qty == null || qty <= 0) {
+                        return 'Valid quantity > 0';
                       }
-                    }
-                  },
-                ),
 
-                const SizedBox(height: 16),
+                      if (_selectedSackPriceId != null && qty % 1 != 0) {
+                        return 'Sack quantity must be a whole number';
+                      }
 
-                // Quantity Controls
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildQuantityButton(
-                      icon: Icons.remove_rounded,
-                      onPressed: _decreaseQuantity,
-                      color: Colors.red,
-                    ),
-                    _buildQuantityButton(
-                      icon: Icons.add_rounded,
-                      onPressed: _increaseQuantity,
-                      color: Colors.green,
-                    ),
-                  ],
+                      // Set reasonable upper limits for data integrity
+                      if (_selectedSackPriceId != null && qty > 10000) {
+                        return 'Maximum 10,000 sacks allowed';
+                      }
+
+                      if (_isPerKiloSelected && qty > 50000) {
+                        return 'Maximum 50,000 kg allowed';
+                      }
+
+                      return null;
+                    },
+                    onChanged: (value) {
+                      if (_selectedSackPriceId != null) {
+                        final qty = int.tryParse(value);
+                        if (qty != null && qty > 0) {
+                          _quantity = qty;
+                        }
+                      } else {
+                        final qty = double.tryParse(value);
+                        if (qty != null && qty > 0) {
+                          _quantity = qty;
+                        }
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -756,37 +865,134 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
     );
   }
 
-  Widget _buildQuantityButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required Color color,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+  Widget _buildQuantityControls() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Minus button
+        Container(
+          height: 32,
+          width: 32,
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            color: _quantity > (_isPerKiloSelected ? 0.1 : 1)
+                ? AppColors.primary.withOpacity(0.1)
+                : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _quantity > (_isPerKiloSelected ? 0.1 : 1)
+                  ? AppColors.primary.withOpacity(0.3)
+                  : Colors.grey[300]!,
+            ),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onPressed,
-          child: Container(
-            width: 48,
-            height: 48,
-            child: Icon(icon, color: Colors.white, size: 24),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _quantity > (_isPerKiloSelected ? 0.1 : 1)
+                  ? _decreaseQuantity
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Icon(
+                Icons.remove_rounded,
+                color: _quantity > (_isPerKiloSelected ? 0.1 : 1)
+                    ? AppColors.primary
+                    : Colors.grey[500],
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        // Plus button
+        Container(
+          height: 32,
+          width: 32,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.3),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _increaseQuantity,
+              borderRadius: BorderRadius.circular(8),
+              child: Icon(
+                Icons.add_rounded,
+                color: AppColors.primary,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionButton(String label, double quantity) {
+    String unit = _selectedSackPriceId != null ? 'sacks' : 'kg';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _setQuickQuantity(quantity),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 56,
+          width: 60,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                unit,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary.withOpacity(0.7),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  void _setQuickQuantity(double quantity) {
+    setState(() {
+      _quantity = quantity;
+      _quantityController.text = _quantity.toString();
+    });
+  }
+
+  double _getMaxQuantity() {
+    // For incoming deliveries, we don't limit based on current stock
+    // Return a reasonable maximum for UI purposes
+    return _selectedSackPriceId != null ? 10000.0 : 50000.0;
   }
 }
