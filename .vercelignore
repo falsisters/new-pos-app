@@ -1,1 +1,16 @@
-!flutter-sdk/
+flutter-sdk/
+.dart_tool/
+.packages
+.metadata
+.flutter-plugins
+.flutter-plugins-dependencies
+test/
+integration_test/
+android/
+ios/
+linux/
+macos/
+windows/
+*.md
+LICENSE
+analysis_options.yaml
