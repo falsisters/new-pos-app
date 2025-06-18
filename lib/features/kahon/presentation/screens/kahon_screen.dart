@@ -1,11 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet.dart';
+import 'package:falsisters_pos_android/features/inventory/presentation/widgets/inventory_sheet_new.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet.dart';
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_new.dart';
 
 class KahonScreen extends ConsumerStatefulWidget {
   const KahonScreen({super.key});
@@ -221,7 +222,7 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
                         _buildTabContent(
                           sheetState,
                           (data) => data.sheet != null
-                              ? KahonSheet(sheet: data.sheet!)
+                              ? KahonSheetNew(sheet: data.sheet!)
                               : _buildEmptyState(
                                   'No sheet data available', Icons.table_chart),
                         ),
@@ -230,7 +231,7 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
                         _buildTabContent(
                           inventoryState,
                           (data) => data.sheet != null
-                              ? InventorySheet(sheet: data.sheet!)
+                              ? InventorySheetNew(sheet: data.sheet!)
                               : _buildEmptyState('No inventory data available',
                                   Icons.inventory_2_outlined),
                         ),

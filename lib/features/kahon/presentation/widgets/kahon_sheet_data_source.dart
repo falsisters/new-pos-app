@@ -94,16 +94,53 @@ class KahonSheetDataSource extends DataGridSource {
 
   @override
   DataGridRowAdapter buildRow(DataGridRow row) {
-    return DataGridRowAdapter(
-      cells: row.getCells().map<Widget>((cell) {
-        if (cell.columnName == 'itemName') {
-          return _buildItemNameWidget(cell.value as RowCellData);
-        } else if (cell.value is CellModel) {
-          return _buildCellWidget(cell.value as CellModel);
-        } else {
-          return _buildEmptyCell();
-        }
-      }).toList(),
+    try {
+      return DataGridRowAdapter(
+        cells: row.getCells().map<Widget>((cell) {
+          try {
+            if (cell.columnName == 'itemName') {
+              return _buildItemNameWidget(cell.value as RowCellData);
+            } else if (cell.value is CellModel) {
+              return _buildCellWidget(cell.value as CellModel);
+            } else {
+              return _buildEmptyCell();
+            }
+          } catch (e) {
+            print('Error building cell widget: $e');
+            return _buildErrorCell(e.toString());
+          }
+        }).toList(),
+      );
+    } catch (e) {
+      print('Error building row: $e');
+      // Return a row with error cells
+      return DataGridRowAdapter(
+        cells: List.generate(
+          sheet.columns + 1,
+          (index) => _buildErrorCell('Row Error'),
+        ),
+      );
+    }
+  }
+
+  Widget _buildErrorCell(String error) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        border: Border.all(color: Colors.red.withOpacity(0.3), width: 0.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Text(
+          '#ERROR',
+          style: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 
@@ -292,37 +329,43 @@ class KahonSheetDataSource extends DataGridSource {
   }
 
   Widget _buildCellWidget(CellModel cellModel) {
-    final backgroundColor =
-        cellModel.color != null && cellModel.color!.isNotEmpty
-            ? CellColorHandler.getColorFromHex(cellModel.color)
-            : (cellModel.isCalculated
-                ? AppColors.primaryLight.withOpacity(0.1)
-                : null);
+    try {
+      final backgroundColor =
+          cellModel.color != null && cellModel.color!.isNotEmpty
+              ? CellColorHandler.getColorFromHex(cellModel.color)
+              : (cellModel.isCalculated
+                  ? AppColors.primaryLight.withOpacity(0.1)
+                  : null);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(
-          color: cellModel.isCalculated
-              ? AppColors.primary.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
-          width: 0.5,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Text(
-          cellModel.value ?? '',
-          style: TextStyle(
-            color: cellModel.isCalculated ? AppColors.primary : Colors.black87,
-            fontWeight:
-                cellModel.isCalculated ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 13,
+      return Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(
+            color: cellModel.isCalculated
+                ? AppColors.primary.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.2),
+            width: 0.5,
           ),
-          textAlign: TextAlign.center,
         ),
-      ),
-    );
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Text(
+            cellModel.value ?? '',
+            style: TextStyle(
+              color:
+                  cellModel.isCalculated ? AppColors.primary : Colors.black87,
+              fontWeight:
+                  cellModel.isCalculated ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error building cell widget: $e');
+      return _buildErrorCell('Cell Error');
+    }
   }
 
   Widget _buildEmptyCell() {

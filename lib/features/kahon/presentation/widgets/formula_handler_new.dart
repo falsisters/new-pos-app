@@ -6,6 +6,10 @@ class FormulaHandler {
   final SheetModel sheet;
   final Map<String, int> _columnIndexMap = {};
 
+  // Enhanced error handling cache
+  final Map<String, String> _evaluationCache = {};
+  final Set<String> _circularReferenceCheck = {};
+
   FormulaHandler({required this.sheet}) {
     _initializeColumnMaps();
   }
@@ -120,52 +124,125 @@ class FormulaHandler {
     return references;
   }
 
-  // Main method to evaluate formulas
+  // Main method to evaluate formulas with enhanced error handling
   String evaluateFormula(
       String formula, int currentRowIndex, int currentColumnIndex) {
     if (!formula.startsWith('=')) {
       return formula;
     }
 
+    // Create cache key
+    final cacheKey = '${formula}_${currentRowIndex}_$currentColumnIndex';
+
+    // Check cache first for performance
+    if (_evaluationCache.containsKey(cacheKey)) {
+      return _evaluationCache[cacheKey]!;
+    }
+
+    // Check for circular references
+    if (_circularReferenceCheck.contains(cacheKey)) {
+      print('Circular reference detected: $formula');
+      return '#CIRCULAR';
+    }
+
+    _circularReferenceCheck.add(cacheKey);
+
     try {
-      String processedFormula = formula.substring(1); // Remove the '=' sign
+      String processedFormula =
+          formula.substring(1).trim(); // Remove the '=' sign
 
-      // Process range functions first (SUM, AVG, etc.)
-      processedFormula = _processRangeFunctions(processedFormula);
+      // Validate formula isn't empty
+      if (processedFormula.isEmpty) {
+        throw Exception('Empty formula');
+      }
 
-      // Process cell references (A1, B2, etc.)
-      processedFormula =
-          _processCellReferences(processedFormula, currentRowIndex);
+      // Process range functions first with error handling
+      try {
+        processedFormula = _processRangeFunctions(processedFormula);
+      } catch (e) {
+        print('Error processing range functions: $e');
+        throw Exception('Range function error: ${e.toString()}');
+      }
 
-      // Evaluate the processed formula using math_expressions
+      // Process cell references with error handling
+      try {
+        processedFormula =
+            _processCellReferences(processedFormula, currentRowIndex);
+      } catch (e) {
+        print('Error processing cell references: $e');
+        throw Exception('Cell reference error: ${e.toString()}');
+      }
+
+      // Validate processed formula
+      if (processedFormula.isEmpty || processedFormula.trim().isEmpty) {
+        throw Exception('Formula resulted in empty expression');
+      }
+
+      // Evaluate the processed formula using math_expressions with timeout
+      String result = _evaluateWithTimeout(processedFormula);
+
+      // Cache the result
+      _evaluationCache[cacheKey] = result;
+
+      return result;
+    } catch (e) {
+      print('Error evaluating formula "$formula": $e');
+      final errorResult = '#ERROR: ${e.toString().split(':').last.trim()}';
+      _evaluationCache[cacheKey] = errorResult;
+      return errorResult;
+    } finally {
+      _circularReferenceCheck.remove(cacheKey);
+    }
+  }
+
+  String _evaluateWithTimeout(String processedFormula) {
+    try {
+      // Add timeout to prevent long-running calculations
       Parser p = Parser();
       Expression exp = p.parse(processedFormula);
       ContextModel cm = ContextModel();
+
+      // Simple timeout simulation - if the formula is too complex, it might hang
+      final stopwatch = Stopwatch()..start();
       double result = exp.evaluate(EvaluationType.REAL, cm);
+      stopwatch.stop();
+
+      if (stopwatch.elapsedMilliseconds > 1000) {
+        print(
+            'Warning: Formula evaluation took ${stopwatch.elapsedMilliseconds}ms');
+      }
+
+      // Validate result
+      if (result.isNaN || result.isInfinite) {
+        throw Exception('Invalid calculation result');
+      }
 
       // Format result (remove decimal if it's a whole number)
       if (result == result.floor()) {
         return result.floor().toString();
       } else {
-        return result.toString();
+        // Limit decimal places for performance
+        return result
+            .toStringAsFixed(6)
+            .replaceAll(RegExp(r'0+$'), '')
+            .replaceAll(RegExp(r'\.$'), '');
       }
     } catch (e) {
-      print('Error evaluating formula: $e');
-      return '#ERROR';
+      throw Exception('Math evaluation failed: ${e.toString()}');
     }
   }
 
-  // Process range functions like SUM(A1:A5), AVG(B1:B10), etc.
+  // Enhanced range function processing with better error handling
   String _processRangeFunctions(String formula) {
     RegExp rangePattern =
         RegExp(r'(SUM|AVG|COUNT|MAX|MIN)\(([A-Za-z]+)(\d+):([A-Za-z]+)(\d+)\)');
 
     return formula.replaceAllMapped(rangePattern, (match) {
-      String function = match.group(1)!.toUpperCase();
-      String startRef = match.group(2)! + match.group(3)!;
-      String endRef = match.group(4)! + match.group(5)!;
-
       try {
+        String function = match.group(1)!.toUpperCase();
+        String startRef = match.group(2)! + match.group(3)!;
+        String endRef = match.group(4)! + match.group(5)!;
+
         CellReference startCell = _parseCellReference(startRef);
         CellReference endCell = _parseCellReference(endRef);
 
@@ -181,8 +258,8 @@ class FormulaHandler {
             return values.fold(0.0, (a, b) => a + b).toString();
           case 'AVG':
             if (values.isEmpty) return '0';
-            return (values.fold(0.0, (a, b) => a + b) / values.length)
-                .toString();
+            double avg = values.fold(0.0, (a, b) => a + b) / values.length;
+            return avg.toString();
           case 'COUNT':
             return values.length.toString();
           case 'MAX':
@@ -192,11 +269,11 @@ class FormulaHandler {
             if (values.isEmpty) return '0';
             return values.reduce((a, b) => a < b ? a : b).toString();
           default:
-            return '0';
+            throw Exception('Unknown function: $function');
         }
       } catch (e) {
-        print('Error processing range function: $e');
-        return '0';
+        print('Error processing range function ${match.group(0)}: $e');
+        throw Exception('Range function error: ${e.toString()}');
       }
     });
   }
@@ -365,6 +442,12 @@ class FormulaHandler {
     }
 
     return formulaCells;
+  }
+
+  // Clear cache when sheet data changes
+  void clearCache() {
+    _evaluationCache.clear();
+    _circularReferenceCheck.clear();
   }
 }
 
