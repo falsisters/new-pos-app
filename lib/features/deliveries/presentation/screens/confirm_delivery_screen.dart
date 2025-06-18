@@ -1,6 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/providers/delivery_provider.dart';
-import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:board_datetime_picker/board_datetime_picker.dart';
@@ -669,22 +668,47 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
                               ),
                               ElevatedButton(
                                 onPressed: () async {
-                                  Navigator.pop(context);
+                                  final navigator = Navigator.of(context);
+                                  navigator.pop(); // Close dialog
 
-                                  // Process the delivery
-                                  await ref
-                                      .read(deliveryProvider.notifier)
-                                      .createDelivery(
-                                        _driverNameController.text,
-                                        _deliveryTimeStart!,
+                                  try {
+                                    // Process the delivery
+                                    await ref
+                                        .read(deliveryProvider.notifier)
+                                        .createDelivery(
+                                          _driverNameController.text,
+                                          _deliveryTimeStart!,
+                                        );
+
+                                    // Check if widget is still mounted before navigation
+                                    if (mounted) {
+                                      navigator
+                                          .pop(); // Go back to previous screen
+                                    }
+                                  } catch (e) {
+                                    // Handle error and show message if widget is still mounted
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.error_outline,
+                                                  color: Colors.white),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                  'Failed to create delivery: $e'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10)),
+                                        ),
                                       );
-
-                                  // Refresh products to get updated stock
-                                  await ref
-                                      .read(productProvider.notifier)
-                                      .refresh();
-
-                                  Navigator.pop(context);
+                                    }
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.secondary,

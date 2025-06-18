@@ -3,6 +3,7 @@ import 'package:falsisters_pos_android/features/deliveries/data/models/delivery_
 import 'package:falsisters_pos_android/features/deliveries/data/models/delivery_state_model.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/models/truck_model.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/repository/delivery_repository.dart';
+import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DeliveryNotifier extends AsyncNotifier<DeliveryStateModel> {
@@ -48,23 +49,23 @@ class DeliveryNotifier extends AsyncNotifier<DeliveryStateModel> {
     state = const AsyncLoading();
 
     state = await AsyncValue.guard(() async {
-      try {
-        final currentTruck = state.value!.truck;
-        // Create a properly formatted request
-        final createDeliveryRequest = CreateDeliveryRequestModel(
-          deliveryItems: currentTruck.products,
-          driverName: driverName,
-          deliveryTimeStart: deliveryTimeStart,
-        );
+      final currentTruck = state.value!.truck;
 
-        // Submit the delivery to the server
-        await _deliveryRepository.createDelivery(createDeliveryRequest);
+      // Create a properly formatted request
+      final createDeliveryRequest = CreateDeliveryRequestModel(
+        deliveryItems: currentTruck.products,
+        driverName: driverName,
+        deliveryTimeStart: deliveryTimeStart,
+      );
 
-        return DeliveryStateModel(truck: TruckModel());
-      } catch (e) {
-        return DeliveryStateModel(
-            truck: state.value!.truck, error: e.toString());
-      }
+      // Submit the delivery to the server
+      await _deliveryRepository.createDelivery(createDeliveryRequest);
+
+      // Refresh products after successful delivery
+      await ref.read(productProvider.notifier).getProducts();
+
+      // Return clean state with empty truck
+      return DeliveryStateModel(truck: TruckModel());
     });
   }
 }
