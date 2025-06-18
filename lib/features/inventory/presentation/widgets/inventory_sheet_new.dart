@@ -15,8 +15,6 @@ import 'package:falsisters_pos_android/features/inventory/presentation/widgets/e
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/first_or_where_null.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/row_cell_data.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
-import 'package:falsisters_pos_android/features/inventory/presentation/widgets/row_reorder_change.dart';
-import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_color_handler.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 
 class InventorySheetNew extends ConsumerStatefulWidget {

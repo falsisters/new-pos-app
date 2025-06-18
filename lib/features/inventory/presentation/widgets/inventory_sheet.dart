@@ -295,89 +295,89 @@ class _InventorySheetState extends ConsumerState<InventorySheet>
   }
 
   // Handle row reordering (deprecated)
-  void _handleRowReorderDeprecated(String rowId, int oldIndex, int newIndex) {
-    if (oldIndex == newIndex) return;
+  // void _handleRowReorderDeprecated(String rowId, int oldIndex, int newIndex) {
+  //   if (oldIndex == newIndex) return;
 
-    print("Row reorder requested: $rowId from $oldIndex to $newIndex");
+  //   print("Row reorder requested: $rowId from $oldIndex to $newIndex");
 
-    // Add to pending row reorders
-    _pendingRowReorders[rowId] = RowReorderChange(
-      rowId: rowId,
-      oldRowIndex: oldIndex,
-      newRowIndex: newIndex,
-    );
+  //   // Add to pending row reorders
+  //   _pendingRowReorders[rowId] = RowReorderChange(
+  //     rowId: rowId,
+  //     oldRowIndex: oldIndex,
+  //     newRowIndex: newIndex,
+  //   );
 
-    // Update UI immediately with temporary reordering
-    setState(() {
-      _updateRowOrderInUI(oldIndex, newIndex);
-    });
+  //   // Update UI immediately with temporary reordering
+  //   setState(() {
+  //     _updateRowOrderInUI(oldIndex, newIndex);
+  //   });
 
-    _showSnackBar('Row position updated (pending save)');
-  }
+  //   _showSnackBar('Row position updated (pending save)');
+  // }
 
-  // Update row order in UI temporarily
-  void _updateRowOrderInUI(int oldIndex, int newIndex) {
-    // Create a working copy of the sheet with reordered rows
-    final currentSheet = _dataSource.currentSheet;
-    final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
-      ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
+  // // Update row order in UI temporarily
+  // void _updateRowOrderInUI(int oldIndex, int newIndex) {
+  //   // Create a working copy of the sheet with reordered rows
+  //   final currentSheet = _dataSource.currentSheet;
+  //   final sortedRows = List<InventoryRowModel>.from(currentSheet.rows)
+  //     ..sort((a, b) => a.rowIndex.compareTo(b.rowIndex));
 
-    if (oldIndex >= 0 &&
-        oldIndex < sortedRows.length &&
-        newIndex >= 0 &&
-        newIndex < sortedRows.length) {
-      // Remove the row from old position
-      final movedRow = sortedRows.removeAt(oldIndex);
+  //   if (oldIndex >= 0 &&
+  //       oldIndex < sortedRows.length &&
+  //       newIndex >= 0 &&
+  //       newIndex < sortedRows.length) {
+  //     // Remove the row from old position
+  //     final movedRow = sortedRows.removeAt(oldIndex);
 
-      // Insert at new position
-      sortedRows.insert(newIndex, movedRow);
+  //     // Insert at new position
+  //     sortedRows.insert(newIndex, movedRow);
 
-      // Update all row indexes based on new positions
-      final updatedRows = <InventoryRowModel>[];
-      for (int i = 0; i < sortedRows.length; i++) {
-        final row = sortedRows[i];
-        updatedRows.add(InventoryRowModel(
-          id: row.id,
-          inventorySheetId: row.inventorySheetId,
-          rowIndex: i, // New index based on position
-          isItemRow: row.isItemRow,
-          itemId: row.itemId,
-          cells: row.cells,
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt,
-        ));
-      }
+  //     // Update all row indexes based on new positions
+  //     final updatedRows = <InventoryRowModel>[];
+  //     for (int i = 0; i < sortedRows.length; i++) {
+  //       final row = sortedRows[i];
+  //       updatedRows.add(InventoryRowModel(
+  //         id: row.id,
+  //         inventorySheetId: row.inventorySheetId,
+  //         rowIndex: i, // New index based on position
+  //         isItemRow: row.isItemRow,
+  //         itemId: row.itemId,
+  //         cells: row.cells,
+  //         createdAt: row.createdAt,
+  //         updatedAt: row.updatedAt,
+  //       ));
+  //     }
 
-      // Create updated sheet
-      final updatedSheet = InventorySheetModel(
-        id: currentSheet.id,
-        name: currentSheet.name,
-        columns: currentSheet.columns,
-        inventoryId: currentSheet.inventoryId,
-        createdAt: currentSheet.createdAt,
-        updatedAt: currentSheet.updatedAt,
-        rows: updatedRows,
-      );
+  //     // Create updated sheet
+  //     final updatedSheet = InventorySheetModel(
+  //       id: currentSheet.id,
+  //       name: currentSheet.name,
+  //       columns: currentSheet.columns,
+  //       inventoryId: currentSheet.inventoryId,
+  //       createdAt: currentSheet.createdAt,
+  //       updatedAt: currentSheet.updatedAt,
+  //       rows: updatedRows,
+  //     );
 
-      // Update formula handler and data source
-      _formulaHandler = InventoryFormulaHandler(sheet: updatedSheet);
-      _dataSource = InventorySheetDataSource(
-        sheet: updatedSheet,
-        isEditable: _isEditable,
-        cellSubmitCallback: _handleCellSubmit,
-        addCalculationRowCallback: _addCalculationRow,
-        deleteRowCallback: _deleteRow,
-        formulaHandler: _formulaHandler,
-        eraseCellCallback: _eraseCell,
-        addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
-        onDoubleTabHandler: !_isEditable ? _toggleEditMode : null,
-        onRowReorder: _handleRowReorder,
-      );
+  //     // Update formula handler and data source
+  //     _formulaHandler = InventoryFormulaHandler(sheet: updatedSheet);
+  //     _dataSource = InventorySheetDataSource(
+  //       sheet: updatedSheet,
+  //       isEditable: _isEditable,
+  //       cellSubmitCallback: _handleCellSubmit,
+  //       addCalculationRowCallback: _addCalculationRow,
+  //       deleteRowCallback: _deleteRow,
+  //       formulaHandler: _formulaHandler,
+  //       eraseCellCallback: _eraseCell,
+  //       addMultipleCalculationRowsCallback: _addMultipleCalculationRows,
+  //       onDoubleTabHandler: !_isEditable ? _toggleEditMode : null,
+  //       onRowReorder: _handleRowReorder,
+  //     );
 
-      // Rebuild formula dependencies after reordering
-      _buildFormulaDependencyMap();
-    }
-  }
+  //     // Rebuild formula dependencies after reordering
+  //     _buildFormulaDependencyMap();
+  //   }
+  // }
 
   // Apply all pending changes including row reorders
   Future<void> _applyPendingChanges() async {

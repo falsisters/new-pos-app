@@ -440,19 +440,19 @@ class KahonSheetFormulaManager {
     }
   }
 
-  // Check if cells are valid for calculations
-  bool _isCellValidForCalculation(int rowIndex, int columnIndex) {
-    final rowModel =
-        _currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
-    if (rowModel == null) return false;
+  // // Check if cells are valid for calculations
+  // bool _isCellValidForCalculation(int rowIndex, int columnIndex) {
+  //   final rowModel =
+  //       _currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
+  //   if (rowModel == null) return false;
 
-    final cell =
-        rowModel.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
-    if (cell == null || cell.value == null || cell.value!.isEmpty) {
-      return false;
-    }
+  //   final cell =
+  //       rowModel.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
+  //   if (cell == null || cell.value == null || cell.value!.isEmpty) {
+  //     return false;
+  //   }
 
-    return double.tryParse(cell.value!) != null ||
-        (cell.formula != null && cell.formula!.startsWith('='));
-  }
+  //   return double.tryParse(cell.value!) != null ||
+  //       (cell.formula != null && cell.formula!.startsWith('='));
+  // }
 }

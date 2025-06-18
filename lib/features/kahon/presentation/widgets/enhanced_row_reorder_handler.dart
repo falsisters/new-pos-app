@@ -202,18 +202,18 @@ class EnhancedRowReorderHandler {
     });
   }
 
-  static String _getColumnLetter(int index) {
-    // Match the UI's _getColumnLetter method
-    if (index == 0) return "Quantity";
-    if (index == 1) return "Name";
+  // static String _getColumnLetter(int index) {
+  //   // Match the UI's _getColumnLetter method
+  //   if (index == 0) return "Quantity";
+  //   if (index == 1) return "Name";
 
-    String columnLetter = '';
-    int adjustedIndex = index - 2;
-    while (adjustedIndex >= 0) {
-      columnLetter =
-          String.fromCharCode((adjustedIndex % 26) + 65) + columnLetter;
-      adjustedIndex = (adjustedIndex ~/ 26) - 1;
-    }
-    return columnLetter;
-  }
+  //   String columnLetter = '';
+  //   int adjustedIndex = index - 2;
+  //   while (adjustedIndex >= 0) {
+  //     columnLetter =
+  //         String.fromCharCode((adjustedIndex % 26) + 65) + columnLetter;
+  //     adjustedIndex = (adjustedIndex ~/ 26) - 1;
+  //   }
+  //   return columnLetter;
+  // }
 }

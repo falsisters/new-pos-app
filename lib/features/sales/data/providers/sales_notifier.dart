@@ -5,6 +5,7 @@ import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dar
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
+import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 
@@ -180,6 +181,8 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
 
         // Update products first, as it might be more reliable
         await ref.read(productProvider.notifier).getProducts();
+
+        await ref.read(salesCheckProvider.notifier).refresh();
 
         // Safely get sales with error handling
         List<SaleModel> sales = [];

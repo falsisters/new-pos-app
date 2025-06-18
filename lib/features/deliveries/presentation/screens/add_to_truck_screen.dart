@@ -989,10 +989,4 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       _quantityController.text = _quantity.toString();
     });
   }
-
-  double _getMaxQuantity() {
-    // For incoming deliveries, we don't limit based on current stock
-    // Return a reasonable maximum for UI purposes
-    return _selectedSackPriceId != null ? 10000.0 : 50000.0;
-  }
 }

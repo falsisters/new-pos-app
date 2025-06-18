@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/deliveries/data/providers/delivery_provider.dart';
+import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:board_datetime_picker/board_datetime_picker.dart';
@@ -667,16 +668,21 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
                                     style: TextStyle(color: Colors.grey[600])),
                               ),
                               ElevatedButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   Navigator.pop(context);
 
                                   // Process the delivery
-                                  ref
+                                  await ref
                                       .read(deliveryProvider.notifier)
                                       .createDelivery(
                                         _driverNameController.text,
                                         _deliveryTimeStart!,
                                       );
+
+                                  // Refresh products to get updated stock
+                                  await ref
+                                      .read(productProvider.notifier)
+                                      .refresh();
 
                                   Navigator.pop(context);
                                 },

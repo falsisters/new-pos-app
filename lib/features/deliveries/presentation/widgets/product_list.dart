@@ -2,7 +2,6 @@
 
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/screens/add_to_truck_screen.dart';
-import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

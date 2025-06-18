@@ -414,25 +414,25 @@ class FormulaHandler {
     return values;
   }
 
-  // Get cell value from the sheet
-  String _getCellValue(int rowIndex, int columnIndex) {
-    try {
-      var rowModel = sheet.rows.firstWhereOrNull(
-        (row) => row.rowIndex == rowIndex,
-      );
+  // // Get cell value from the sheet
+  // String _getCellValue(int rowIndex, int columnIndex) {
+  //   try {
+  //     var rowModel = sheet.rows.firstWhereOrNull(
+  //       (row) => row.rowIndex == rowIndex,
+  //     );
 
-      if (rowModel == null) return '';
+  //     if (rowModel == null) return '';
 
-      var cellModel = rowModel.cells.firstWhereOrNull(
-        (cell) => cell.columnIndex == columnIndex,
-      );
+  //     var cellModel = rowModel.cells.firstWhereOrNull(
+  //       (cell) => cell.columnIndex == columnIndex,
+  //     );
 
-      return cellModel?.value ?? '';
-    } catch (e) {
-      print('Error getting cell value: $e');
-      return '';
-    }
-  }
+  //     return cellModel?.value ?? '';
+  //   } catch (e) {
+  //     print('Error getting cell value: $e');
+  //     return '';
+  //   }
+  // }
 
   // Check if a cell contains a formula
   bool isCellFormula(int rowIndex, int columnIndex) {

@@ -60,12 +60,12 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
     }
   }
 
-  bool _hasAvailableStock() {
-    final hasPerKiloStock = widget.product.perKiloPrice != null &&
-        widget.product.perKiloPrice!.stock > 0;
-    final hasSackStock = widget.product.sackPrice.any((sack) => sack.stock > 0);
-    return hasPerKiloStock || hasSackStock;
-  }
+  // bool _hasAvailableStock() {
+  //   final hasPerKiloStock = widget.product.perKiloPrice != null &&
+  //       widget.product.perKiloPrice!.stock > 0;
+  //   final hasSackStock = widget.product.sackPrice.any((sack) => sack.stock > 0);
+  //   return hasPerKiloStock || hasSackStock;
+  // }
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,7 @@ import 'package:falsisters_pos_android/features/sales/data/constants/parse_payme
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
+import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +46,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final salesNotifier = ref.watch(salesProvider.notifier);
+    final salesCheckNotifier = ref.watch(salesCheckProvider.notifier);
 
     double cashGiven = 0.0;
     double changeAmount = 0.0;
@@ -620,6 +622,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           // Complete purchase directly
                           salesNotifier.submitSale(
                               widget.total, _selectedPaymentMethod);
+
+                          // Refresh sales check data after successful purchase
+                          salesCheckNotifier.refresh();
+
                           Navigator.pop(context);
                         }
                       },
