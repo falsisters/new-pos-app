@@ -27,15 +27,15 @@ class KahonSheetDataManager {
 
   // Handle cell submission
   ({SheetModel updatedSheet, CellChange? pendingChange}) handleCellSubmit(
-    int rowIndex,
-    int columnIndex,
-    String value,
-    String? colorHex,
-    String? originalValue,
-    String? originalColorHex,
-  ) {
+      int rowIndex,
+      int columnIndex,
+      String value,
+      String? colorHex,
+      String? originalValue,
+      String? originalColorHex,
+      {bool isCalculatedResult = false}) {
     print(
-        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex");
+        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex, isCalculated=$isCalculatedResult");
 
     // Skip submitting empty unchanged values
     if (originalValue == value && originalColorHex == colorHex) {
@@ -55,12 +55,30 @@ class KahonSheetDataManager {
 
       String? formula;
       String displayValue = value;
+      bool isCalculated = isCalculatedResult;
 
       // Check if the value is a formula
       if (value.startsWith('=')) {
         formula = value;
-        // Formula evaluation will be handled by FormulaManager
-        displayValue = value; // Keep original for now
+        isCalculated = true;
+        displayValue = value; // Keep the formula as display value initially
+        print("Detected formula: $formula, setting isCalculated=true");
+      } else if (isCalculatedResult) {
+        // This is a calculated result - preserve the original formula if it exists
+        if (existingCell?.formula != null &&
+            existingCell!.formula!.startsWith('=')) {
+          formula = existingCell.formula;
+          isCalculated = true;
+          displayValue = value; // Use the calculated result as display value
+          print(
+              "Preserving existing formula: $formula for calculated result: $value");
+        } else {
+          // This shouldn't happen, but handle gracefully
+          isCalculated = true;
+          displayValue = value;
+          print(
+              "No existing formula found for calculated result, marking as calculated anyway");
+        }
       }
 
       String changeKey = '${rowIndex}_${columnIndex}';
@@ -75,8 +93,10 @@ class KahonSheetDataManager {
           displayValue: displayValue,
           formula: formula,
           color: colorHex,
+          isCalculated: isCalculated,
         );
-        print("Created update change: $changeKey");
+        print(
+            "Created update change: $changeKey, formula: $formula, isCalculated: $isCalculated");
       } else {
         pendingChange = CellChange(
           isUpdate: false,
@@ -85,8 +105,10 @@ class KahonSheetDataManager {
           displayValue: displayValue,
           formula: formula,
           color: colorHex,
+          isCalculated: isCalculated,
         );
-        print("Created new change: $changeKey");
+        print(
+            "Created new change: $changeKey, formula: $formula, isCalculated: $isCalculated");
       }
 
       // Create updated sheet for UI
@@ -98,6 +120,7 @@ class KahonSheetDataManager {
         displayValue,
         formula,
         colorHex,
+        isCalculated,
       );
 
       _currentSheet = updatedSheet;
@@ -117,6 +140,7 @@ class KahonSheetDataManager {
     String displayValue,
     String? formula,
     String? colorHex,
+    bool isCalculated,
   ) {
     return SheetModel(
       id: currentSheet.id,
@@ -141,7 +165,7 @@ class KahonSheetDataManager {
                 value: displayValue,
                 formula: formula,
                 color: colorHex,
-                isCalculated: formula != null,
+                isCalculated: isCalculated,
                 createdAt: existingCell.createdAt,
                 updatedAt: DateTime.now(),
               );
@@ -155,7 +179,7 @@ class KahonSheetDataManager {
               value: displayValue,
               formula: formula,
               color: colorHex,
-              isCalculated: formula != null,
+              isCalculated: isCalculated,
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ));
@@ -174,6 +198,29 @@ class KahonSheetDataManager {
         }
         return row;
       }).toList(),
+    );
+  }
+
+  // Public method to create updated sheet with cell (for formula handling)
+  SheetModel createUpdatedSheetWithCell(
+    SheetModel currentSheet,
+    RowModel targetRow,
+    CellModel? existingCell,
+    int columnIndex,
+    String displayValue,
+    String? formula,
+    String? colorHex,
+    bool isCalculated,
+  ) {
+    return _createUpdatedSheetWithCell(
+      currentSheet,
+      targetRow,
+      existingCell,
+      columnIndex,
+      displayValue,
+      formula,
+      colorHex,
+      isCalculated,
     );
   }
 
@@ -299,9 +346,11 @@ class KahonSheetDataManager {
             'value': change.displayValue,
             'formula': change.formula,
             'color': change.color,
+            'isCalculated':
+                change.isCalculated, // Ensure isCalculated is included
           });
           print(
-              "Update cell: id=${change.cellId}, value=${change.displayValue}, color=${change.color}");
+              "Update cell: id=${change.cellId}, value=${change.displayValue}, formula=${change.formula}, color=${change.color}, isCalculated=${change.isCalculated}");
         } else {
           cellsToCreate.add({
             'rowId': change.rowId,
@@ -309,9 +358,11 @@ class KahonSheetDataManager {
             'value': change.displayValue,
             'formula': change.formula,
             'color': change.color,
+            'isCalculated':
+                change.isCalculated, // Ensure isCalculated is included
           });
           print(
-              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, color=${change.color}");
+              "Create cell: rowId=${change.rowId}, columnIndex=${change.columnIndex}, value=${change.displayValue}, formula=${change.formula}, color=${change.color}, isCalculated=${change.isCalculated}");
         }
       }
 

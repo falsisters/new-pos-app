@@ -289,30 +289,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
     }
   }
 
-  // Auto-save recalculated formulas in the background
-  void _autoSaveRecalculatedFormulas() async {
-    // This method is no longer called by _recalculateAllFormulasOnLoad.
-    // If it's triggered from elsewhere, ensure it's safe.
-    if (!_hasPendingChanges) {
-      // Updated to use helper
-      print("Auto-save triggered, but no pending changes.");
-      return;
-    }
-    print(
-        "Attempting to auto-save ${_pendingChanges.length} recalculated formula values...");
-
-    try {
-      await _applyPendingChanges();
-      print("Auto-save of recalculated formulas completed successfully.");
-    } catch (e) {
-      print("Error auto-saving recalculated formulas: $e");
-    } finally {
-      if (mounted) {
-        // Any UI updates after auto-save can go here, if necessary.
-      }
-    }
-  }
-
   void _initializeDataSource() {
     _dataSource = KahonSheetDataSource(
       sheet: widget.sheet,
@@ -1334,78 +1310,6 @@ class _KahonSheetState extends ConsumerState<KahonSheet>
         );
       }
     }
-  }
-
-  // Recalculate formulas
-  Future<void> _recalculateFormulas() async {
-    // Create a local copy of the pending changes
-    final changesSnapshot = Map<String, CellChange>.from(_pendingChanges);
-
-    // Rebuild the formula dependency map
-    _buildFormulaDependencyMap();
-
-    // Track recalculated cells to avoid redundant calculations
-    final Set<String> recalculatedCells = {};
-
-    // Process each pending change
-    for (var change in changesSnapshot.values) {
-      if (change.isUpdate) {
-        // For updates, directly recalculate the formula if it exists
-        final cellKey = '${change.rowId}_${change.columnIndex}';
-        final namedCellKey =
-            '${_getColumnLetter(change.columnIndex)}${change.rowId}';
-
-        // Skip if already recalculated
-        if (recalculatedCells.contains(cellKey) ||
-            recalculatedCells.contains(namedCellKey)) {
-          continue;
-        }
-
-        // Mark as recalculated
-        recalculatedCells.add(cellKey);
-        recalculatedCells.add(namedCellKey);
-
-        // Find the row and cell to update
-        final rowModel = widget.sheet.rows
-            .firstWhereOrNull((r) => r.rowIndex == change.rowId);
-        if (rowModel != null) {
-          final cellModel = rowModel.cells
-              .firstWhereOrNull((c) => c.columnIndex == change.columnIndex);
-          if (cellModel != null &&
-              cellModel.formula != null &&
-              cellModel.formula!.startsWith('=')) {
-            try {
-              // Recalculate the formula
-              String newValue = _formulaHandler.evaluateFormula(
-                  cellModel.formula!, rowModel.rowIndex, change.columnIndex);
-
-              // Update the pending change if the value has changed
-              if (newValue != cellModel.value) {
-                String changeKey = '${change.rowId}_${change.columnIndex}';
-                _pendingChanges[changeKey] = CellChange(
-                  isUpdate: true,
-                  cellId: cellModel.id,
-                  rowId: rowModel.id,
-                  columnIndex: change.columnIndex,
-                  displayValue: newValue,
-                  formula: cellModel.formula,
-                  color: cellModel.color,
-                );
-
-                print(
-                    "Marked cell for formula update: ${changeKey} with value: ${newValue}");
-              }
-            } catch (e) {
-              print("Error recalculating formula ${cellModel.formula}: $e");
-            }
-          }
-        }
-      }
-    }
-
-    // After applying all changes, we can safely recalculate all formulas
-    print("Recalculating all formulas...");
-    _recalculateAllFormulas(widget.sheet);
   }
 
   // Add calculation row

@@ -5,9 +5,9 @@ part 'transfer_product_request.freezed.dart';
 part 'transfer_product_request.g.dart';
 
 enum TransferType {
+  KAHON,
   OWN_CONSUMPTION,
   RETURN_TO_WAREHOUSE,
-  KAHON,
   REPACK,
 }
 

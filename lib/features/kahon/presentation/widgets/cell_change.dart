@@ -6,6 +6,7 @@ class CellChange {
   final String displayValue;
   final String? formula;
   final String? color; // Hex color string
+  final bool isCalculated;
 
   CellChange({
     required this.isUpdate,
@@ -15,11 +16,12 @@ class CellChange {
     required this.displayValue,
     this.formula,
     this.color,
+    this.isCalculated = false,
   });
 
   @override
   String toString() {
     return 'CellChange{isUpdate: $isUpdate, cellId: $cellId, rowId: $rowId, '
-        'columnIndex: $columnIndex, displayValue: $displayValue, formula: $formula, color: $color}';
+        'columnIndex: $columnIndex, displayValue: $displayValue, formula: $formula, color: $color, isCalculated: $isCalculated}';
   }
 }

@@ -1,10 +1,10 @@
+import 'package:falsisters_pos_android/features/kahon/presentation/widgets/cell_change.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
-import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_state.dart';
@@ -246,9 +246,10 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
   }
 
   Future<void> _handleCellSubmit(
-      int rowIndex, int columnIndex, String value, String? colorHex) async {
+      int rowIndex, int columnIndex, String value, String? colorHex,
+      {bool isCalculatedResult = false}) async {
     print(
-        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex");
+        "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex, isCalculated=$isCalculatedResult");
 
     // Skip submitting empty unchanged values
     if (_state.selectedRowIndex == rowIndex &&
@@ -266,6 +267,7 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
         colorHex,
         _state.selectedCellValue,
         _state.selectedCellColorHex,
+        isCalculatedResult: isCalculatedResult,
       );
 
       if (result.pendingChange != null) {
@@ -285,8 +287,9 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
         _initializeDataSource();
         _buildFormulaDependencyMap();
 
-        // Update dependent formulas if needed
-        if (value.startsWith('=') || result.pendingChange != null) {
+        // Update dependent formulas if needed (but not for calculated results from quick formulas)
+        if (value.startsWith('=') ||
+            (result.pendingChange != null && !isCalculatedResult)) {
           _updateDependentFormulas(rowIndex, columnIndex);
         }
       });
@@ -694,25 +697,27 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
                         'Add Vertical Cells',
                         Icons.add_rounded,
                         () {
-                          if (rowIndex >= 2) {
-                            final topCellRowIndex = rowIndex - 2;
-                            final bottomCellRowIndex = rowIndex - 1;
-
-                            bool topCellExists = currentSheet.rows
-                                .any((r) => r.rowIndex == topCellRowIndex);
-                            bool bottomCellExists = currentSheet.rows
-                                .any((r) => r.rowIndex == bottomCellRowIndex);
-
-                            if (topCellExists && bottomCellExists) {
-                              String formula =
-                                  '=${_getColumnLetter(columnIndex)}${topCellRowIndex} + ${_getColumnLetter(columnIndex)}${bottomCellRowIndex}';
-                              _handleCellSubmit(rowIndex, columnIndex, formula,
+                          String formula =
+                              _formulaManager.generateAddVerticalFormula(
+                                  rowIndex, columnIndex);
+                          if (formula.isNotEmpty) {
+                            String result =
+                                _formulaManager.evaluateQuickFormula(
+                                    formula, rowIndex, columnIndex);
+                            if (result.isNotEmpty &&
+                                !result.startsWith('#ERROR')) {
+                              // Submit the result but mark it as a calculated result with the formula
+                              _handleCellSubmitWithFormula(
+                                  rowIndex,
+                                  columnIndex,
+                                  result,
+                                  formula,
                                   _state.selectedCellColorHex);
                               Navigator.of(context).pop();
                             } else {
                               _uiBuilder.showModernSnackBar(
                                 message:
-                                    'Not enough valid rows above for this operation',
+                                    'Unable to calculate result for this operation',
                                 icon: Icons.warning,
                                 color: Colors.orange,
                               );
@@ -720,14 +725,216 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
                           } else {
                             _uiBuilder.showModernSnackBar(
                               message:
-                                  'Not enough rows above for this operation',
+                                  'Not enough valid rows above for this operation',
                               icon: Icons.warning,
                               color: Colors.orange,
                             );
                           }
                         },
                       ),
-                      // ...other formula options...
+                      const SizedBox(height: 12),
+                      _buildFormulaOption(
+                        context,
+                        'Add All Vertical Cells',
+                        Icons.add_circle_outline_rounded,
+                        () {
+                          String formula =
+                              _formulaManager.generateSumAllAboveFormula(
+                                  rowIndex, columnIndex);
+                          if (formula.isNotEmpty) {
+                            String result =
+                                _formulaManager.evaluateQuickFormula(
+                                    formula, rowIndex, columnIndex);
+                            if (result.isNotEmpty &&
+                                !result.startsWith('#ERROR')) {
+                              // Submit the result but mark it as a calculated result with the formula
+                              _handleCellSubmitWithFormula(
+                                  rowIndex,
+                                  columnIndex,
+                                  result,
+                                  formula,
+                                  _state.selectedCellColorHex);
+                              Navigator.of(context).pop();
+                            } else {
+                              _uiBuilder.showModernSnackBar(
+                                message:
+                                    'Unable to calculate sum of cells above',
+                                icon: Icons.warning,
+                                color: Colors.orange,
+                              );
+                            }
+                          } else {
+                            _uiBuilder.showModernSnackBar(
+                              message: 'No rows above to sum',
+                              icon: Icons.warning,
+                              color: Colors.orange,
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFormulaOption(
+                        context,
+                        'Subtract Vertical Cells',
+                        Icons.remove_rounded,
+                        () {
+                          String formula =
+                              _formulaManager.generateSubtractVerticalFormula(
+                                  rowIndex, columnIndex);
+                          if (formula.isNotEmpty) {
+                            String result =
+                                _formulaManager.evaluateQuickFormula(
+                                    formula, rowIndex, columnIndex);
+                            if (result.isNotEmpty &&
+                                !result.startsWith('#ERROR')) {
+                              // Submit the result but mark it as a calculated result with the formula
+                              _handleCellSubmitWithFormula(
+                                  rowIndex,
+                                  columnIndex,
+                                  result,
+                                  formula,
+                                  _state.selectedCellColorHex);
+                              Navigator.of(context).pop();
+                            } else {
+                              _uiBuilder.showModernSnackBar(
+                                message:
+                                    'Unable to calculate result for this operation',
+                                icon: Icons.warning,
+                                color: Colors.orange,
+                              );
+                            }
+                          } else {
+                            _uiBuilder.showModernSnackBar(
+                              message:
+                                  'Not enough valid rows above for this operation',
+                              icon: Icons.warning,
+                              color: Colors.orange,
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFormulaOption(
+                        context,
+                        'Apply Multiply to All Rows',
+                        Icons.close_rounded,
+                        () async {
+                          if (columnIndex >= 2) {
+                            // Validate that we have at least one row with valid values in both required columns
+                            int validRowsCount = 0;
+                            for (var row in currentSheet.rows) {
+                              if (_isMultiplyValidForRow(row, columnIndex)) {
+                                validRowsCount++;
+                              }
+                            }
+
+                            if (validRowsCount == 0) {
+                              _uiBuilder.showModernSnackBar(
+                                message:
+                                    'No rows found with valid numeric values in both ${_getColumnLetter(columnIndex - 2)} and ${_getColumnLetter(columnIndex - 1)} columns',
+                                icon: Icons.warning,
+                                color: Colors.orange,
+                              );
+                              return;
+                            }
+
+                            // Show confirmation dialog
+                            bool? confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  title: Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.orange, size: 24),
+                                      const SizedBox(width: 8),
+                                      const Text('Confirm Bulk Operation'),
+                                    ],
+                                  ),
+                                  content: Text(
+                                    'This will calculate and insert the result of (${_getColumnLetter(columnIndex - 2)} * ${_getColumnLetter(columnIndex - 1)}) for $validRowsCount rows with valid values. Continue?',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      child: const Text('Cancel'),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.primary,
+                                            AppColors.primary.withOpacity(0.8)
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: TextButton(
+                                        child: const Text('Apply',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600)),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirm == true) {
+                              Navigator.of(context)
+                                  .pop(); // Close the formula menu first
+
+                              int appliedCount = 0;
+
+                              // Apply calculation to all valid rows
+                              for (var row in currentSheet.rows) {
+                                if (_isMultiplyValidForRow(row, columnIndex)) {
+                                  String formula =
+                                      _formulaManager.generateMultiplyFormula(
+                                          row.rowIndex, columnIndex);
+                                  if (formula.isNotEmpty) {
+                                    String result =
+                                        _formulaManager.evaluateQuickFormula(
+                                            formula, row.rowIndex, columnIndex);
+                                    if (result.isNotEmpty &&
+                                        !result.startsWith('#ERROR')) {
+                                      // Submit the result but mark it as a calculated result with the formula
+                                      await _handleCellSubmitWithFormula(
+                                          row.rowIndex,
+                                          columnIndex,
+                                          result,
+                                          formula,
+                                          null);
+                                      appliedCount++;
+                                    }
+                                  }
+                                }
+                              }
+
+                              _uiBuilder.showModernSnackBar(
+                                message:
+                                    'Applied calculation to $appliedCount rows',
+                                icon: Icons.check_circle,
+                                color: Colors.green,
+                              );
+                            }
+                          } else {
+                            _uiBuilder.showModernSnackBar(
+                              message:
+                                  'Need at least 2 columns to the left for multiplication',
+                              icon: Icons.warning,
+                              color: Colors.orange,
+                            );
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -749,6 +956,111 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
         );
       },
     );
+  }
+
+  // Helper method to handle cell submission with both result and formula
+  Future<void> _handleCellSubmitWithFormula(int rowIndex, int columnIndex,
+      String result, String formula, String? colorHex) async {
+    print(
+        "_handleCellSubmitWithFormula called with: rowIndex=$rowIndex, columnIndex=$columnIndex, result=$result, formula=$formula, color=$colorHex");
+
+    try {
+      final rowModel = _dataManager.currentSheet.rows.firstWhere(
+        (r) => r.rowIndex == rowIndex,
+        orElse: () => throw Exception('Row not found'),
+      );
+
+      final existingCell = rowModel.cells.firstWhereOrNull(
+        (c) => c.columnIndex == columnIndex,
+      );
+
+      // Create a special handling for formula + result combination
+      final pendingChange = CellChange(
+        isUpdate: existingCell != null && !existingCell.id.startsWith('temp_'),
+        cellId: existingCell?.id,
+        rowId: rowModel.id,
+        columnIndex: columnIndex,
+        displayValue: result, // Display the calculated result
+        formula: formula, // But save the formula
+        color: colorHex,
+        isCalculated: true, // Mark as calculated
+      );
+
+      String changeKey = '${rowIndex}_${columnIndex}';
+      _state.addPendingChange(changeKey, pendingChange);
+
+      // Update the sheet with the result but keep the formula
+      final updatedSheet = _dataManager.createUpdatedSheetWithCell(
+        _dataManager.currentSheet,
+        rowModel,
+        existingCell,
+        columnIndex,
+        result, // Show result in UI
+        formula, // But keep formula for future calculations
+        colorHex,
+        true, // isCalculated
+      );
+
+      setState(() {
+        _dataManager.updateSheet(updatedSheet);
+        _formulaManager.updateSheet(updatedSheet);
+        _state.setSelectedCell(
+            rowIndex: rowIndex,
+            columnIndex: columnIndex,
+            value: result,
+            colorHex: colorHex);
+        _initializeDataSource();
+        _buildFormulaDependencyMap();
+      });
+    } catch (e) {
+      print('Error handling cell submission with formula: $e');
+      if (mounted) {
+        _uiBuilder.showModernSnackBar(
+          message: 'Failed to update cell: ${e.toString()}',
+          icon: Icons.error,
+          color: Colors.red,
+        );
+      }
+    }
+  }
+
+  // Helper method to check if a row has valid values for multiplication
+  bool _isMultiplyValidForRow(dynamic row, int columnIndex) {
+    if (columnIndex < 2) return false;
+
+    int leftColumnIndex = columnIndex - 2;
+    int rightColumnIndex = columnIndex - 1;
+
+    // Convert cells to a regular iterable to ensure firstWhereOrNull works
+    final cells = row.cells as Iterable<dynamic>;
+
+    // Find the cells in the required columns
+    dynamic leftCell;
+    dynamic rightCell;
+
+    try {
+      leftCell =
+          cells.firstWhereOrNull((c) => c.columnIndex == leftColumnIndex);
+      rightCell =
+          cells.firstWhereOrNull((c) => c.columnIndex == rightColumnIndex);
+    } catch (e) {
+      print('Error finding cells for multiplication validation: $e');
+      return false;
+    }
+
+    // Check if both cells exist and have valid numeric values
+    if (leftCell == null || rightCell == null) return false;
+
+    String leftValue = leftCell.value?.toString().trim() ?? '';
+    String rightValue = rightCell.value?.toString().trim() ?? '';
+
+    if (leftValue.isEmpty || rightValue.isEmpty) return false;
+
+    // Try to parse as numbers
+    double? leftNum = double.tryParse(leftValue);
+    double? rightNum = double.tryParse(rightValue);
+
+    return leftNum != null && rightNum != null;
   }
 
   Widget _buildFormulaOption(

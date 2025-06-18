@@ -101,8 +101,14 @@ class KahonSheetFormulaManager {
               print(
                   "Updating formula cell $rowIndex,$columnIndex: ${cellModel.value} -> $newValue");
 
-              workingSheet = updateCellInSheet(workingSheet, rowId, cellId,
-                  newValue, formula, cellModel.color);
+              workingSheet = updateCellInSheet(
+                  workingSheet,
+                  rowId,
+                  cellId,
+                  newValue,
+                  formula,
+                  cellModel.color,
+                  true); // Ensure isCalculated is true
 
               String changeKey = '${rowIndex}_${columnIndex}';
               pendingChanges[changeKey] = CellChange(
@@ -113,6 +119,8 @@ class KahonSheetFormulaManager {
                 displayValue: newValue,
                 formula: formula,
                 color: cellModel.color,
+                isCalculated:
+                    true, // Ensure this is set to true for formula cells
               );
 
               changesInThisPass = true;
@@ -244,6 +252,8 @@ class KahonSheetFormulaManager {
               displayValue: newValue,
               formula: cellModel.formula,
               color: cellModel.color,
+              isCalculated:
+                  true, // Ensure this is set to true for formula cells
             );
             print("Added formula update to pending changes: $changeKey");
           }
@@ -281,9 +291,17 @@ class KahonSheetFormulaManager {
                 displayValue: newValue,
                 formula: cell.formula,
                 color: cell.color,
+                isCalculated:
+                    true, // Ensure this is set to true for formula cells
               );
-              updatedSheet = updateCellInSheet(updatedSheet, row.id, cell.id,
-                  newValue, cell.formula, cell.color);
+              updatedSheet = updateCellInSheet(
+                  updatedSheet,
+                  row.id,
+                  cell.id,
+                  newValue,
+                  cell.formula,
+                  cell.color,
+                  true); // Ensure isCalculated is true
               formulasProcessed++;
             }
           } catch (e) {
@@ -306,7 +324,8 @@ class KahonSheetFormulaManager {
 
   // Helper method to update a cell in the sheet immutably
   SheetModel updateCellInSheet(SheetModel sheet, String rowId, String cellId,
-      String newValue, String? formula, String? color) {
+      String newValue, String? formula, String? color,
+      [bool? isCalculated]) {
     return sheet.copyWith(
       rows: sheet.rows.map((row) {
         if (row.id == rowId) {
@@ -317,7 +336,8 @@ class KahonSheetFormulaManager {
                   value: newValue,
                   formula: formula,
                   color: color,
-                  isCalculated: true,
+                  isCalculated: isCalculated ??
+                      (formula != null && formula.startsWith('=')),
                   updatedAt: DateTime.now(),
                 );
               }
@@ -344,5 +364,95 @@ class KahonSheetFormulaManager {
       adjustedIndex = (adjustedIndex ~/ 26) - 1;
     }
     return columnLetter;
+  }
+
+  // Quick Formula Generators
+  String generateAddVerticalFormula(int rowIndex, int columnIndex) {
+    if (rowIndex >= 2) {
+      final topRowIndex = rowIndex - 2;
+      final bottomRowIndex = rowIndex - 1;
+
+      bool topRowExists =
+          _currentSheet.rows.any((r) => r.rowIndex == topRowIndex);
+      bool bottomRowExists =
+          _currentSheet.rows.any((r) => r.rowIndex == bottomRowIndex);
+
+      if (topRowExists && bottomRowExists) {
+        return '=${getColumnLetter(columnIndex)}$topRowIndex + ${getColumnLetter(columnIndex)}$bottomRowIndex';
+      }
+    }
+    return '';
+  }
+
+  String generateSubtractVerticalFormula(int rowIndex, int columnIndex) {
+    if (rowIndex >= 2) {
+      final topRowIndex = rowIndex - 2;
+      final bottomRowIndex = rowIndex - 1;
+
+      bool topRowExists =
+          _currentSheet.rows.any((r) => r.rowIndex == topRowIndex);
+      bool bottomRowExists =
+          _currentSheet.rows.any((r) => r.rowIndex == bottomRowIndex);
+
+      if (topRowExists && bottomRowExists) {
+        return '=${getColumnLetter(columnIndex)}$topRowIndex - ${getColumnLetter(columnIndex)}$bottomRowIndex';
+      }
+    }
+    return '';
+  }
+
+  String generateSumAllAboveFormula(int rowIndex, int columnIndex) {
+    List<int> validRowIndexes = _currentSheet.rows
+        .where((r) => r.rowIndex < rowIndex)
+        .map((r) => r.rowIndex)
+        .toList();
+
+    if (validRowIndexes.isNotEmpty) {
+      validRowIndexes.sort();
+      String cellReferences = validRowIndexes
+          .map((idx) => '${getColumnLetter(columnIndex)}$idx')
+          .join(' + ');
+      return '=$cellReferences';
+    }
+    return '';
+  }
+
+  String generateMultiplyFormula(int rowIndex, int columnIndex) {
+    if (columnIndex >= 2) {
+      int leftColumnIndex = columnIndex - 2;
+      int rightColumnIndex = columnIndex - 1;
+
+      return '=${getColumnLetter(leftColumnIndex)}$rowIndex * ${getColumnLetter(rightColumnIndex)}$rowIndex';
+    }
+    return '';
+  }
+
+  // Evaluate formula and return result directly
+  String evaluateQuickFormula(String formula, int rowIndex, int columnIndex) {
+    if (formula.isEmpty) return '';
+
+    try {
+      return _formulaHandler.evaluateFormulaDirectly(
+          formula, rowIndex, columnIndex);
+    } catch (e) {
+      print('Error evaluating quick formula: $e');
+      return '#ERROR';
+    }
+  }
+
+  // Check if cells are valid for calculations
+  bool _isCellValidForCalculation(int rowIndex, int columnIndex) {
+    final rowModel =
+        _currentSheet.rows.firstWhereOrNull((r) => r.rowIndex == rowIndex);
+    if (rowModel == null) return false;
+
+    final cell =
+        rowModel.cells.firstWhereOrNull((c) => c.columnIndex == columnIndex);
+    if (cell == null || cell.value == null || cell.value!.isEmpty) {
+      return false;
+    }
+
+    return double.tryParse(cell.value!) != null ||
+        (cell.formula != null && cell.formula!.startsWith('='));
   }
 }

@@ -133,8 +133,8 @@ class _ProductTileState extends State<ProductTile>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Enhanced Image Container with fixed square dimensions
-                      Container(
-                        height: 120, // Fixed height for uniformity
+                      AspectRatio(
+                        aspectRatio: 1.0, // Force square aspect ratio
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -149,6 +149,9 @@ class _ProductTileState extends State<ProductTile>
                                     child: Image.network(
                                       widget.imageUrl,
                                       fit: BoxFit.cover,
+                                      cacheWidth:
+                                          200, // Cache at reasonable resolution
+                                      cacheHeight: 200,
                                       color: isOutOfStock
                                           ? Colors.grey.withOpacity(0.5)
                                           : null,
@@ -343,52 +346,54 @@ class _ProductTileState extends State<ProductTile>
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8), // Reduced from 12 to 8
 
                       // Enhanced Title with flex layout
-                      Expanded(
+                      Flexible(
+                        // Changed from Expanded to Flexible
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Column(
+                            mainAxisSize:
+                                MainAxisSize.min, // Added to prevent overflow
                             children: [
-                              Expanded(
-                                child: Center(
-                                  child: Text(
-                                    widget.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isOutOfStock
-                                          ? Colors.grey[500]
-                                          : _isHovering
-                                              ? AppColors.secondary
-                                              : AppColors.primary,
-                                      height: 1.3,
-                                    ),
-                                  ),
+                              Text(
+                                widget.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12, // Reduced from 13 to 12
+                                  fontWeight: FontWeight.w600,
+                                  color: isOutOfStock
+                                      ? Colors.grey[500]
+                                      : _isHovering
+                                          ? AppColors.secondary
+                                          : AppColors.primary,
+                                  height: 1.2, // Reduced from 1.3 to 1.2
                                 ),
                               ),
 
                               // Enhanced Price (if available)
                               if (widget.price != null) ...[
-                                const SizedBox(height: 6),
+                                const SizedBox(
+                                    height: 4), // Reduced from 6 to 4
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                      horizontal: 6,
+                                      vertical: 3), // Reduced padding
                                   decoration: BoxDecoration(
                                     color: isOutOfStock
                                         ? Colors.grey[200]
                                         : AppColors.accent.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        6), // Reduced from 8 to 6
                                   ),
                                   child: Text(
                                     '₱${widget.price!.toStringAsFixed(2)}',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11, // Reduced from 12 to 11
                                       fontWeight: FontWeight.bold,
                                       color: isOutOfStock
                                           ? Colors.grey[500]

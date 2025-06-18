@@ -107,7 +107,7 @@ class _ProductListState extends ConsumerState<ProductList> {
                     icon:
                         Icon(Icons.refresh, color: AppColors.primary, size: 20),
                     onPressed: () {
-                      ref.read(productProvider.notifier).getProducts();
+                      ref.refresh(productProvider);
                     },
                   ),
                 ),
@@ -240,9 +240,9 @@ class _ProductListState extends ConsumerState<ProductList> {
                     child: GridView.builder(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4, // Changed from 5 to 4
+                        crossAxisCount: 4,
                         childAspectRatio:
-                            0.8, // Adjusted for better proportions
+                            0.75, // Adjusted from 0.8 to 0.75 for more height
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),

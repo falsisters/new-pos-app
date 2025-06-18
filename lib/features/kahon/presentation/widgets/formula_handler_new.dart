@@ -195,6 +195,54 @@ class FormulaHandler {
     }
   }
 
+  // Direct evaluation without caching for quick formulas
+  String evaluateFormulaDirectly(
+      String formula, int currentRowIndex, int currentColumnIndex) {
+    if (!formula.startsWith('=')) {
+      return formula;
+    }
+
+    try {
+      String processedFormula =
+          formula.substring(1).trim(); // Remove the '=' sign
+
+      // Validate formula isn't empty
+      if (processedFormula.isEmpty) {
+        throw Exception('Empty formula');
+      }
+
+      // Process range functions first with error handling
+      try {
+        processedFormula = _processRangeFunctions(processedFormula);
+      } catch (e) {
+        print('Error processing range functions: $e');
+        throw Exception('Range function error: ${e.toString()}');
+      }
+
+      // Process cell references with error handling
+      try {
+        processedFormula =
+            _processCellReferences(processedFormula, currentRowIndex);
+      } catch (e) {
+        print('Error processing cell references: $e');
+        throw Exception('Cell reference error: ${e.toString()}');
+      }
+
+      // Validate processed formula
+      if (processedFormula.isEmpty || processedFormula.trim().isEmpty) {
+        throw Exception('Formula resulted in empty expression');
+      }
+
+      // Evaluate the processed formula using math_expressions with timeout
+      String result = _evaluateWithTimeout(processedFormula);
+
+      return result;
+    } catch (e) {
+      print('Error evaluating formula directly "$formula": $e');
+      return '#ERROR: ${e.toString().split(':').last.trim()}';
+    }
+  }
+
   String _evaluateWithTimeout(String processedFormula) {
     try {
       // Add timeout to prevent long-running calculations
@@ -217,16 +265,8 @@ class FormulaHandler {
         throw Exception('Invalid calculation result');
       }
 
-      // Format result (remove decimal if it's a whole number)
-      if (result == result.floor()) {
-        return result.floor().toString();
-      } else {
-        // Limit decimal places for performance
-        return result
-            .toStringAsFixed(6)
-            .replaceAll(RegExp(r'0+$'), '')
-            .replaceAll(RegExp(r'\.$'), '');
-      }
+      // Truncate decimal values (round down)
+      return result.floor().toString();
     } catch (e) {
       throw Exception('Math evaluation failed: ${e.toString()}');
     }
@@ -253,24 +293,31 @@ class FormulaHandler {
         List<double> values = _getValuesInRange(
             startCell.columnIndex, startCell.rowIndex, endCell.rowIndex);
 
+        double result;
         switch (function) {
           case 'SUM':
-            return values.fold(0.0, (a, b) => a + b).toString();
+            result = values.fold(0.0, (a, b) => a + b);
+            break;
           case 'AVG':
             if (values.isEmpty) return '0';
-            double avg = values.fold(0.0, (a, b) => a + b) / values.length;
-            return avg.toString();
+            result = values.fold(0.0, (a, b) => a + b) / values.length;
+            break;
           case 'COUNT':
             return values.length.toString();
           case 'MAX':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a > b ? a : b).toString();
+            result = values.reduce((a, b) => a > b ? a : b);
+            break;
           case 'MIN':
             if (values.isEmpty) return '0';
-            return values.reduce((a, b) => a < b ? a : b).toString();
+            result = values.reduce((a, b) => a < b ? a : b);
+            break;
           default:
             throw Exception('Unknown function: $function');
         }
+
+        // Truncate the result (round down)
+        return result.floor().toString();
       } catch (e) {
         print('Error processing range function ${match.group(0)}: $e');
         throw Exception('Range function error: ${e.toString()}');

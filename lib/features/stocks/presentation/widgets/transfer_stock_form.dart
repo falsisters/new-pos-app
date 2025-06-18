@@ -27,7 +27,7 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
   final _formKey = GlobalKey<FormState>();
   final _stockRepository = StockRepository();
 
-  TransferType _selectedTransferType = TransferType.OWN_CONSUMPTION;
+  TransferType _selectedTransferType = TransferType.KAHON;
   bool _isPerKilo = false;
   int _selectedSackIndex = -1;
   double _quantity = 0;
