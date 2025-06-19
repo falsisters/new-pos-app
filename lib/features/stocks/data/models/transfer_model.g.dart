@@ -29,8 +29,8 @@ Map<String, dynamic> _$TransferModelToJson(_TransferModel instance) =>
     };
 
 const _$TransferTypeEnumMap = {
+  TransferType.KAHON: 'KAHON',
   TransferType.OWN_CONSUMPTION: 'OWN_CONSUMPTION',
   TransferType.RETURN_TO_WAREHOUSE: 'RETURN_TO_WAREHOUSE',
-  TransferType.KAHON: 'KAHON',
   TransferType.REPACK: 'REPACK',
 };

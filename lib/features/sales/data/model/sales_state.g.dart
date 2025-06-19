@@ -11,6 +11,10 @@ _SalesState _$SalesStateFromJson(Map<String, dynamic> json) => _SalesState(
       sales: (json['sales'] as List<dynamic>)
           .map((e) => SaleModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      pendingSales: (json['pendingSales'] as List<dynamic>?)
+              ?.map((e) => PendingSale.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       orderId: json['orderId'] as String?,
       error: json['error'] as String?,
       selectedDate: json['selectedDate'] == null
@@ -22,6 +26,7 @@ Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
     <String, dynamic>{
       'cart': instance.cart,
       'sales': instance.sales,
+      'pendingSales': instance.pendingSales,
       'orderId': instance.orderId,
       'error': instance.error,
       'selectedDate': instance.selectedDate?.toIso8601String(),

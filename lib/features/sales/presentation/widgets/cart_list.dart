@@ -7,6 +7,7 @@ import 'package:falsisters_pos_android/features/sales/presentation/screens/check
 import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:falsisters_pos_android/features/sales/presentation/widgets/pending_sales_indicator.dart';
 
 class CartList extends ConsumerWidget {
   const CartList({
@@ -76,6 +77,15 @@ class CartList extends ConsumerWidget {
                   ],
                 ),
                 const Spacer(),
+                // Add pending sales indicator
+                salesState.when(
+                  data: (state) => PendingSalesIndicator(
+                    pendingSales: state.pendingSales,
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),

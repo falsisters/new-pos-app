@@ -1,5 +1,4 @@
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
-import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/formula_handler_new.dart';
 
 class FormulaReferenceUpdate {

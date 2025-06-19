@@ -36,6 +36,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   late TextEditingController _sackQuantityController;
   late TextEditingController _perKiloQuantityController;
   late TextEditingController _perKiloTotalPriceController;
+
+  // New separate controllers for whole and decimal quantities
+  late TextEditingController _wholeQuantityController;
+  late TextEditingController _decimalQuantityController;
+
   bool _isUpdatingPriceAndQuantityInternally = false;
 
   // FocusNodes for per kilo inputs
@@ -49,6 +54,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _sackQuantityController = TextEditingController(text: '1');
     _perKiloQuantityController = TextEditingController(text: '1.0');
     _perKiloTotalPriceController = TextEditingController();
+
+    // Initialize new controllers
+    _wholeQuantityController = TextEditingController(text: '1');
+    _decimalQuantityController = TextEditingController(text: '0');
 
     if (widget.product.perKiloPrice != null &&
         widget.product.sackPrice.isEmpty) {
@@ -64,6 +73,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         .addListener(_updatePerKiloTotalPriceFromQuantity);
     _perKiloTotalPriceController
         .addListener(_updatePerKiloQuantityFromTotalPrice);
+
+    // Add listeners for new controllers
+    _wholeQuantityController.addListener(_updateCombinedQuantityAndTotal);
+    _decimalQuantityController.addListener(_updateCombinedQuantityAndTotal);
   }
 
   @override
@@ -78,6 +91,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _perKiloTotalPriceController.dispose();
     _perKiloQuantityFocusNode.dispose();
     _perKiloTotalPriceFocusNode.dispose();
+
+    // Dispose new controllers
+    _wholeQuantityController.removeListener(_updateCombinedQuantityAndTotal);
+    _decimalQuantityController.removeListener(_updateCombinedQuantityAndTotal);
+    _wholeQuantityController.dispose();
+    _decimalQuantityController.dispose();
+
     super.dispose();
   }
 
@@ -149,6 +169,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
         if (unitPrice <= 0) {
           _perKiloQuantityController.clear();
+          _wholeQuantityController.clear();
+          _decimalQuantityController.text = '0';
         } else if (totalPrice != null && totalPrice >= 0) {
           // Use precise calculation with proper rounding
           double calculatedQuantity =
@@ -162,12 +184,22 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
           _perKiloQuantityController.text =
               calculatedQuantity.toStringAsFixed(2);
+
+          // Separate whole and decimal parts
+          final wholePart = calculatedQuantity.floor();
+          final decimalPart = ((calculatedQuantity - wholePart) * 100).round();
+
+          _wholeQuantityController.text = wholePart.toString();
+          _decimalQuantityController.text =
+              decimalPart.toString().padLeft(2, '0');
         } else {
           if (currentTotalPriceText.isEmpty &&
               (_perKiloTotalPriceFocusNode.hasFocus ||
                   (!_perKiloQuantityFocusNode.hasFocus &&
                       !_perKiloTotalPriceFocusNode.hasFocus))) {
             _perKiloQuantityController.clear();
+            _wholeQuantityController.clear();
+            _decimalQuantityController.text = '0';
           }
         }
       }
@@ -197,7 +229,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _selectedSpecialPriceId = null;
       _isSpecialPrice = false;
       _isPerKiloSelected = true;
+
+      // Reset to 1.0 kg
+      _wholeQuantityController.text = '1';
+      _decimalQuantityController.text = '0';
       _perKiloQuantityController.text = '1.0';
+
       // Calculate and set total price for 1.0 kg
       if (widget.product.perKiloPrice != null) {
         final double unitPrice = widget.product.perKiloPrice!.price;
@@ -417,6 +454,96 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     }
   }
 
+  void _updateCombinedQuantityAndTotal() {
+    if (!_isUpdatingPriceAndQuantityInternally) {
+      final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+      final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+      final combinedValue = wholeValue + (decimalValue / 100);
+
+      _isUpdatingPriceAndQuantityInternally = true;
+      _perKiloQuantityController.text = combinedValue.toStringAsFixed(2);
+
+      // Update total price based on combined quantity
+      if (widget.product.perKiloPrice != null && combinedValue > 0) {
+        final double unitPrice = widget.product.perKiloPrice!.price;
+        double calculatedTotalPrice =
+            (combinedValue * unitPrice * 100).round() / 100;
+        calculatedTotalPrice = _customRoundValue(calculatedTotalPrice);
+        _perKiloTotalPriceController.text =
+            calculatedTotalPrice.toStringAsFixed(2);
+      } else if (combinedValue == 0) {
+        _perKiloTotalPriceController.clear();
+      }
+
+      _isUpdatingPriceAndQuantityInternally = false;
+    }
+  }
+
+  void _increaseWholeQuantity() {
+    final currentValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+    final newValue = currentValue + 1;
+
+    // Check stock limit
+    if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+      final totalQuantity = newValue + (decimalValue / 100);
+      if (totalQuantity <= widget.product.perKiloPrice!.stock) {
+        setState(() {
+          _wholeQuantityController.text = newValue.toString();
+        });
+      }
+    }
+  }
+
+  void _decreaseWholeQuantity() {
+    final currentValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+    if (currentValue > 0) {
+      setState(() {
+        _wholeQuantityController.text = (currentValue - 1).toString();
+      });
+    }
+  }
+
+  void _increaseDecimalQuantity() {
+    final currentValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+    final newValue = (currentValue + 5).clamp(0, 99);
+
+    // Check stock limit
+    if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+      final totalQuantity = wholeValue + (newValue / 100);
+      if (totalQuantity <= widget.product.perKiloPrice!.stock) {
+        setState(() {
+          _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+        });
+      }
+    }
+  }
+
+  void _decreaseDecimalQuantity() {
+    final currentValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+    final newValue = (currentValue - 5).clamp(0, 99);
+    setState(() {
+      _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+    });
+  }
+
+  void _setDecimalQuickQuantity(double decimal) {
+    final decimalAsInt = (decimal * 100).round();
+
+    // Check stock limit
+    if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+      final totalQuantity = wholeValue + decimal;
+      if (totalQuantity <= widget.product.perKiloPrice!.stock) {
+        setState(() {
+          _decimalQuantityController.text =
+              decimalAsInt.toString().padLeft(2, '0');
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool hasStock = _hasStock();
@@ -445,15 +572,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0), // Reduced padding
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Header Card
+                // Product Header Card - reduced size
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12), // Reduced padding
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -461,7 +588,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                         AppColors.primary.withOpacity(0.05),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12), // Reduced radius
                     border:
                         Border.all(color: AppColors.primary.withOpacity(0.1)),
                   ),
@@ -470,10 +597,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       Hero(
                         tag: 'product-${widget.product.id}',
                         child: Container(
-                          width: 60,
-                          height: 60,
+                          width: 50, // Reduced size
+                          height: 50,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -489,7 +616,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,24 +624,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                             Text(
                               widget.product.name,
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16, // Reduced size
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                  horizontal: 6,
+                                  vertical: 2), // Reduced padding
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 'Configure your order',
                                 style: TextStyle(
                                   color: AppColors.primary,
-                                  fontSize: 12,
+                                  fontSize: 10, // Reduced size
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -526,176 +654,93 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12), // Reduced spacing
 
-                // Pricing Options
+                // Pricing Options - reduced size
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border:
                         Border.all(color: AppColors.accent.withOpacity(0.2)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12), // Reduced padding
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 color: AppColors.accent.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(Icons.payments_outlined,
-                                  color: AppColors.accent, size: 20),
+                                  color: AppColors.accent,
+                                  size: 16), // Reduced size
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Text(
                               'Pricing Options',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14, // Reduced size
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.accent,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         _buildPricingOptions(),
                       ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Quantity & Discount Row
+                // Main content row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Quantity Section
+                    // Left Column - Quantity
                     Expanded(
-                      flex: 2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: AppColors.secondary.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          AppColors.secondary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(Icons.scale_outlined,
-                                        color: AppColors.secondary, size: 16),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Quantity',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.secondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _buildQuantityInput(),
-                            ],
-                          ),
-                        ),
-                      ),
+                      flex: _selectedSackPriceId != null ? 3 : 2,
+                      child: _buildQuantitySection(),
                     ),
 
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
 
-                    // Discount Section
+                    // Right Column - Decimal (Per Kilo only) and Discount
                     Expanded(
-                      flex: 1,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border:
-                              Border.all(color: Colors.orange.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          // Decimal quantity section (only for per kilo)
+                          if (_isPerKiloSelected) ...[
+                            _buildDecimalQuantitySection(),
+                            const SizedBox(height: 8),
                           ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(Icons.local_offer_outlined,
-                                        color: Colors.orange[700], size: 16),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Discount',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange[700],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _buildDiscountInput(),
-                            ],
-                          ),
-                        ),
+                          // Discount section
+                          _buildDiscountSection(),
+                        ],
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Add to Cart Button
+                // Add to Cart Button - reduced size
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -709,13 +754,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                         : LinearGradient(
                             colors: [Colors.grey[400]!, Colors.grey[300]!],
                           ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: hasStock
                         ? [
                             BoxShadow(
                               color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         : [],
@@ -723,10 +768,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       onTap: hasStock ? _addToCart : null,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12), // Reduced padding
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -735,12 +781,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                     ? Icons.shopping_cart_rounded
                                     : Icons.block,
                                 color: Colors.white,
-                                size: 20),
-                            const SizedBox(width: 12),
+                                size: 18), // Reduced size
+                            const SizedBox(width: 8),
                             Text(
                               hasStock ? 'Add to Cart' : 'Out of Stock',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14, // Reduced size
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                                 letterSpacing: 0.5,
@@ -990,259 +1036,154 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     );
   }
 
-  Widget _buildQuantityInput() {
+  Widget _buildQuantitySection() {
     final bool hasStock = _hasStock();
     final double availableStock = _getAvailableStock();
 
-    return Column(
-      children: [
-        // Quick Action Buttons - mobile-friendly size
-        if (hasStock) ...[
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _buildQuickActionButton('1', 1.0)),
-                  const SizedBox(width: 4),
-                  Expanded(child: _buildQuickActionButton('2', 2.0)),
-                  const SizedBox(width: 4),
-                  Expanded(child: _buildQuickActionButton('3', 3.0)),
-                  const SizedBox(width: 4),
-                  Expanded(child: _buildQuickActionButton('4', 4.0)),
-                  const SizedBox(width: 4),
-                  Expanded(child: _buildQuickActionButton('5', 5.0)),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ],
-
-        if (!hasStock)
-          Container(
-            padding: const EdgeInsets.all(8),
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.red[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red[200]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.red[700], size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Out of Stock',
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (hasStock && _isOutOfStock())
-          Container(
-            padding: const EdgeInsets.all(8),
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange[200]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.inventory_2, color: Colors.orange[700], size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Only ${availableStock.toStringAsFixed(_selectedSackPriceId != null ? 0 : 1)} ${_selectedSackPriceId != null ? 'sacks' : 'kg'} available',
-                    style: TextStyle(
-                      color: Colors.orange[700],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (_selectedSackPriceId != null)
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextFormField(
-              controller: _sackQuantityController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              enabled: hasStock,
-              decoration: _inputDecoration(
-                labelText: 'Sacks',
-                suffixIcon: hasStock ? _buildQuantityControls() : null,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Enter quantity';
-                final qty = int.tryParse(value);
-                if (qty == null || qty <= 0) return 'Valid quantity > 0';
-
-                final sackPrice = widget.product.sackPrice
-                    .firstWhere((sp) => sp.id == _selectedSackPriceId);
-
-                if (qty > sackPrice.stock) {
-                  return 'Only ${sackPrice.stock} available';
-                }
-
-                if (_isSpecialPrice) {
-                  if (qty < (sackPrice.specialPrice?.minimumQty ?? 0)) {
-                    return 'Min qty is ${sackPrice.specialPrice?.minimumQty}';
-                  }
-                }
-                return null;
-              },
-            ),
-          ),
-        if (_isPerKiloSelected) ...[
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextFormField(
-              controller: _perKiloQuantityController,
-              focusNode: _perKiloQuantityFocusNode,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              enabled: hasStock,
-              decoration: _inputDecoration(
-                labelText: 'Kg',
-                suffixIcon: hasStock ? _buildQuantityControls() : null,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Enter quantity';
-                final qty = double.tryParse(value);
-                if (qty == null || qty <= 0) return 'Valid quantity > 0';
-
-                if (widget.product.perKiloPrice != null &&
-                    qty > widget.product.perKiloPrice!.stock) {
-                  return 'Only ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg available';
-                }
-
-                return null;
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextFormField(
-              controller: _perKiloTotalPriceController,
-              focusNode: _perKiloTotalPriceFocusNode,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              enabled: hasStock,
-              decoration: _inputDecoration(
-                labelText: 'Total ₱',
-                prefixText: '₱ ',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Enter total price';
-                final priceVal = double.tryParse(value);
-                if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
-                return null;
-              },
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String labelText,
-    String? prefixText,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.primary, width: 2),
-      ),
-      labelText: labelText,
-      labelStyle: TextStyle(color: AppColors.primary, fontSize: 12),
-      prefixText: prefixText,
-      suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      isDense: true,
-      filled: true,
-      fillColor: Colors.white,
-    );
-  }
-
-  Widget _buildQuantityControls() {
-    return SizedBox(
-      width: 70,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          _quantityButton(Icons.remove, _decreaseQuantity),
-          const SizedBox(width: 4),
-          _quantityButton(Icons.add, _increaseQuantity),
-        ],
-      ),
-    );
-  }
-
-  Widget _quantityButton(IconData icon, VoidCallback onPressed) {
     return Container(
-      height: 28,
-      width: 28,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(icon, color: AppColors.primary, size: 16),
-        onPressed: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(Icons.scale_outlined,
+                      color: AppColors.secondary, size: 14),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _selectedSackPriceId != null ? 'Sacks' : 'Whole Kg',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildMainQuantityInput(hasStock, availableStock),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDecimalQuantitySection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(Icons.tune_outlined,
+                      color: Colors.purple[700], size: 14),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Decimal',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.purple[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildDecimalInput(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscountSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(Icons.local_offer_outlined,
+                      color: Colors.orange[700], size: 14),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Discount',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildDiscountInput(),
+          ],
+        ),
       ),
     );
   }
@@ -1336,6 +1277,324 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     );
   }
 
+  Widget _buildMainQuantityInput(bool hasStock, double availableStock) {
+    return Column(
+      children: [
+        // Quick Action Buttons - reduced size
+        if (hasStock) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildQuickActionButton('1', 1.0)),
+              const SizedBox(width: 2),
+              Expanded(child: _buildQuickActionButton('2', 2.0)),
+              const SizedBox(width: 2),
+              Expanded(child: _buildQuickActionButton('3', 3.0)),
+              const SizedBox(width: 2),
+              Expanded(child: _buildQuickActionButton('5', 5.0)),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        // Stock status messages - reduced
+        if (!hasStock)
+          Container(
+            padding: const EdgeInsets.all(6),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.red[700], size: 12),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Out of Stock',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Quantity input field
+        if (_selectedSackPriceId != null)
+          _buildSackQuantityField(hasStock)
+        else if (_isPerKiloSelected)
+          _buildWholeQuantityField(hasStock),
+
+        // Total price field for per kilo
+        if (_isPerKiloSelected) ...[
+          const SizedBox(height: 6),
+          _buildTotalPriceField(hasStock),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDecimalInput() {
+    return Column(
+      children: [
+        // Quick decimal buttons
+        Row(
+          children: [
+            Expanded(child: _buildDecimalQuickButton('0.25', 0.25)),
+            const SizedBox(width: 2),
+            Expanded(child: _buildDecimalQuickButton('0.50', 0.50)),
+            const SizedBox(width: 2),
+            Expanded(child: _buildDecimalQuickButton('0.75', 0.75)),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Decimal input field
+        Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _decimalQuantityController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(2),
+            ],
+            decoration: _inputDecoration(
+              labelText: 'Decimal',
+              prefixText: '0.',
+              suffixIcon: _buildDecimalControls(),
+            ),
+            validator: (value) {
+              if (value != null && value.isNotEmpty) {
+                final decimal = int.tryParse(value);
+                if (decimal == null || decimal < 0 || decimal > 99) {
+                  return 'Range: 0-99';
+                }
+              }
+              return null;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSackQuantityField(bool hasStock) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _sackQuantityController,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        enabled: hasStock,
+        decoration: _inputDecoration(
+          labelText: 'Sacks',
+          suffixIcon: hasStock ? _buildQuantityControls() : null,
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) return 'Enter quantity';
+          final qty = int.tryParse(value);
+          if (qty == null || qty <= 0) return 'Valid quantity > 0';
+
+          final sackPrice = widget.product.sackPrice
+              .firstWhere((sp) => sp.id == _selectedSackPriceId);
+
+          if (qty > sackPrice.stock) {
+            return 'Only ${sackPrice.stock} available';
+          }
+
+          if (_isSpecialPrice) {
+            if (qty < (sackPrice.specialPrice?.minimumQty ?? 0)) {
+              return 'Min qty is ${sackPrice.specialPrice?.minimumQty}';
+            }
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildWholeQuantityField(bool hasStock) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _wholeQuantityController,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        enabled: hasStock,
+        decoration: _inputDecoration(
+          labelText: 'Whole Kg',
+          suffixIcon: hasStock ? _buildWholeQuantityControls() : null,
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) return 'Enter quantity';
+          final wholeQty = int.tryParse(value) ?? 0;
+          final decimalQty = int.tryParse(_decimalQuantityController.text) ?? 0;
+          final totalQty = wholeQty + (decimalQty / 100);
+
+          if (totalQty <= 0) return 'Valid quantity > 0';
+
+          if (widget.product.perKiloPrice != null &&
+              totalQty > widget.product.perKiloPrice!.stock) {
+            return 'Only ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg available';
+          }
+
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildTotalPriceField(bool hasStock) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _perKiloTotalPriceController,
+        focusNode: _perKiloTotalPriceFocusNode,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+        ],
+        enabled: hasStock,
+        decoration: _inputDecoration(
+          labelText: 'Total ₱',
+          prefixText: '₱ ',
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) return 'Enter total price';
+          final priceVal = double.tryParse(value);
+          if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
+          return null;
+        },
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String labelText,
+    String? prefixText,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: AppColors.primary, width: 2),
+      ),
+      labelText: labelText,
+      labelStyle: TextStyle(color: AppColors.primary, fontSize: 10),
+      prefixText: prefixText,
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+    );
+  }
+
+  Widget _buildQuantityControls() {
+    return SizedBox(
+      width: 60,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _quantityButton(Icons.remove, _decreaseQuantity),
+          const SizedBox(width: 2),
+          _quantityButton(Icons.add, _increaseQuantity),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWholeQuantityControls() {
+    return SizedBox(
+      width: 60,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _quantityButton(Icons.remove, _decreaseWholeQuantity),
+          const SizedBox(width: 2),
+          _quantityButton(Icons.add, _increaseWholeQuantity),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDecimalControls() {
+    return SizedBox(
+      width: 60,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _quantityButton(Icons.remove, _decreaseDecimalQuantity),
+          const SizedBox(width: 2),
+          _quantityButton(Icons.add, _increaseDecimalQuantity),
+        ],
+      ),
+    );
+  }
+
+  Widget _quantityButton(IconData icon, VoidCallback onPressed) {
+    return Container(
+      height: 24,
+      width: 24,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, color: AppColors.primary, size: 12),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
   Widget _buildQuickActionButton(String label, double quantity) {
     bool isEnabled = true;
     String unit = _selectedSackPriceId != null ? 'sack' : 'kg';
@@ -1358,29 +1617,20 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? () => _setQuickQuantity(quantity) : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          height: 56,
+          height: 40,
           decoration: BoxDecoration(
             color: isEnabled
                 ? AppColors.primary.withOpacity(0.1)
                 : Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isEnabled
                   ? AppColors.primary.withOpacity(0.3)
                   : Colors.grey[300]!,
-              width: 1.5,
+              width: 1,
             ),
-            boxShadow: isEnabled
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1388,16 +1638,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: isEnabled ? AppColors.primary : Colors.grey[500],
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
                 unit,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 8,
                   fontWeight: FontWeight.w500,
                   color: isEnabled
                       ? AppColors.primary.withOpacity(0.7)
@@ -1410,4 +1659,48 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       ),
     );
   }
+
+  Widget _buildDecimalQuickButton(String label, double decimal) {
+    bool isEnabled = true;
+
+    if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+      final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
+      final totalQuantity = wholeValue + decimal;
+      isEnabled = totalQuantity <= widget.product.perKiloPrice!.stock;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? () => _setDecimalQuickQuantity(decimal) : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color:
+                isEnabled ? Colors.purple.withOpacity(0.1) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isEnabled
+                  ? Colors.purple.withOpacity(0.3)
+                  : Colors.grey[300]!,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: isEnabled ? Colors.purple[700] : Colors.grey[500],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ...existing code for _buildDiscountInput and other methods...
 }
