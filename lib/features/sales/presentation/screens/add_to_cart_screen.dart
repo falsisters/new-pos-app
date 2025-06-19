@@ -971,9 +971,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? color : Colors.grey[700],
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? Colors.black : Colors.grey[700],
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1004,12 +1004,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: isOutOfStock
                     ? Colors.grey[500]
                     : isSelected
-                        ? color.withOpacity(0.8)
+                        ? Colors.black
                         : Colors.grey[600],
                 decoration: isOutOfStock ? TextDecoration.lineThrough : null,
               ),
@@ -1019,11 +1019,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             Text(
               stock,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 color: isOutOfStock
                     ? Colors.red[600]
                     : isSelected
-                        ? color.withOpacity(0.7)
+                        ? Colors.black
                         : Colors.grey[500],
                 fontWeight: isOutOfStock ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -1638,7 +1638,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isEnabled ? AppColors.primary : Colors.grey[500],
                 ),
@@ -1691,7 +1691,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: isEnabled ? Colors.purple[700] : Colors.grey[500],
               ),
