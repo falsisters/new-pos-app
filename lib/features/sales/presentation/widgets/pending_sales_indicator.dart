@@ -13,9 +13,6 @@ class PendingSalesIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (pendingSales.isEmpty) return const SizedBox.shrink();
-
-    final processingCount =
-        pendingSales.where((sale) => sale.isProcessing).length;
     final errorCount = pendingSales.where((sale) => sale.error != null).length;
 
     return PopupMenuButton<void>(

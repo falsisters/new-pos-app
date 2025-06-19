@@ -21,7 +21,8 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
   }
 
   Future<ProductState> getProducts() async {
-    state = const AsyncLoading();
+    // Don't set loading state to preserve current products
+    final currentProducts = state.value?.products ?? [];
 
     state = await AsyncValue.guard(() async {
       try {
@@ -36,8 +37,9 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
           products: products,
         );
       } catch (e) {
+        // On error, preserve current products
         return ProductState(
-          products: [],
+          products: currentProducts,
           error: e.toString(),
         );
       }
@@ -47,19 +49,28 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
+    // Don't set loading state to preserve current products
+    final currentProducts = state.value?.products ?? [];
 
     state = await AsyncValue.guard(() async {
-      final products = await _productRepository.getProducts();
+      try {
+        final products = await _productRepository.getProducts();
 
-      // Preload images after getting products
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _preloadProductImages(products);
-      });
+        // Preload images after getting products
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _preloadProductImages(products);
+        });
 
-      return ProductState(
-        products: products,
-      );
+        return ProductState(
+          products: products,
+        );
+      } catch (e) {
+        // On error, preserve current products
+        return ProductState(
+          products: currentProducts,
+          error: e.toString(),
+        );
+      }
     });
   }
 

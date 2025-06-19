@@ -1,5 +1,6 @@
 // filepath: d:\Projects\falsisters_pos_android\lib\features\shift\presentation\widgets\edit_shift_dialog.dart
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/edit_shift_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,12 +9,25 @@ void showEditShiftDialog(BuildContext context, WidgetRef ref,
     {required Map<String, dynamic> shiftData}) {
   final employeeController = TextEditingController(text: shiftData['employee']);
 
+  // Mark that we're editing a shift
+  ref.read(dialogStateProvider.notifier).setEditingShift(true);
+
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
       return PopScope(
         canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) {
+            // Clear editing state when dialog closes
+            try {
+              ref.read(dialogStateProvider.notifier).setEditingShift(false);
+            } catch (e) {
+              // Ignore errors if ref is disposed
+            }
+          }
+        },
         child: Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(20),
@@ -109,5 +123,12 @@ void showEditShiftDialog(BuildContext context, WidgetRef ref,
         ),
       );
     },
-  );
+  ).then((_) {
+    // Ensure editing state is cleared when dialog closes immediately
+    try {
+      ref.read(dialogStateProvider.notifier).setEditingShift(false);
+    } catch (e) {
+      // Ignore errors if ref is disposed
+    }
+  });
 }

@@ -27,65 +27,67 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _dialogCheckPending = true;
+  bool _hasCheckedInitialDialog = false;
+  bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
-    // Initial setup for dialog check
-    _setupDialogCheck();
+    // Don't schedule dialog check immediately - wait for shift data to load
   }
 
-  void _setupDialogCheck() {
-    // This sets up a listener for shift state changes
-    ref.listenManual(isShiftActiveProvider, (previous, next) {
-      if (next == false) {
-        // If shift becomes inactive, mark dialog check as pending
+  Future<void> _checkAndShowDialog() async {
+    if (_hasCheckedInitialDialog || !mounted) return;
+
+    // Check if we're editing a shift
+    final dialogState = ref.read(dialogStateProvider);
+    if (dialogState.isEditingShift) {
+      if (mounted) {
         setState(() {
-          _dialogCheckPending = true;
+          _hasCheckedInitialDialog = true;
         });
-        _scheduleDialogCheck();
       }
-    });
-  }
+      return;
+    }
 
-  void _scheduleDialogCheck() {
-    if (!_dialogCheckPending) return;
-
-    // Schedule dialog check after the frame is built with a small delay
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Add a small delay to ensure bypass state is properly set
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final isShiftActive = ref.read(isShiftActiveProvider);
-      final isDialogVisible = ref.read(dialogStateProvider);
-
-      // Check if bypass is active before showing dialog
-      final isBypassed = await SecureCodeService.isBypassActive();
-
-      // Only show dialog if shift is inactive, dialog should be visible, and not bypassed
-      if (isShiftActive == false && !isDialogVisible && !isBypassed) {
-        // Use the notifier to update the dialog state
-        ref.read(dialogStateProvider.notifier).showDialog();
-
-        // Show the actual dialog (it will handle bypass check internally too)
-        if (context.mounted) {
-          showCreateShiftDialog(context, ref);
-        }
+    // Check bypass status first
+    final isBypassed = await SecureCodeService.isBypassActive();
+    if (isBypassed) {
+      // Update dialog state to reflect bypass status - with error handling
+      try {
+        ref.read(dialogStateProvider.notifier).setBypass();
+      } catch (e) {
+        // Ignore if ref is disposed
       }
 
+      if (mounted) {
+        setState(() {
+          _hasCheckedInitialDialog = true;
+        });
+      }
+      return;
+    }
+
+    // Check current shift state
+    final currentShiftState = ref.read(currentShiftProvider);
+    final shouldShowDialog = ref.read(shouldShowShiftDialogProvider);
+
+    // Show dialog if conditions are met and we have loaded the initial shift data
+    if (!_isInitialLoad &&
+        shouldShowDialog &&
+        !dialogState.isVisible &&
+        !dialogState.isBypassed &&
+        !dialogState.isEditingShift &&
+        (currentShiftState == null || !currentShiftState.isShiftActive)) {
+      if (context.mounted) {
+        await showCreateShiftDialog(context, ref);
+      }
+    }
+
+    if (mounted) {
       setState(() {
-        _dialogCheckPending = false;
+        _hasCheckedInitialDialog = true;
       });
-    });
-  }
-
-  @override
-  void didUpdateWidget(HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Check if we need to show dialog after widget updates
-    if (_dialogCheckPending) {
-      _scheduleDialogCheck();
     }
   }
 
@@ -93,10 +95,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final drawerIndex = ref.watch(drawerIndexProvider);
 
-    // If dialog check is pending, schedule it
-    if (_dialogCheckPending) {
-      _scheduleDialogCheck();
-    }
+    // Listen to shift state changes to handle dialog visibility
+    ref.listen<AsyncValue<CurrentShiftState>>(shiftProvider, (previous, next) {
+      if (!mounted) return;
+
+      // Handle initial load completion
+      if (_isInitialLoad && !next.isLoading) {
+        setState(() {
+          _isInitialLoad = false;
+        });
+
+        // Schedule dialog check after initial load is complete
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _checkAndShowDialog();
+          }
+        });
+        return;
+      }
+
+      // Handle subsequent shift state changes
+      next.whenData((state) {
+        if (!state.isShiftActive &&
+            _hasCheckedInitialDialog &&
+            !_isInitialLoad) {
+          // Reset dialog check flag when shift becomes inactive
+          if (mounted) {
+            setState(() {
+              _hasCheckedInitialDialog = false;
+            });
+
+            // Schedule dialog check for next frame
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _checkAndShowDialog();
+              }
+            });
+          }
+        }
+      });
+    });
+
+    // Listen to dialog state changes for bypass and edit updates
+    ref.listen<DialogState>(dialogStateProvider, (previous, next) {
+      if (!mounted) return;
+
+      if (next.isBypassed && !_hasCheckedInitialDialog) {
+        setState(() {
+          _hasCheckedInitialDialog = true;
+        });
+      }
+
+      // Don't trigger dialog check when editing state changes
+      // The editing state should prevent dialog from showing automatically
+    });
 
     return Scaffold(
       body: Consumer(builder: (context, ref, _) {
@@ -112,24 +164,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text('Error: ${error.toString()}'),
                 ElevatedButton(
-                  onPressed: () => ref.refresh(shiftProvider),
+                  onPressed: () {
+                    ref.refresh(shiftProvider);
+                    setState(() {
+                      _hasCheckedInitialDialog = false;
+                      _isInitialLoad = true;
+                    });
+                  },
                   child: const Text('Retry'),
                 ),
               ],
             ),
           ),
           data: (CurrentShiftState state) {
-            // We'll handle dialog visibility through the lifecycle methods,
-            // not directly in the build method
-
             return Row(
               children: [
                 Sidebar(),
                 if (drawerIndex == 10) Expanded(child: OrderScreen()),
-                if (drawerIndex == 0)
-                  Expanded(
-                    child: SalesScreen(),
-                  ),
+                if (drawerIndex == 0) Expanded(child: SalesScreen()),
                 if (drawerIndex == 1) Expanded(child: DeliveryScreen()),
                 if (drawerIndex == 2) Expanded(child: StocksScreen()),
                 if (drawerIndex == 3) Expanded(child: KahonScreen()),

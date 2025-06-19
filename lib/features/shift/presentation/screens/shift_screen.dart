@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/shift_model.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/create_shift_dialog.dart';
 import 'package:falsisters_pos_android/features/shift/presentation/widgets/edit_shift_dialog.dart';
@@ -644,6 +645,14 @@ class _NoActiveShiftState extends ConsumerState<_NoActiveShift> {
         isBypassed = bypassed;
         remainingMinutes = remaining;
       });
+
+      // Also update the dialog state provider
+      final dialogNotifier = ref.read(dialogStateProvider.notifier);
+      if (bypassed) {
+        dialogNotifier.setBypass();
+      } else {
+        await dialogNotifier.checkBypassStatus();
+      }
     }
   }
 
@@ -719,6 +728,8 @@ class _NoActiveShiftState extends ConsumerState<_NoActiveShift> {
                     onPressed: () async {
                       await SecureCodeService.clearBypass();
                       await _checkBypassStatus();
+                      // Refresh shift provider after clearing bypass
+                      ref.refresh(shiftProvider);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
@@ -845,9 +856,12 @@ class _NoActiveShiftState extends ConsumerState<_NoActiveShift> {
                 child: ElevatedButton(
                   onPressed: () async {
                     final bypassed = await SecureCodeService.isBypassActive();
-                    if (!bypassed) {
+                    final currentShift = ref.read(currentShiftProvider);
+
+                    if (!bypassed &&
+                        (currentShift == null || !currentShift.isShiftActive)) {
                       if (context.mounted) {
-                        showCreateShiftDialog(context, ref);
+                        await showCreateShiftDialog(context, ref);
                       }
                     }
                   },

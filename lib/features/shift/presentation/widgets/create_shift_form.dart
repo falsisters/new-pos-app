@@ -219,28 +219,22 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                           // Set bypass first
                           await SecureCodeService.setBypass();
 
-                          // Update dialog state to hidden
+                          // Update dialog state
                           widget.ref
                               .read(dialogStateProvider.notifier)
-                              .hideDialog();
+                              .setBypass();
 
                           if (context.mounted) {
                             Navigator.pop(context);
 
-                            // Add a small delay before showing success message
-                            // to ensure dialog state is properly updated
-                            await Future.delayed(
-                                const Duration(milliseconds: 300));
-
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text(
-                                      'Shift dialog bypassed for 6 hours'),
-                                  backgroundColor: Colors.green[600],
-                                ),
-                              );
-                            }
+                            // Show success message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                    'Shift dialog bypassed for 6 hours'),
+                                backgroundColor: Colors.green[600],
+                              ),
+                            );
                           }
                         } else {
                           setState(() => secureCodeError = true);
@@ -626,19 +620,58 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
           child: ElevatedButton(
             onPressed: widget.isLoading || selectedEmployees.isEmpty
                 ? null
-                : () {
-                    widget.ref
-                        .read(shiftProvider.notifier)
-                        .startShift(
-                          CreateShiftRequestModel(
-                            employees:
-                                selectedEmployees.map((e) => e.id).toList(),
+                : () async {
+                    // Capture refs and context before async operations
+                    final dialogNotifier =
+                        widget.ref.read(dialogStateProvider.notifier);
+                    final shiftNotifier =
+                        widget.ref.read(shiftProvider.notifier);
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                    try {
+                      // Hide dialog immediately
+                      dialogNotifier.hideDialog();
+
+                      // Start the shift
+                      await shiftNotifier.startShift(
+                        CreateShiftRequestModel(
+                          employees:
+                              selectedEmployees.map((e) => e.id).toList(),
+                        ),
+                      );
+
+                      // Only proceed if widget is still mounted
+                      if (mounted) {
+                        // Refresh the shift provider
+                        widget.ref.invalidate(shiftProvider);
+
+                        // Close dialog
+                        navigator.pop();
+
+                        // Show success message
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: const Text('Shift started successfully'),
+                            backgroundColor: Colors.green[600],
                           ),
-                        )
-                        .then((_) {
-                      widget.ref.invalidate(shiftProvider);
-                      Navigator.pop(context);
-                    });
+                        );
+                      }
+                    } catch (e) {
+                      // Only proceed if widget is still mounted
+                      if (mounted) {
+                        // If there's an error, show dialog again
+                        dialogNotifier.showDialog();
+
+                        // Show error message
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Error starting shift: $e'),
+                            backgroundColor: Colors.red[600],
+                          ),
+                        );
+                      }
+                    }
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,

@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/features/shift/data/model/create_shift_request_model.dart';
 import 'package:falsisters_pos_android/features/shift/data/model/employee_model.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_dialog_provider.dart';
 import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
@@ -555,22 +556,50 @@ class _EditShiftFormContentState extends State<_EditShiftFormContent> {
                 child: ElevatedButton(
                   onPressed: widget.isLoading || selectedEmployees.isEmpty
                       ? null
-                      : () {
+                      : () async {
                           final shiftId = widget.shiftData['id'] as String;
-                          widget.ref
-                              .read(shiftProvider.notifier)
-                              .editShift(
-                                shiftId,
-                                CreateShiftRequestModel(
-                                  employees: selectedEmployees
-                                      .map((e) => e.id)
-                                      .toList(),
+
+                          // Capture refs before async operations
+                          final shiftNotifier =
+                              widget.ref.read(shiftProvider.notifier);
+                          final dialogNotifier =
+                              widget.ref.read(dialogStateProvider.notifier);
+                          final navigator = Navigator.of(context);
+
+                          try {
+                            // Mark that we're editing a shift
+                            dialogNotifier.setEditingShift(true);
+
+                            await shiftNotifier.editShift(
+                              shiftId,
+                              CreateShiftRequestModel(
+                                employees:
+                                    selectedEmployees.map((e) => e.id).toList(),
+                              ),
+                            );
+
+                            if (mounted) {
+                              // Only invalidate, don't refresh to avoid loading state
+                              widget.ref.invalidate(shiftProvider);
+
+                              navigator.pop();
+                            }
+                          } catch (e) {
+                            // Handle error if needed
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error updating shift: $e'),
+                                  backgroundColor: Colors.red[600],
                                 ),
-                              )
-                              .then((_) {
-                            widget.ref.invalidate(shiftProvider);
-                            Navigator.pop(context);
-                          });
+                              );
+                            }
+                          } finally {
+                            // Clear editing state immediately after edit completes
+                            if (mounted) {
+                              dialogNotifier.setEditingShift(false);
+                            }
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,

@@ -9,6 +9,19 @@ final productProvider =
 });
 
 final productsProvider = Provider<List<Product>>((ref) {
-  return ref.watch(productProvider).whenData((state) => state.products).value ??
-      [];
+  final asyncState = ref.watch(productProvider);
+
+  return asyncState.when(
+    data: (state) => state.products,
+    loading: () {
+      // During loading, try to return previous products if available
+      final previousState = ref.read(productProvider).value;
+      return previousState?.products ?? [];
+    },
+    error: (error, stack) {
+      // On error, try to return previous products if available
+      final previousState = ref.read(productProvider).value;
+      return previousState?.products ?? [];
+    },
+  );
 });

@@ -5,7 +5,6 @@ import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
-import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,16 +52,16 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     });
   }
 
-  @override
   void dispose() {
     _queueSubscription?.cancel();
   }
 
   Future<void> deleteSale(String id) async {
-    state = const AsyncLoading();
+    // Don't set loading state to preserve current data
     final currentCart = state.value?.cart ?? CartModel();
     final currentOrderId = state.value?.orderId;
     final currentSelectedDate = state.value?.selectedDate ?? DateTime.now();
+    final currentPendingSales = state.value?.pendingSales ?? [];
 
     state = await AsyncValue.guard(() async {
       try {
@@ -72,6 +71,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         return SalesState(
           cart: currentCart,
           sales: sales,
+          pendingSales: currentPendingSales,
           orderId: currentOrderId,
           selectedDate: currentSelectedDate,
         );
@@ -79,7 +79,8 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         print('Error in SalesNotifier.deleteSale: $e');
         return SalesState(
           cart: currentCart,
-          sales: [], // Use empty list on error
+          sales: state.value?.sales ?? [], // Preserve current sales on error
+          pendingSales: currentPendingSales,
           orderId: currentOrderId,
           selectedDate: currentSelectedDate,
           error: e.toString(),
@@ -89,7 +90,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   }
 
   Future<void> getSales({DateTime? date}) async {
-    state = const AsyncLoading();
+    // Don't set loading state to preserve current data
     final currentCart = state.value?.cart ?? CartModel();
     final currentOrderId = state.value?.orderId;
     final currentPendingSales = state.value?.pendingSales ?? [];
@@ -109,7 +110,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         print('Error in SalesNotifier.getSales: $e');
         return SalesState(
           cart: currentCart,
-          sales: [],
+          sales: state.value?.sales ?? [], // Preserve current sales on error
           pendingSales: currentPendingSales,
           orderId: currentOrderId,
           selectedDate: targetDate,
@@ -209,9 +210,10 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
       );
     });
 
-    // Refresh other providers in background
+    // Refresh other providers in background silently
     try {
-      await ref.read(productProvider.notifier).getProducts();
+      // Use refresh instead of getProducts to avoid loading state
+      await ref.read(productProvider.notifier).refresh();
       await ref.read(salesCheckProvider.notifier).refresh();
     } catch (e) {
       print('Error refreshing providers: $e');

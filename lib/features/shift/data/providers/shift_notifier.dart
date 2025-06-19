@@ -9,29 +9,40 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
 
   @override
   Future<CurrentShiftState> build() async {
-    // Get the latest shift, if the latest shift's end time is null, there is no active shift, build the state accordingly
-    final shifts = await _shiftRepository.getShifts();
-
-    if (shifts.isEmpty) {
-      return CurrentShiftState(
-        shift: null,
-        isShiftActive: false,
-      );
-    }
-
     try {
-      final activeShift = shifts.firstWhere(
-        (shift) => shift.endTime == null,
-      );
+      // Get the latest shift, if the latest shift's end time is null, there is an active shift
+      final shifts = await _shiftRepository.getShifts();
 
-      return CurrentShiftState(
-        shift: activeShift,
-        isShiftActive: true,
-      );
+      if (shifts.isEmpty) {
+        return CurrentShiftState(
+          shift: null,
+          isShiftActive: false,
+        );
+      }
+
+      try {
+        // Look for the most recent shift that hasn't ended
+        final activeShift = shifts.firstWhere(
+          (shift) => shift.endTime == null,
+        );
+
+        return CurrentShiftState(
+          shift: activeShift,
+          isShiftActive: true,
+        );
+      } catch (e) {
+        // No active shift found
+        return CurrentShiftState(
+          shift: null,
+          isShiftActive: false,
+        );
+      }
     } catch (e) {
+      // Error fetching shifts
       return CurrentShiftState(
         shift: null,
         isShiftActive: false,
+        error: e.toString(),
       );
     }
   }
@@ -46,10 +57,11 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
     state = await AsyncValue.guard(() async {
       try {
         final newShift = await _shiftRepository.createShift(shift);
-        return CurrentShiftState(
+        final newState = CurrentShiftState(
           shift: newShift,
           isShiftActive: true,
         );
+        return newState;
       } catch (e) {
         return CurrentShiftState(
           error: e.toString(),
@@ -126,8 +138,7 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
   }
 
   Future<void> editShift(String shiftId, CreateShiftRequestModel shift) async {
-    state = const AsyncLoading();
-
+    // Don't set loading state to avoid triggering dialog during edit
     state = await AsyncValue.guard(() async {
       try {
         final updatedShift = await _shiftRepository.editShift(shiftId, shift);
@@ -136,9 +147,12 @@ class ShiftNotifier extends AsyncNotifier<CurrentShiftState> {
           isShiftActive: true,
         );
       } catch (e) {
-        return CurrentShiftState(
-          error: e.toString(),
-        );
+        // Keep the current state if edit fails
+        final currentState = state.value;
+        return currentState ??
+            CurrentShiftState(
+              error: e.toString(),
+            );
       }
     });
   }
