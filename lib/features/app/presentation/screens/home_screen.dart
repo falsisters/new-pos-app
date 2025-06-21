@@ -164,8 +164,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text('Error: ${error.toString()}'),
                 ElevatedButton(
-                  onPressed: () {
-                    ref.refresh(shiftProvider);
+                  onPressed: () async {
+                    final future = ref.refresh(shiftProvider);
+                    await future;
                     setState(() {
                       _hasCheckedInitialDialog = false;
                       _isInitialLoad = true;
