@@ -13,11 +13,10 @@ class ExpenseItemWidget extends StatelessWidget {
     required this.amount,
     this.onRemove,
   });
-
   @override
   Widget build(BuildContext context) {
     final currencyFormatter =
-        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ');
+        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ', decimalDigits: 2);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

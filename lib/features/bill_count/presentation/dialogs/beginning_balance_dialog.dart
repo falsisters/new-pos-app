@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/currency_input_formatter.dart';
 
 class BeginningBalanceDialog extends StatefulWidget {
   final double initialValue;
@@ -18,11 +20,13 @@ class BeginningBalanceDialog extends StatefulWidget {
 
 class _BeginningBalanceDialogState extends State<BeginningBalanceDialog> {
   late TextEditingController _controller;
-
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialValue.toString());
+    // Format the initial value with commas
+    final formattedValue =
+        widget.initialValue == 0 ? '' : widget.initialValue.toInt().toString();
+    _controller = TextEditingController(text: formattedValue);
   }
 
   @override
@@ -68,7 +72,9 @@ class _BeginningBalanceDialogState extends State<BeginningBalanceDialog> {
                 ),
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*(\.\d*)?$')),
+                CurrencyInputFormatter(),
+                LengthLimitingTextInputFormatter(
+                    15), // Allow up to 999,999,999,999
               ],
             ),
             const SizedBox(height: 20),
@@ -94,7 +100,9 @@ class _BeginningBalanceDialogState extends State<BeginningBalanceDialog> {
                         horizontal: 20, vertical: 10),
                   ),
                   onPressed: () {
-                    final value = double.tryParse(_controller.text) ?? 0.0;
+                    // Remove commas before parsing
+                    final cleanValue = _controller.text.replaceAll(',', '');
+                    final value = double.tryParse(cleanValue) ?? 0.0;
                     widget.onSave(value);
                     Navigator.pop(context);
                   },

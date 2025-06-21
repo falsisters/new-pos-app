@@ -5,11 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class SalesCheckScreen extends ConsumerWidget {
+class SalesCheckScreen extends ConsumerStatefulWidget {
   const SalesCheckScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SalesCheckScreen> createState() => _SalesCheckScreenState();
+}
+
+class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(salesCheckProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final salesState = ref.watch(salesCheckProvider);
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
@@ -576,16 +590,52 @@ class _FormattedSaleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Extract quantity part from the formattedSale if possible
+    final numberFormat = NumberFormat("#,##0.00", "en_US");
+
+    // Parse the formattedSale to extract components
     final parts = formattedSale.split(' ');
     String quantity = '';
-    String remainingText = formattedSale;
+    String productInfo = '';
+    String amountStr = '';
+    double? amount;
 
-    // Try to extract quantity if it's a number at the beginning
+    // Try to extract quantity (first number), product info, and amount (last number with ₱)
     if (parts.isNotEmpty) {
+      // Extract quantity if it's a number at the beginning
       if (RegExp(r'^\d+(\.\d+)?$').hasMatch(parts[0])) {
         quantity = parts[0];
-        remainingText = parts.sublist(1).join(' ');
+      }
+
+      // Find amount (look for ₱ symbol or number at the end)
+      for (int i = parts.length - 1; i >= 0; i--) {
+        String part = parts[i].replaceAll('₱', '').replaceAll(',', '');
+        if (RegExp(r'^\d+(\.\d+)?$').hasMatch(part)) {
+          amount = double.tryParse(part);
+          if (amount != null) {
+            amountStr = '₱${numberFormat.format(amount)}';
+            // Remove the amount part from the original string
+            parts.removeAt(i);
+            break;
+          }
+        }
+      }
+
+      // Remove quantity from parts if it was extracted
+      if (quantity.isNotEmpty && parts.isNotEmpty && parts[0] == quantity) {
+        parts.removeAt(0);
+      }
+
+      // The remaining parts are product info
+      productInfo = parts.join(' ');
+    }
+
+    // If we couldn't parse properly, fall back to original formatting
+    if (quantity.isEmpty && productInfo.isEmpty && amountStr.isEmpty) {
+      if (RegExp(r'^\d+(\.\d+)?$').hasMatch(parts[0])) {
+        quantity = parts[0];
+        productInfo = parts.sublist(1).join(' ');
+      } else {
+        productInfo = formattedSale;
       }
     }
 
@@ -608,7 +658,7 @@ class _FormattedSaleRow extends StatelessWidget {
               ),
             ),
 
-          // If we have a quantity (extracted from formattedSale)
+          // Quantity column
           if (quantity.isNotEmpty)
             SizedBox(
               width: 80,
@@ -625,17 +675,33 @@ class _FormattedSaleRow extends StatelessWidget {
           // Add spacing between quantity and description
           if (quantity.isNotEmpty) const SizedBox(width: 16),
 
-          // Show the remaining text (without quantity if extracted)
+          // Product info column
           Expanded(
             flex: 4,
             child: Text(
-              quantity.isEmpty ? formattedSale : remainingText,
+              productInfo.isNotEmpty
+                  ? productInfo
+                  : (quantity.isEmpty ? formattedSale : ''),
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.3,
               ),
             ),
           ),
+
+          // Amount column (only show if we have a time column, meaning this is chronological view)
+          if (time != null && amountStr.isNotEmpty)
+            SizedBox(
+              width: 100,
+              child: Text(
+                amountStr,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
         ],
       ),
     );
@@ -656,51 +722,49 @@ class _TotalsRow extends StatelessWidget {
     this.isBold = false,
     this.isGrandTotal = false,
   });
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0),
-      child: Row(
-        children: [
-          // Align with the quantity column
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: isGrandTotal
-                    ? AppColors.primary
-                    : isBold
-                        ? Colors.grey[800]
-                        : Colors.grey[700],
-                fontSize: isBold ? 15 : 14,
-              ),
+    final numberFormat = NumberFormat("#,##0.00", "en_US");
+
+    return Row(
+      children: [
+        // Align with the quantity column
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: isGrandTotal
+                  ? AppColors.primary
+                  : isBold
+                      ? Colors.grey[800]
+                      : Colors.grey[700],
+              fontSize: isBold ? 15 : 14,
             ),
           ),
-          const SizedBox(width: 16),
-          const Spacer(flex: 4),
-          // Amount value
-          SizedBox(
-            width: 100,
-            child: Text(
-              numberFormat.format(amount),
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: isGrandTotal
-                    ? AppColors.primary
-                    : isBold
-                        ? Colors.grey[800]
-                        : Colors.grey[700],
-                fontSize: isBold ? 15 : 14,
-              ),
+        ),
+        const SizedBox(width: 16),
+        const Spacer(flex: 4),
+        // Amount value with proper currency formatting
+        SizedBox(
+          width: 100,
+          child: Text(
+            '₱${numberFormat.format(amount)}',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              color: isGrandTotal
+                  ? AppColors.primary
+                  : isBold
+                      ? Colors.grey[800]
+                      : Colors.grey[700],
+              fontSize: isBold ? 15 : 14,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

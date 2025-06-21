@@ -12,6 +12,69 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/core/utils/extensions.dart';
 
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters except decimal point
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d.]'), '');
+
+    // Handle multiple decimal points
+    List<String> parts = digitsOnly.split('.');
+    if (parts.length > 2) {
+      digitsOnly = '${parts[0]}.${parts.sublist(1).join('')}';
+    }
+
+    // Limit to 2 decimal places
+    if (parts.length == 2 && parts[1].length > 2) {
+      digitsOnly = '${parts[0]}.${parts[1].substring(0, 2)}';
+    }
+
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue();
+    }
+
+    // Parse the number
+    double? value = double.tryParse(digitsOnly);
+    if (value == null) {
+      return oldValue;
+    }
+
+    // Format with commas
+    String formatted;
+    if (digitsOnly.contains('.')) {
+      List<String> splitValue = digitsOnly.split('.');
+      String integerPart = splitValue[0];
+      String decimalPart = splitValue.length > 1 ? splitValue[1] : '';
+
+      // Add commas to integer part
+      if (integerPart.isNotEmpty) {
+        int intValue = int.tryParse(integerPart) ?? 0;
+        String formattedInteger = intValue.toString().replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+        formatted = decimalPart.isNotEmpty
+            ? '$formattedInteger.$decimalPart'
+            : formattedInteger;
+      } else {
+        formatted = '.$decimalPart';
+      }
+    } else {
+      int intValue = int.tryParse(digitsOnly) ?? 0;
+      formatted = intValue.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 class AddToCartScreen extends ConsumerStatefulWidget {
   final Product product;
 
@@ -349,6 +412,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
         if (quantity <= widget.product.perKiloPrice!.stock) {
           _perKiloQuantityController.text = quantity.toStringAsFixed(1);
+
+          // Update the separate whole and decimal controllers
+          final wholePart = quantity.floor();
+          final decimalPart = ((quantity - wholePart) * 100).round();
+
+          _wholeQuantityController.text = wholePart.toString();
+          _decimalQuantityController.text =
+              decimalPart.toString().padLeft(2, '0');
         }
       }
     });
@@ -405,7 +476,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: _isDiscounted
-            ? double.tryParse(_discountedPriceController.text)
+            ? double.tryParse(
+                    _discountedPriceController.text.replaceAll(',', ''))
                 ?.let((val) => double.parse(val.toStringAsFixed(2)))
             : null,
       );
@@ -429,7 +501,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: _isDiscounted
-            ? double.tryParse(_discountedPriceController.text)
+            ? double.tryParse(
+                    _discountedPriceController.text.replaceAll(',', ''))
                 ?.let((val) => double.parse(val.toStringAsFixed(2)))
             : null,
       );
@@ -656,143 +729,85 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
                 const SizedBox(height: 12), // Reduced spacing
 
-                // Pricing and Discount row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Pricing Options - Left side (60% width)
-                    Expanded(
-                      flex: 6,
-                      child: Container(
-                        height: 180, // Fixed height to make it more compact
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: AppColors.accent.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                // Pricing Options - reduced size
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: AppColors.accent.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12), // Reduced padding
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.payments_outlined,
+                                  color: AppColors.accent,
+                                  size: 16), // Reduced size
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Pricing Options',
+                              style: TextStyle(
+                                fontSize: 14, // Reduced size
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accent,
+                              ),
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12), // Reduced padding
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accent.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(Icons.payments_outlined,
-                                        color: AppColors.accent,
-                                        size: 16), // Reduced size
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Pricing Options',
-                                    style: TextStyle(
-                                      fontSize: 14, // Reduced size
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.accent,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Expanded(child: _buildPricingOptions()),
-                            ],
-                          ),
-                        ),
-                      ),
+                        const SizedBox(height: 8),
+                        _buildPricingOptions(),
+                      ],
                     ),
-
-                    const SizedBox(width: 8),
-
-                    // Discount section - Right side (40% width)
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        height: 180, // Match the pricing options height
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: Colors.orange.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(Icons.local_offer_outlined,
-                                        color: Colors.orange[700], size: 16),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Discount',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange[700],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Expanded(child: _buildDiscountInput()),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
 
                 const SizedBox(height: 12),
 
-                // Main content row - Quantity sections
+                // Main content row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Left Column - Quantity
                     Expanded(
-                      flex: _selectedSackPriceId != null ? 1 : 1,
+                      flex: _selectedSackPriceId != null ? 3 : 2,
                       child: _buildQuantitySection(),
                     ),
 
                     const SizedBox(width: 8),
 
-                    // Right Column - Decimal (Per Kilo only)
-                    if (_isPerKiloSelected)
-                      Expanded(
-                        flex: 1,
-                        child: _buildDecimalQuantitySection(),
+                    // Right Column - Decimal (Per Kilo only) and Discount
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          // Decimal quantity section (only for per kilo)
+                          if (_isPerKiloSelected) ...[
+                            _buildDecimalQuantitySection(),
+                            const SizedBox(height: 8),
+                          ],
+                          // Discount section
+                          _buildDiscountSection(),
+                        ],
                       ),
+                    ),
                   ],
                 ),
 
@@ -870,23 +885,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
     if (!hasPerKilo && !hasSackPrices) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.red.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.red.withOpacity(0.2)),
         ),
         child: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
-            const SizedBox(width: 8),
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'No pricing options available',
+                'No pricing options available for this product',
                 style: TextStyle(
                   color: Colors.red[700],
                   fontWeight: FontWeight.w500,
-                  fontSize: 12,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -895,7 +910,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       );
     }
 
-    // Collect all options (limit to 4 maximum)
+    // Collect all options
     List<Widget> allOptions = [];
 
     // Add per kilo option
@@ -905,21 +920,19 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           isSelected: _isPerKiloSelected,
           onTap: _selectPerKilo,
           icon: Icons.scale_rounded,
-          title: 'Per Kg',
+          title: 'Per Kilogram',
           subtitle:
               '₱${widget.product.perKiloPrice!.price.toStringAsFixed(2)} / kg',
-          stock: '${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg',
+          stock:
+              '${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg available',
           color: Colors.green,
         ),
       );
     }
 
-    // Add sack options (limit remaining slots)
+    // Add sack options
     if (hasSackPrices) {
-      final remainingSlots = 4 - allOptions.length;
-      final sacksToShow = widget.product.sackPrice.take(remainingSlots);
-
-      for (final sack in sacksToShow) {
+      for (final sack in widget.product.sackPrice) {
         final isSelected = _selectedSackPriceId == sack.id && !_isSpecialPrice;
         allOptions.add(
           _buildOptionCard(
@@ -927,49 +940,31 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             onTap: () => _selectSackPrice(sack.id),
             icon: Icons.inventory_rounded,
             title: parseSackType(sack.type),
-            subtitle:
-                '₱${sack.price.toStringAsFixed(2)} / ${parseSackType(sack.type)}',
-            stock: '${sack.stock.toInt()} pcs',
+            subtitle: '₱${sack.price.toStringAsFixed(2)} / sack',
+            stock: '${sack.stock.toInt()} sacks available',
             color: AppColors.accent,
           ),
         );
       }
     }
 
-    // Create 2x2 grid layout
+    // Create grid layout with 2 columns
     return Column(
       children: [
-        if (allOptions.isNotEmpty)
-          Expanded(
+        for (int i = 0; i < allOptions.length; i += 2)
+          Padding(
+            padding: EdgeInsets.only(bottom: i + 2 < allOptions.length ? 8 : 0),
             child: Row(
               children: [
-                Expanded(child: allOptions[0]),
-                if (allOptions.length > 1) ...[
-                  const SizedBox(width: 4),
-                  Expanded(child: allOptions[1]),
+                Expanded(child: allOptions[i]),
+                if (i + 1 < allOptions.length) ...[
+                  const SizedBox(width: 8),
+                  Expanded(child: allOptions[i + 1]),
                 ] else
                   const Expanded(child: SizedBox()),
               ],
             ),
           ),
-        if (allOptions.length > 2) ...[
-          const SizedBox(height: 4),
-          Expanded(
-            child: Row(
-              children: [
-                if (allOptions.length > 2)
-                  Expanded(child: allOptions[2])
-                else
-                  const Expanded(child: SizedBox()),
-                if (allOptions.length > 3) ...[
-                  const SizedBox(width: 4),
-                  Expanded(child: allOptions[3]),
-                ] else
-                  const Expanded(child: SizedBox()),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -985,7 +980,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }) {
     // Determine if this option is out of stock
     bool isOutOfStock = false;
-    if (title == 'Per Kg' && widget.product.perKiloPrice != null) {
+    if (title == 'Per Kilogram' && widget.product.perKiloPrice != null) {
       isOutOfStock = widget.product.perKiloPrice!.stock <= 0;
     } else {
       // For sack prices, find the matching sack by title
@@ -1000,14 +995,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       onTap: isOutOfStock ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(6), // Reduced padding
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isOutOfStock
               ? Colors.grey[100]
               : isSelected
                   ? color.withOpacity(0.1)
                   : Colors.grey[50],
-          borderRadius: BorderRadius.circular(8), // Reduced radius
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isOutOfStock
                 ? Colors.grey[300]!
@@ -1020,214 +1015,97 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               ? [
                   BoxShadow(
                     color: color.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ]
               : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color:
                         isSelected ? color.withOpacity(0.2) : Colors.grey[200],
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     icon,
                     color: isSelected ? color : Colors.grey[600],
-                    size: 12, // Reduced size
+                    size: 14,
                   ),
                 ),
-                const Spacer(),
-                if (isSelected && !isOutOfStock)
-                  Icon(Icons.check_circle_rounded, color: color, size: 12),
-                if (isOutOfStock)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: Colors.red[100],
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'OUT',
-                      style: TextStyle(
-                        color: Colors.red[700],
-                        fontSize: 7,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            // Horizontally aligned group with separator
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 16, // Reduced size
-                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.black : Colors.grey[700],
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  height: 12,
-                  width: 1,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  color: Colors.grey[300],
-                ),
-                Expanded(
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12, // Reduced size
-                      fontWeight: FontWeight.w500,
-                      color: isOutOfStock
-                          ? Colors.grey[500]
-                          : isSelected
-                              ? Colors.black
-                              : Colors.grey[600],
-                      decoration:
-                          isOutOfStock ? TextDecoration.lineThrough : null,
+                if (isSelected && !isOutOfStock)
+                  Icon(Icons.check_circle_rounded, color: color, size: 16),
+                if (isOutOfStock)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red[100],
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  height: 12,
-                  width: 1,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  color: Colors.grey[300],
-                ),
-                Expanded(
-                  child: Text(
-                    stock,
-                    style: TextStyle(
-                      fontSize: 10, // Reduced size
-                      color: isOutOfStock
-                          ? Colors.red[600]
-                          : isSelected
-                              ? Colors.black
-                              : Colors.grey[500],
-                      fontWeight:
-                          isOutOfStock ? FontWeight.w600 : FontWeight.normal,
+                    child: Text(
+                      'OUT',
+                      style: TextStyle(
+                        color: Colors.red[700],
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isOutOfStock
+                    ? Colors.grey[500]
+                    : isSelected
+                        ? Colors.black
+                        : Colors.grey[600],
+                decoration: isOutOfStock ? TextDecoration.lineThrough : null,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              stock,
+              style: TextStyle(
+                fontSize: 11,
+                color: isOutOfStock
+                    ? Colors.red[600]
+                    : isSelected
+                        ? Colors.black
+                        : Colors.grey[500],
+                fontWeight: isOutOfStock ? FontWeight.w600 : FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDiscountInput() {
-    return Column(
-      children: [
-        Transform.scale(
-          scale: 0.8,
-          child: CheckboxListTile(
-            title: Text('Apply Discount', style: TextStyle(fontSize: 12)),
-            value: _isDiscounted,
-            onChanged: (bool? value) {
-              setState(() {
-                _isDiscounted = value ?? false;
-                if (!_isDiscounted) _discountedPriceController.clear();
-              });
-            },
-            activeColor: Colors.orange[700],
-            controlAffinity: ListTileControlAffinity.leading,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        if (_isDiscounted)
-          Expanded(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  margin: const EdgeInsets.only(bottom: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          color: Colors.orange[700], size: 12),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'Price per ${_selectedSackPriceId != null ? 'sack' : 'kg'}',
-                          style: TextStyle(
-                            color: Colors.orange[700],
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextFormField(
-                      controller: _discountedPriceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d{0,2}')),
-                      ],
-                      decoration: _inputDecoration(
-                        labelText: 'Unit Price ₱',
-                        prefixText: '₱ ',
-                      ),
-                      validator: (value) {
-                        if (_isDiscounted) {
-                          if (value == null || value.isEmpty)
-                            return 'Enter discounted price';
-                          final priceVal = double.tryParse(value);
-                          if (priceVal == null || priceVal <= 0)
-                            return 'Valid price > 0';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 
@@ -1356,13 +1234,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withAlpha((0.1 * 255).toInt()),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(Icons.local_offer_outlined,
                       color: Colors.orange[700], size: 14),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 12),
+                Checkbox(
+                  value: _isDiscounted,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isDiscounted = value ?? false;
+                      if (!_isDiscounted) _discountedPriceController.clear();
+                    });
+                  },
+                  activeColor: Colors.orange[700],
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Discount',
@@ -1380,6 +1270,79 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDiscountInput() {
+    return Column(
+      children: [
+        if (_isDiscounted)
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        color: Colors.orange[700], size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Price per ${_selectedSackPriceId != null ? 'sack' : 'kg'}',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _discountedPriceController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    CurrencyInputFormatter(),
+                  ],
+                  decoration: _inputDecoration(
+                    labelText: 'Unit Price ₱',
+                    prefixText: '₱ ',
+                  ),
+                  validator: (value) {
+                    if (_isDiscounted) {
+                      if (value == null || value.isEmpty)
+                        return 'Enter discounted price';
+                      // Remove commas before parsing
+                      final cleanValue = value.replaceAll(',', '');
+                      final priceVal = double.tryParse(cleanValue);
+                      if (priceVal == null || priceVal <= 0)
+                        return 'Valid price > 0';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -1449,18 +1412,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   Widget _buildDecimalInput() {
     return Column(
       children: [
-        // Quick decimal buttons
-        Row(
-          children: [
-            Expanded(child: _buildDecimalQuickButton('0.25', 0.25)),
-            const SizedBox(width: 2),
-            Expanded(child: _buildDecimalQuickButton('0.50', 0.50)),
-            const SizedBox(width: 2),
-            Expanded(child: _buildDecimalQuickButton('0.75', 0.75)),
-          ],
-        ),
-        const SizedBox(height: 8),
-
         // Decimal input field
         Container(
           decoration: BoxDecoration(
@@ -1807,4 +1758,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       ),
     );
   }
+
+  // ...existing code for _buildDiscountInput and other methods...
 }

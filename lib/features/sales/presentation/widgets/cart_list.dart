@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/widgets/pending_sales_indicator.dart';
+import 'package:intl/intl.dart';
 
 class CartList extends ConsumerWidget {
   const CartList({
@@ -289,7 +290,7 @@ class CartList extends ConsumerWidget {
                                               color: AppColors.secondary),
                                           const SizedBox(width: 4),
                                           Text(
-                                            'Discounted: ₱${product.discountedPrice!.toStringAsFixed(2)} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
+                                            'Discount: ₱${NumberFormat('#,##0.00').format(product.discountedPrice!)} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
                                             style: TextStyle(
                                               color: AppColors.secondary,
                                               fontWeight: FontWeight.bold,
@@ -324,14 +325,14 @@ class CartList extends ConsumerWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Item Total:',
+                                    'Total:',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: Colors.grey[700],
                                     ),
                                   ),
                                   Text(
-                                    '₱${_calculateItemTotal(product)}',
+                                    '₱${NumberFormat('#,##0').format(double.parse(_calculateItemTotal(product)))}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
@@ -423,7 +424,7 @@ class CartList extends ConsumerWidget {
                               color: AppColors.primary, size: 20),
                           const SizedBox(width: 8),
                           const Text(
-                            'Total Amount:',
+                            'Total:',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -432,7 +433,7 @@ class CartList extends ConsumerWidget {
                         ],
                       ),
                       Text(
-                        '₱${_calculateTotal(salesState)}',
+                        '₱${NumberFormat('#,##0').format(double.parse(_calculateTotal(salesState)))}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 22,
@@ -501,7 +502,7 @@ class CartList extends ConsumerWidget {
   Widget _buildPriceInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
       String priceText =
-          '₱${product.perKiloPrice!.price.toStringAsFixed(2)}/kg';
+          '₱${NumberFormat('#,##0.00').format(product.perKiloPrice!.price)}/kg';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -517,7 +518,8 @@ class CartList extends ConsumerWidget {
         ),
       );
     } else if (product.sackPrice != null) {
-      String priceText = '₱${product.sackPrice!.price.toStringAsFixed(2)}/sack';
+      String priceText =
+          '₱${NumberFormat('#,##0.00').format(product.sackPrice!.price)}/sack';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }

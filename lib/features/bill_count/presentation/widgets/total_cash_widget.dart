@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
 
 class TotalCashWidget extends StatelessWidget {
   final double totalCash;
@@ -9,11 +9,8 @@ class TotalCashWidget extends StatelessWidget {
     Key? key,
     required this.totalCash,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat("#,##0.00", "en_US");
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -59,7 +56,7 @@ class TotalCashWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "₱ ${currencyFormat.format(totalCash)}",
+            "₱ ${BillCountFormatter.formatCurrency(totalCash)}",
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,

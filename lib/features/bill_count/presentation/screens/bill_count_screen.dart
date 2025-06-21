@@ -8,6 +8,7 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {
@@ -20,7 +21,6 @@ class BillCountScreen extends ConsumerStatefulWidget {
 class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isCalendarVisible = false;
-  final currencyFormat = NumberFormat("#,##0.00", "en_US");
 
   @override
   void initState() {
@@ -432,7 +432,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "₱ ${currencyFormat.format(billCount.totalExpenses)}",
+                                "₱ ${BillCountFormatter.formatCurrency(billCount.totalExpenses)}",
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
@@ -489,7 +489,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "₱ ${currencyFormat.format(billCount.netCash)}",
+                                "₱ ${BillCountFormatter.formatCurrency(billCount.netCash)}",
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
@@ -533,7 +533,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "₱ ${currencyFormat.format(billCount.beginningBalance)}",
+                                    "₱ ${BillCountFormatter.formatCurrency(billCount.beginningBalance)}",
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -687,7 +687,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                     ),
                                   ),
                                   Text(
-                                    "₱ ${currencyFormat.format(billCount.billsTotal)}",
+                                    "₱ ${BillCountFormatter.formatCurrency(billCount.billsTotal)}",
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -749,7 +749,7 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               if (billCount.showBeginningBalance)
                                 Text(
-                                  "₱ ${currencyFormat.format(billCount.beginningBalance)}",
+                                  "₱ ${BillCountFormatter.formatCurrency(billCount.beginningBalance)}",
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,

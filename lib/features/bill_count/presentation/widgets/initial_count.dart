@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
 
 class InitialCountWidget extends StatelessWidget {
   final double billsSubtotal;
@@ -15,10 +15,8 @@ class InitialCountWidget extends StatelessWidget {
     required this.totalSales,
     required this.totalExpenses,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat("#,##0.00", "en_US");
     final afterBeginningBalance = billsSubtotal - beginningBalance;
     final afterTotalSales = afterBeginningBalance;
     final finalAmount = afterTotalSales + totalExpenses;
@@ -70,7 +68,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(billsSubtotal)}",
+                "₱ ${BillCountFormatter.formatCurrency(billsSubtotal)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -95,7 +93,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "- ₱ ${currencyFormat.format(beginningBalance)}",
+                "- ₱ ${BillCountFormatter.formatCurrency(beginningBalance)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -124,7 +122,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(afterBeginningBalance)}",
+                "₱ ${BillCountFormatter.formatCurrency(afterBeginningBalance)}",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -149,7 +147,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(totalSales)}",
+                "₱ ${BillCountFormatter.formatCurrency(totalSales)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -174,7 +172,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "+ ₱ ${currencyFormat.format(totalExpenses)}",
+                "+ ₱ ${BillCountFormatter.formatCurrency(totalExpenses)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -203,7 +201,7 @@ class InitialCountWidget extends StatelessWidget {
                 ),
               ),
               Text(
-                "₱ ${currencyFormat.format(finalAmount)}",
+                "₱ ${BillCountFormatter.formatCurrency(finalAmount)}",
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

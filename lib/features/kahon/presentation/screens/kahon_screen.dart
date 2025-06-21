@@ -162,7 +162,7 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '${_formatDate(_selectedStartDate!)} - ${_formatDate(_selectedEndDate!)}',
+                        'Selected Date: ${_formatDate(_selectedStartDate!)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -379,7 +379,7 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
   }
 
   Future<void> _selectDateRange() async {
-    final DateTime? startDate = await showDatePicker(
+    final DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: _selectedStartDate ?? DateTime.now(),
       firstDate: DateTime(2020),
@@ -399,40 +399,18 @@ class _KahonScreenState extends ConsumerState<KahonScreen>
       },
     );
 
-    if (startDate != null) {
-      final DateTime? endDate = await showDatePicker(
-        context: context,
-        initialDate: startDate.add(const Duration(days: 1)),
-        firstDate: startDate,
-        lastDate: DateTime(2030),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
-                primary: AppColors.primary,
-                onPrimary: Colors.white,
-                surface: Colors.white,
-                onSurface: Colors.black,
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
+    if (selectedDate != null) {
+      setState(() {
+        _selectedStartDate = selectedDate;
+        _selectedEndDate = selectedDate.add(const Duration(days: 1));
+      });
 
-      if (endDate != null) {
-        setState(() {
-          _selectedStartDate = startDate;
-          _selectedEndDate = endDate;
-        });
-
-        ref
-            .read(sheetNotifierProvider.notifier)
-            .getSheetByDate(_selectedStartDate, _selectedEndDate);
-        ref
-            .read(inventoryProvider.notifier)
-            .getInventoryByDate(_selectedStartDate, _selectedEndDate);
-      }
+      ref
+          .read(sheetNotifierProvider.notifier)
+          .getSheetByDate(_selectedStartDate, _selectedEndDate);
+      ref
+          .read(inventoryProvider.notifier)
+          .getInventoryByDate(_selectedStartDate, _selectedEndDate);
     }
   }
 

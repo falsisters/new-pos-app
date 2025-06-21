@@ -5,8 +5,45 @@ import 'package:falsisters_pos_android/features/expenses/data/models/expense_sta
 import 'package:falsisters_pos_android/features/expenses/data/providers/expense_provider.dart';
 import 'package:falsisters_pos_android/features/expenses/presentation/widgets/expense_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+class NumberFormatter extends TextInputFormatter {
+  final NumberFormat _formatter = NumberFormat('#,##0.##');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters except decimal point
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
+
+    // Handle multiple decimal points
+    List<String> parts = digitsOnly.split('.');
+    if (parts.length > 2) {
+      digitsOnly = '${parts[0]}.${parts.sublist(1).join('')}';
+    }
+
+    // Format the number
+    double? value = double.tryParse(digitsOnly);
+    if (value == null) {
+      return oldValue;
+    }
+
+    String formatted = _formatter.format(value);
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -68,8 +105,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   void _addItem() {
     final name = _expenseNameController.text.trim();
-    final amount =
-        double.tryParse(_expenseAmountController.text.replaceAll(',', '.'));
+    final amountText = _expenseAmountController.text.replaceAll(',', '');
+    final amount = double.tryParse(amountText);
 
     if (name.isNotEmpty && amount != null && amount > 0) {
       setState(() {
@@ -459,6 +496,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: _expenseAmountController,
+                                    inputFormatters: [NumberFormatter()],
                                     decoration: InputDecoration(
                                       labelText: 'Amount',
                                       hintText: '0.00',
@@ -496,8 +534,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                           value.trim().isEmpty) {
                                         return 'Please enter amount';
                                       }
-                                      final amount = double.tryParse(
-                                          value.replaceAll(',', '.'));
+                                      final amountText =
+                                          value.replaceAll(',', '');
+                                      final amount =
+                                          double.tryParse(amountText);
                                       if (amount == null || amount <= 0) {
                                         return 'Please enter valid amount';
                                       }

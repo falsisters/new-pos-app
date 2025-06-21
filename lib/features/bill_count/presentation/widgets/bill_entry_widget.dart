@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/models/bill_type.dart';
+import 'package:falsisters_pos_android/features/bill_count/presentation/utils/currency_input_formatter.dart';
 
 class BillEntryWidget extends StatefulWidget {
   final BillType type;
@@ -114,11 +115,14 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
                 fontWeight: FontWeight.w600,
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(7), // Allow up to 1,000,000
+                CurrencyInputFormatter(),
+                LengthLimitingTextInputFormatter(
+                    15), // Allow up to 999,999,999,999
               ],
               onChanged: (value) {
-                final intValue = int.tryParse(value) ?? 0;
+                // Remove commas and parse the value
+                final cleanValue = value.replaceAll(',', '');
+                final intValue = int.tryParse(cleanValue) ?? 0;
                 _updateAmount(intValue);
               },
             ),

@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/utils/currency_formatter.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_payment_method.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
@@ -51,10 +52,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     double cashGiven = 0.0;
     double changeAmount = 0.0;
     bool showChange = false;
-
     if (_selectedPaymentMethod == PaymentMethod.CASH &&
         _cashGivenController.text.isNotEmpty) {
-      final parsedCash = double.tryParse(_cashGivenController.text);
+      // Remove commas and parse cash given
+      final cleanedText = _cashGivenController.text.replaceAll(',', '');
+      final parsedCash = double.tryParse(cleanedText);
       if (parsedCash != null) {
         cashGiven = parsedCash;
         if (cashGiven >= widget.total) {
@@ -255,7 +257,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '₱${itemDisplayPrice.toStringAsFixed(2)}',
+                                          '₱${CurrencyFormatter.formatCurrency(itemDisplayPrice)}',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -290,7 +292,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey[600])),
-                                        Text('₱${cashGiven.toStringAsFixed(2)}',
+                                        Text(
+                                            '₱${CurrencyFormatter.formatCurrency(cashGiven)}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey[800])),
@@ -307,7 +310,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 color: AppColors.secondary,
                                                 fontWeight: FontWeight.w500)),
                                         Text(
-                                            '₱${changeAmount.toStringAsFixed(2)}',
+                                            '₱${CurrencyFormatter.formatCurrency(changeAmount)}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: AppColors.secondary,
@@ -330,7 +333,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '₱${widget.total.toStringAsFixed(2)}',
+                                        '₱${CurrencyFormatter.formatCurrency(widget.total)}',
                                         style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
@@ -509,8 +512,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d+\.?\d{0,2}')),
+                              CurrencyInputFormatter(),
                             ],
                             decoration: InputDecoration(
                               labelText: 'Amount Tendered',
@@ -543,7 +545,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter amount tendered';
                                 }
-                                final double? amount = double.tryParse(value);
+                                // Remove commas before parsing for validation
+                                final cleanedValue = value.replaceAll(',', '');
+                                final double? amount =
+                                    double.tryParse(cleanedValue);
                                 if (amount == null) {
                                   return 'Invalid amount';
                                 }
@@ -585,7 +590,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         if (_formKey.currentState!.validate()) {
                           if (_selectedPaymentMethod == PaymentMethod.CASH) {
                             final String cashGivenText =
-                                _cashGivenController.text;
+                                _cashGivenController.text.replaceAll(',', '');
                             if (cashGivenText.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -611,7 +616,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      'Cash tendered (₱${tenderedAmount.toStringAsFixed(2)}) is less than the total amount (₱${widget.total.toStringAsFixed(2)}).'),
+                                      'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(widget.total)}).'),
                                   backgroundColor: Colors.redAccent,
                                 ),
                               );

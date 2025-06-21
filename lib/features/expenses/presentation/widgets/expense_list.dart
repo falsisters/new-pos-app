@@ -13,14 +13,13 @@ class ExpenseListWidget extends StatelessWidget {
     required this.items,
     this.onItemRemove,
   });
-
   @override
   Widget build(BuildContext context) {
     debugPrint("ExpenseListWidget build with ${items.length} items");
     final double totalAmount =
         items.fold(0.0, (sum, item) => sum + item.amount);
     final currencyFormatter =
-        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ');
+        NumberFormat.currency(locale: 'en_PH', symbol: '₱ ', decimalDigits: 2);
 
     return Card(
       elevation: 2,

@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/utils/currency_formatter.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/widgets/cart_list.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/widgets/product_list.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/widgets/sales_list.dart';
