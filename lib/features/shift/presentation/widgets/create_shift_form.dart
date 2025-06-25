@@ -716,6 +716,49 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                   ),
           ),
         ),
+
+        const SizedBox(height: 20),
+
+        // Logout section
+        Column(
+          children: [
+            Text(
+              'Not you?',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () async {
+                // Close dialog first
+                Navigator.of(context).pop();
+
+                // Then logout
+                await widget.ref.read(authProvider.notifier).logout();
+              },
+              icon: Icon(
+                Icons.logout_rounded,
+                color: Colors.red[600],
+                size: 18,
+              ),
+              label: Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.red[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
