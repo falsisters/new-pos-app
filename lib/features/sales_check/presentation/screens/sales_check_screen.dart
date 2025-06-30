@@ -282,12 +282,74 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                           size: 20,
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          group.productName,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.primary,
+                                        Expanded(
+                                          child: Builder(
+                                            builder: (context) {
+                                              // Look for product types: 5KG, 25KG, 50KG, KG using word boundaries
+                                              final weightRegExp = RegExp(
+                                                  r'\b(5KG|25KG|50KG|KG)\b',
+                                                  caseSensitive: false);
+                                              final match =
+                                                  weightRegExp.firstMatch(
+                                                      group.productName);
+
+                                              if (match != null) {
+                                                final weight = match.group(0)!;
+                                                final beforeWeight = group
+                                                    .productName
+                                                    .substring(0, match.start)
+                                                    .trim();
+                                                final afterWeight = group
+                                                    .productName
+                                                    .substring(match.end)
+                                                    .trim();
+
+                                                // Combine before and after weight parts
+                                                final nameParts = [
+                                                  beforeWeight,
+                                                  afterWeight
+                                                ]
+                                                    .where((part) =>
+                                                        part.isNotEmpty)
+                                                    .join(' ');
+
+                                                return RichText(
+                                                  text: TextSpan(
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                    children: [
+                                                      if (nameParts.isNotEmpty)
+                                                        TextSpan(
+                                                            text: nameParts),
+                                                      if (nameParts.isNotEmpty)
+                                                        const TextSpan(
+                                                            text: ' '),
+                                                      TextSpan(
+                                                        text: weight,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              } else {
+                                                // No product type found, display as is
+                                                return Text(
+                                                  group.productName,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                );
+                                              }
+                                            },
                                           ),
                                         ),
                                       ],
@@ -593,50 +655,69 @@ class _FormattedSaleRow extends StatelessWidget {
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
     // Parse the formattedSale to extract components
-    final parts = formattedSale.split(' ');
     String quantity = '';
     String productInfo = '';
     String amountStr = '';
     double? amount;
 
-    // Try to extract quantity (first number), product info, and amount (last number with ₱)
-    if (parts.isNotEmpty) {
-      // Extract quantity if it's a number at the beginning
-      if (RegExp(r'^\d+(\.\d+)?$').hasMatch(parts[0])) {
-        quantity = parts[0];
-      }
+    // Handle format like "1 asdasd 50KG = 111" or similar variations
+    if (formattedSale.contains(' = ')) {
+      // Split by ' = ' to separate product info from amount
+      final parts = formattedSale.split(' = ');
+      productInfo = parts[0].trim();
 
-      // Find amount (look for ₱ symbol or number at the end)
-      for (int i = parts.length - 1; i >= 0; i--) {
-        String part = parts[i].replaceAll('₱', '').replaceAll(',', '');
-        if (RegExp(r'^\d+(\.\d+)?$').hasMatch(part)) {
-          amount = double.tryParse(part);
-          if (amount != null) {
-            amountStr = '₱${numberFormat.format(amount)}';
-            // Remove the amount part from the original string
-            parts.removeAt(i);
-            break;
-          }
+      if (parts.length > 1) {
+        amount = double.tryParse(parts[1].trim());
+        if (amount != null) {
+          amountStr = '₱${numberFormat.format(amount)}';
         }
       }
+    } else {
+      // Fallback: try to parse the original way
+      final parts = formattedSale.split(' ');
 
-      // Remove quantity from parts if it was extracted
-      if (quantity.isNotEmpty && parts.isNotEmpty && parts[0] == quantity) {
-        parts.removeAt(0);
+      if (parts.isNotEmpty) {
+        // Extract quantity if it's a number at the beginning
+        if (RegExp(r'^\d+(\.\d+)?$').hasMatch(parts[0])) {
+          quantity = parts[0];
+        }
+
+        // Find amount (look for ₱ symbol or number at the end)
+        for (int i = parts.length - 1; i >= 0; i--) {
+          String part = parts[i].replaceAll('₱', '').replaceAll(',', '');
+          if (RegExp(r'^\d+(\.\d+)?$').hasMatch(part)) {
+            amount = double.tryParse(part);
+            if (amount != null) {
+              amountStr = '₱${numberFormat.format(amount)}';
+              parts.removeAt(i);
+              break;
+            }
+          }
+        }
+
+        // Remove quantity from parts if it was extracted
+        if (quantity.isNotEmpty && parts.isNotEmpty && parts[0] == quantity) {
+          parts.removeAt(0);
+        }
+
+        // The remaining parts are product info
+        productInfo = parts.join(' ');
       }
+    }
 
-      // The remaining parts are product info
-      productInfo = parts.join(' ');
+    // Extract quantity from the beginning of productInfo if not already extracted
+    if (quantity.isEmpty && productInfo.isNotEmpty) {
+      final productParts = productInfo.split(' ');
+      if (productParts.isNotEmpty &&
+          RegExp(r'^\d+(\.\d+)?$').hasMatch(productParts[0])) {
+        quantity = productParts[0];
+        productInfo = productParts.sublist(1).join(' ');
+      }
     }
 
     // If we couldn't parse properly, fall back to original formatting
     if (quantity.isEmpty && productInfo.isEmpty && amountStr.isEmpty) {
-      if (RegExp(r'^\d+(\.\d+)?$').hasMatch(parts[0])) {
-        quantity = parts[0];
-        productInfo = parts.sublist(1).join(' ');
-      } else {
-        productInfo = formattedSale;
-      }
+      productInfo = formattedSale;
     }
 
     return Padding(
@@ -675,17 +756,57 @@ class _FormattedSaleRow extends StatelessWidget {
           // Add spacing between quantity and description
           if (quantity.isNotEmpty) const SizedBox(width: 16),
 
-          // Product info column
+          // Product info column with bold product types
           Expanded(
             flex: 4,
-            child: Text(
-              productInfo.isNotEmpty
-                  ? productInfo
-                  : (quantity.isEmpty ? formattedSale : ''),
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.3,
-              ),
+            child: Builder(
+              builder: (context) {
+                // Look for product types: 5KG, 25KG, 50KG, KG using word boundaries
+                final weightRegExp =
+                    RegExp(r'\b(5KG|25KG|50KG|KG)\b', caseSensitive: false);
+                final match = weightRegExp.firstMatch(productInfo);
+
+                if (match != null) {
+                  final weight = match.group(0)!;
+                  final beforeWeight =
+                      productInfo.substring(0, match.start).trim();
+                  final afterWeight = productInfo.substring(match.end).trim();
+
+                  // Combine before and after weight parts
+                  final nameParts = [beforeWeight, afterWeight]
+                      .where((part) => part.isNotEmpty)
+                      .join(' ');
+
+                  return RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.3,
+                        color: Colors.black,
+                      ),
+                      children: [
+                        if (nameParts.isNotEmpty) TextSpan(text: nameParts),
+                        if (nameParts.isNotEmpty) const TextSpan(text: ' '),
+                        TextSpan(
+                          text: weight,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  // No product type found, display as is
+                  return Text(
+                    productInfo.isNotEmpty
+                        ? productInfo
+                        : (quantity.isEmpty ? formattedSale : ''),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
+                  );
+                }
+              },
             ),
           ),
 
@@ -697,7 +818,7 @@ class _FormattedSaleRow extends StatelessWidget {
                 amountStr,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                 ),
                 textAlign: TextAlign.right,
               ),

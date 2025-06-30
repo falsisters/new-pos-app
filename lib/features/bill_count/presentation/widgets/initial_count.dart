@@ -134,29 +134,6 @@ class InitialCountWidget extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // Step 3: Add Total Sales
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Cash from Total Sales",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              Text(
-                "₱ ${BillCountFormatter.formatCurrency(totalSales)}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-
           const SizedBox(height: 8),
 
           // Step 4: Add Total Expenses

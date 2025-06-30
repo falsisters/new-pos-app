@@ -152,6 +152,8 @@ class QuantitySectionWidget extends StatelessWidget {
               const SizedBox(width: 2),
               Expanded(child: _buildQuickActionButton('3', 3.0)),
               const SizedBox(width: 2),
+              Expanded(child: _buildQuickActionButton('4', 4.0)),
+              const SizedBox(width: 2),
               Expanded(child: _buildQuickActionButton('5', 5.0)),
             ],
           ),

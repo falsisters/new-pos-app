@@ -90,6 +90,7 @@ class AddToCartScreen extends ConsumerStatefulWidget {
 
 class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final FocusNode _keyboardFocusNode = FocusNode();
 
   // State management variables
   bool _isSpecialPrice = false;
@@ -148,6 +149,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     // Add listeners for new controllers
     _wholeQuantityController.addListener(_updateCombinedQuantityAndTotal);
     _decimalQuantityController.addListener(_updateCombinedQuantityAndTotal);
+
+    // Request focus for keyboard input - this is the key part that was missing!
+    _keyboardFocusNode.requestFocus();
   }
 
   @override
@@ -168,7 +172,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _decimalQuantityController.removeListener(_updateCombinedQuantityAndTotal);
     _wholeQuantityController.dispose();
     _decimalQuantityController.dispose();
-
+    _keyboardFocusNode.dispose();
     super.dispose();
   }
 
@@ -554,6 +558,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     });
   }
 
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+      _addToCart();
+    }
+  }
+
   void _addToCart() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -576,7 +586,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
       final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
 
-      // Round the price to avoid precision issues
       final roundedPrice = _isSpecialPrice
           ? double.parse((sackPrice.specialPrice!.price).toStringAsFixed(2))
           : double.parse(sackPrice.price.toStringAsFixed(2));
@@ -601,22 +610,20 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       );
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final perKiloPrice = widget.product.perKiloPrice!;
-      final kgQuantity =
-          _getCurrentQuantityInKg(); // Always use kg quantity for the DTO
+      final kgQuantity = _getCurrentQuantityInKg();
 
-      // Round the price to avoid precision issues
       final roundedPrice = double.parse(perKiloPrice.price.toStringAsFixed(2));
       final roundedQuantity = double.parse(kgQuantity.toStringAsFixed(2));
 
       productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
-        isGantang: _isGantangMode, // Set the gantang flag
+        isGantang: _isGantangMode,
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
           price: roundedPrice,
-          quantity: roundedQuantity, // Always store as kg
+          quantity: roundedQuantity,
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: _isDiscounted
@@ -641,189 +648,224 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     final bool hasStock = _hasStock();
     final double availableStock = _getAvailableStock();
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
-          ),
-        ],
-        title: const Text('Add to Cart',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.grey[50]!, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+    return KeyboardListener(
+      focusNode: _keyboardFocusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close),
+            ),
+          ],
+          title: const Text('Add to Cart',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(12.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Header Card
-                ProductHeaderWidget(product: widget.product),
-
-                const SizedBox(height: 12),
-
-                // Pricing Options
-                PricingOptionsWidget(
-                  product: widget.product,
-                  selectedSackPriceId: _selectedSackPriceId,
-                  isSpecialPrice: _isSpecialPrice,
-                  isPerKiloSelected: _isPerKiloSelected,
-                  onSelectSackPrice: _selectSackPrice,
-                  onSelectPerKilo: _selectPerKilo,
-                ),
-
-                const SizedBox(height: 12),
-
-                // Main content row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column - Quantity
-                    Expanded(
-                      flex: _selectedSackPriceId != null ? 3 : 2,
-                      child: QuantitySectionWidget(
-                        product: widget.product,
-                        selectedSackPriceId: _selectedSackPriceId,
-                        isPerKiloSelected: _isPerKiloSelected,
-                        isGantangMode: _isGantangMode,
-                        hasStock: hasStock,
-                        availableStock: availableStock,
-                        sackQuantityController: _sackQuantityController,
-                        wholeQuantityController: _wholeQuantityController,
-                        perKiloTotalPriceController:
-                            _perKiloTotalPriceController,
-                        perKiloTotalPriceFocusNode: _perKiloTotalPriceFocusNode,
-                        onIncreaseQuantity: _increaseQuantity,
-                        onDecreaseQuantity: _decreaseQuantity,
-                        onIncreaseWholeQuantity: _increaseWholeQuantity,
-                        onDecreaseWholeQuantity: _decreaseWholeQuantity,
-                        onSetQuickQuantity: _setQuickQuantity,
-                        onToggleGantangMode: (isGantang) {
-                          setState(() {
-                            if (_isGantangMode != isGantang) {
-                              _isGantangMode = isGantang;
-                              final currentKg = _getCurrentQuantityInKg();
-                              _setQuantityFromKg(currentKg);
-                            }
-                          });
-                        },
-                      ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.grey[50]!, Colors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(12.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Add keyboard shortcut hint
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border:
+                          Border.all(color: AppColors.primary.withOpacity(0.2)),
                     ),
-
-                    const SizedBox(width: 8),
-
-                    // Right Column
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        children: [
-                          // Decimal quantity section (only for per kilo)
-                          if (_isPerKiloSelected) ...[
-                            DecimalQuantityWidget(
-                              isGantangMode: _isGantangMode,
-                              decimalQuantityController:
-                                  _decimalQuantityController,
-                              onIncreaseDecimalQuantity:
-                                  _increaseDecimalQuantity,
-                              onDecreaseDecimalQuantity:
-                                  _decreaseDecimalQuantity,
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          // Discount section
-                          DiscountSectionWidget(
-                            isDiscounted: _isDiscounted,
-                            isSackSelected: _selectedSackPriceId != null,
-                            discountedPriceController:
-                                _discountedPriceController,
-                            onDiscountToggle: (bool? value) {
-                              setState(() {
-                                _isDiscounted = value ?? false;
-                                if (!_isDiscounted)
-                                  _discountedPriceController.clear();
-                              });
-                            },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.keyboard,
+                            size: 16, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Press Enter to add to cart',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Add to Cart Button
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: hasStock
-                        ? LinearGradient(
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.8)
-                            ],
-                          )
-                        : LinearGradient(
-                            colors: [Colors.grey[400]!, Colors.grey[300]!],
-                          ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: hasStock
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : [],
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: hasStock ? _addToCart : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+
+                  // Product Header Card
+                  ProductHeaderWidget(product: widget.product),
+
+                  const SizedBox(height: 12),
+
+                  // Pricing Options
+                  PricingOptionsWidget(
+                    product: widget.product,
+                    selectedSackPriceId: _selectedSackPriceId,
+                    isSpecialPrice: _isSpecialPrice,
+                    isPerKiloSelected: _isPerKiloSelected,
+                    onSelectSackPrice: _selectSackPrice,
+                    onSelectPerKilo: _selectPerKilo,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Main content row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Column - Quantity
+                      Expanded(
+                        flex: _selectedSackPriceId != null ? 3 : 2,
+                        child: QuantitySectionWidget(
+                          product: widget.product,
+                          selectedSackPriceId: _selectedSackPriceId,
+                          isPerKiloSelected: _isPerKiloSelected,
+                          isGantangMode: _isGantangMode,
+                          hasStock: hasStock,
+                          availableStock: availableStock,
+                          sackQuantityController: _sackQuantityController,
+                          wholeQuantityController: _wholeQuantityController,
+                          perKiloTotalPriceController:
+                              _perKiloTotalPriceController,
+                          perKiloTotalPriceFocusNode:
+                              _perKiloTotalPriceFocusNode,
+                          onIncreaseQuantity: _increaseQuantity,
+                          onDecreaseQuantity: _decreaseQuantity,
+                          onIncreaseWholeQuantity: _increaseWholeQuantity,
+                          onDecreaseWholeQuantity: _decreaseWholeQuantity,
+                          onSetQuickQuantity: _setQuickQuantity,
+                          onToggleGantangMode: (isGantang) {
+                            setState(() {
+                              if (_isGantangMode != isGantang) {
+                                _isGantangMode = isGantang;
+                                final currentKg = _getCurrentQuantityInKg();
+                                _setQuantityFromKg(currentKg);
+                              }
+                            });
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Right Column
+                      Expanded(
+                        flex: 2,
+                        child: Column(
                           children: [
-                            Icon(
-                                hasStock
-                                    ? Icons.shopping_cart_rounded
-                                    : Icons.block,
-                                color: Colors.white,
-                                size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              hasStock ? 'Add to Cart' : 'Out of Stock',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
+                            // Decimal quantity section (only for per kilo)
+                            if (_isPerKiloSelected) ...[
+                              DecimalQuantityWidget(
+                                isGantangMode: _isGantangMode,
+                                decimalQuantityController:
+                                    _decimalQuantityController,
+                                onIncreaseDecimalQuantity:
+                                    _increaseDecimalQuantity,
+                                onDecreaseDecimalQuantity:
+                                    _decreaseDecimalQuantity,
                               ),
+                              const SizedBox(height: 8),
+                            ],
+                            // Discount section
+                            DiscountSectionWidget(
+                              isDiscounted: _isDiscounted,
+                              isSackSelected: _selectedSackPriceId != null,
+                              discountedPriceController:
+                                  _discountedPriceController,
+                              onDiscountToggle: (bool? value) {
+                                setState(() {
+                                  _isDiscounted = value ?? false;
+                                  if (!_isDiscounted)
+                                    _discountedPriceController.clear();
+                                });
+                              },
                             ),
                           ],
                         ),
                       ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Add to Cart Button
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: hasStock
+                          ? LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(0.8)
+                              ],
+                            )
+                          : LinearGradient(
+                              colors: [Colors.grey[400]!, Colors.grey[300]!],
+                            ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: hasStock
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: hasStock ? _addToCart : null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                  hasStock
+                                      ? Icons.shopping_cart_rounded
+                                      : Icons.block,
+                                  color: Colors.white,
+                                  size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                hasStock
+                                    ? 'Add to Cart (Enter)'
+                                    : 'Out of Stock',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
