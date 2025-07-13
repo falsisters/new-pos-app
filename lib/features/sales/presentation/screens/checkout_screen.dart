@@ -101,9 +101,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final salesNotifier = ref.watch(salesProvider.notifier);
-    final salesCheckNotifier = ref.watch(salesCheckProvider.notifier);
-
     double cashGiven = 0.0;
     double changeAmount = 0.0;
     bool showChange = false;

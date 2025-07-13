@@ -21,6 +21,7 @@ mixin _$SalesState {
   String? get orderId;
   String? get error;
   DateTime? get selectedDate;
+  SaleModel? get saleToPrint;
 
   /// Create a copy of SalesState
   /// with the given fields replaced by the non-null parameter values.
@@ -44,7 +45,9 @@ mixin _$SalesState {
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.error, error) || other.error == error) &&
             (identical(other.selectedDate, selectedDate) ||
-                other.selectedDate == selectedDate));
+                other.selectedDate == selectedDate) &&
+            (identical(other.saleToPrint, saleToPrint) ||
+                other.saleToPrint == saleToPrint));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -56,11 +59,12 @@ mixin _$SalesState {
       const DeepCollectionEquality().hash(pendingSales),
       orderId,
       error,
-      selectedDate);
+      selectedDate,
+      saleToPrint);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, pendingSales: $pendingSales, orderId: $orderId, error: $error, selectedDate: $selectedDate)';
+    return 'SalesState(cart: $cart, sales: $sales, pendingSales: $pendingSales, orderId: $orderId, error: $error, selectedDate: $selectedDate, saleToPrint: $saleToPrint)';
   }
 }
 
@@ -76,9 +80,11 @@ abstract mixin class $SalesStateCopyWith<$Res> {
       List<PendingSale> pendingSales,
       String? orderId,
       String? error,
-      DateTime? selectedDate});
+      DateTime? selectedDate,
+      SaleModel? saleToPrint});
 
   $CartModelCopyWith<$Res> get cart;
+  $SaleModelCopyWith<$Res>? get saleToPrint;
 }
 
 /// @nodoc
@@ -99,6 +105,7 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
     Object? orderId = freezed,
     Object? error = freezed,
     Object? selectedDate = freezed,
+    Object? saleToPrint = freezed,
   }) {
     return _then(_self.copyWith(
       cart: null == cart
@@ -125,6 +132,10 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
           ? _self.selectedDate
           : selectedDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      saleToPrint: freezed == saleToPrint
+          ? _self.saleToPrint
+          : saleToPrint // ignore: cast_nullable_to_non_nullable
+              as SaleModel?,
     ));
   }
 
@@ -135,6 +146,20 @@ class _$SalesStateCopyWithImpl<$Res> implements $SalesStateCopyWith<$Res> {
   $CartModelCopyWith<$Res> get cart {
     return $CartModelCopyWith<$Res>(_self.cart, (value) {
       return _then(_self.copyWith(cart: value));
+    });
+  }
+
+  /// Create a copy of SalesState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $SaleModelCopyWith<$Res>? get saleToPrint {
+    if (_self.saleToPrint == null) {
+      return null;
+    }
+
+    return $SaleModelCopyWith<$Res>(_self.saleToPrint!, (value) {
+      return _then(_self.copyWith(saleToPrint: value));
     });
   }
 }
@@ -148,7 +173,8 @@ class _SalesState implements SalesState {
       final List<PendingSale> pendingSales = const [],
       this.orderId,
       this.error,
-      this.selectedDate})
+      this.selectedDate,
+      this.saleToPrint})
       : _sales = sales,
         _pendingSales = pendingSales;
   factory _SalesState.fromJson(Map<String, dynamic> json) =>
@@ -179,6 +205,8 @@ class _SalesState implements SalesState {
   final String? error;
   @override
   final DateTime? selectedDate;
+  @override
+  final SaleModel? saleToPrint;
 
   /// Create a copy of SalesState
   /// with the given fields replaced by the non-null parameter values.
@@ -207,7 +235,9 @@ class _SalesState implements SalesState {
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.error, error) || other.error == error) &&
             (identical(other.selectedDate, selectedDate) ||
-                other.selectedDate == selectedDate));
+                other.selectedDate == selectedDate) &&
+            (identical(other.saleToPrint, saleToPrint) ||
+                other.saleToPrint == saleToPrint));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -219,11 +249,12 @@ class _SalesState implements SalesState {
       const DeepCollectionEquality().hash(_pendingSales),
       orderId,
       error,
-      selectedDate);
+      selectedDate,
+      saleToPrint);
 
   @override
   String toString() {
-    return 'SalesState(cart: $cart, sales: $sales, pendingSales: $pendingSales, orderId: $orderId, error: $error, selectedDate: $selectedDate)';
+    return 'SalesState(cart: $cart, sales: $sales, pendingSales: $pendingSales, orderId: $orderId, error: $error, selectedDate: $selectedDate, saleToPrint: $saleToPrint)';
   }
 }
 
@@ -241,10 +272,13 @@ abstract mixin class _$SalesStateCopyWith<$Res>
       List<PendingSale> pendingSales,
       String? orderId,
       String? error,
-      DateTime? selectedDate});
+      DateTime? selectedDate,
+      SaleModel? saleToPrint});
 
   @override
   $CartModelCopyWith<$Res> get cart;
+  @override
+  $SaleModelCopyWith<$Res>? get saleToPrint;
 }
 
 /// @nodoc
@@ -265,6 +299,7 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
     Object? orderId = freezed,
     Object? error = freezed,
     Object? selectedDate = freezed,
+    Object? saleToPrint = freezed,
   }) {
     return _then(_SalesState(
       cart: null == cart
@@ -291,6 +326,10 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
           ? _self.selectedDate
           : selectedDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      saleToPrint: freezed == saleToPrint
+          ? _self.saleToPrint
+          : saleToPrint // ignore: cast_nullable_to_non_nullable
+              as SaleModel?,
     ));
   }
 
@@ -301,6 +340,20 @@ class __$SalesStateCopyWithImpl<$Res> implements _$SalesStateCopyWith<$Res> {
   $CartModelCopyWith<$Res> get cart {
     return $CartModelCopyWith<$Res>(_self.cart, (value) {
       return _then(_self.copyWith(cart: value));
+    });
+  }
+
+  /// Create a copy of SalesState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $SaleModelCopyWith<$Res>? get saleToPrint {
+    if (_self.saleToPrint == null) {
+      return null;
+    }
+
+    return $SaleModelCopyWith<$Res>(_self.saleToPrint!, (value) {
+      return _then(_self.copyWith(saleToPrint: value));
     });
   }
 }

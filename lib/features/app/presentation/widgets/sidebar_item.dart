@@ -6,6 +6,7 @@ class SidebarItem extends StatefulWidget {
   final IconData icon;
   final bool isSelected;
   final Function onTap;
+  final bool isCollapsed;
 
   const SidebarItem({
     super.key,
@@ -13,6 +14,7 @@ class SidebarItem extends StatefulWidget {
     required this.icon,
     required this.isSelected,
     required this.onTap,
+    this.isCollapsed = false,
   });
 
   @override
@@ -46,55 +48,79 @@ class _SidebarItemState extends State<SidebarItem> {
           child: InkWell(
             onTap: () => widget.onTap(),
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: widget.isSelected
-                          ? AppColors.secondary.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      color: widget.isSelected
-                          ? AppColors.secondary
-                          : Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: widget.isSelected
-                            ? AppColors.secondary
-                            : Colors.white,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        fontSize: 15,
-                        letterSpacing: 0.3,
+            child: Tooltip(
+              message: widget.isCollapsed ? widget.title : '',
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  vertical: 10.0,
+                  horizontal: widget.isCollapsed ? 12.0 : 8.0,
+                ),
+                child: widget.isCollapsed
+                    ? Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: widget.isSelected
+                                ? AppColors.secondary.withOpacity(0.2)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            widget.icon,
+                            color: widget.isSelected
+                                ? AppColors.secondary
+                                : Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: widget.isSelected
+                                  ? AppColors.secondary.withOpacity(0.2)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              color: widget.isSelected
+                                  ? AppColors.secondary
+                                  : Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              widget.title,
+                              style: TextStyle(
+                                color: widget.isSelected
+                                    ? AppColors.secondary
+                                    : Colors.white,
+                                fontWeight: widget.isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                fontSize: 15,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                          if (widget.isSelected)
+                            Container(
+                              width: 3,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ),
-                  if (widget.isSelected)
-                    Container(
-                      width: 3,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                ],
               ),
             ),
           ),

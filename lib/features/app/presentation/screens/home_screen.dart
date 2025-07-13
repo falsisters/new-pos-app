@@ -1,4 +1,6 @@
 import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
+import 'package:falsisters_pos_android/features/app/presentation/screens/settings_screen.dart';
+import 'package:falsisters_pos_android/features/app/presentation/widgets/printing_orchestrator.dart';
 import 'package:falsisters_pos_android/features/app/presentation/widgets/sidebar.dart';
 import 'package:falsisters_pos_android/features/attachments/presentation/screens/attachments_screen.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/screens/bill_count_screen.dart';
@@ -151,52 +153,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      body: Consumer(builder: (context, ref, _) {
-        final shiftState = ref.watch(shiftProvider);
+      body: PrintingOrchestrator(
+        child: Consumer(builder: (context, ref, _) {
+          final shiftState = ref.watch(shiftProvider);
 
-        return shiftState.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          error: (error, stackTrace) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error: ${error.toString()}'),
-                ElevatedButton(
-                  onPressed: () async {
-                    final future = ref.refresh(shiftProvider);
-                    await future;
-                    setState(() {
-                      _hasCheckedInitialDialog = false;
-                      _isInitialLoad = true;
-                    });
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
+          return shiftState.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(),
             ),
-          ),
-          data: (CurrentShiftState state) {
-            return Row(
-              children: [
-                Sidebar(),
-                if (drawerIndex == 10) Expanded(child: OrderScreen()),
-                if (drawerIndex == 0) Expanded(child: SalesScreen()),
-                if (drawerIndex == 1) Expanded(child: DeliveryScreen()),
-                if (drawerIndex == 2) Expanded(child: StocksScreen()),
-                if (drawerIndex == 3) Expanded(child: KahonScreen()),
-                if (drawerIndex == 4) Expanded(child: ExpensesScreen()),
-                if (drawerIndex == 5) Expanded(child: ProfitsScreen()),
-                if (drawerIndex == 6) Expanded(child: AttachmentsScreen()),
-                if (drawerIndex == 7) Expanded(child: SalesCheckScreen()),
-                if (drawerIndex == 8) Expanded(child: BillCountScreen()),
-                if (drawerIndex == 9) Expanded(child: ShiftScreen()),
-              ],
-            );
-          },
-        );
-      }),
+            error: (error, stackTrace) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${error.toString()}'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final future = ref.refresh(shiftProvider);
+                      await future;
+                      setState(() {
+                        _hasCheckedInitialDialog = false;
+                        _isInitialLoad = true;
+                      });
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            data: (CurrentShiftState state) {
+              return Row(
+                children: [
+                  const Sidebar(),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        if (drawerIndex == 10) return const OrderScreen();
+                        if (drawerIndex == 0) return const SalesScreen();
+                        if (drawerIndex == 1) return const DeliveryScreen();
+                        if (drawerIndex == 2) return const StocksScreen();
+                        if (drawerIndex == 3) return const KahonScreen();
+                        if (drawerIndex == 4) return const ExpensesScreen();
+                        if (drawerIndex == 5) return const ProfitsScreen();
+                        if (drawerIndex == 6) return const AttachmentsScreen();
+                        if (drawerIndex == 7) return const SalesCheckScreen();
+                        if (drawerIndex == 8) return const BillCountScreen();
+                        if (drawerIndex == 9) return const ShiftScreen();
+                        if (drawerIndex == 11) return const SettingsScreen();
+                        return const SalesScreen(); // Default fallback
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        }),
+      ),
     );
   }
 }

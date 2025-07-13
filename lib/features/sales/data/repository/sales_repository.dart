@@ -9,16 +9,16 @@ import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart
 class SalesRepository {
   final DioClient _dio = DioClient();
 
-  Future<Map<String, dynamic>> createSale(CreateSaleRequestModel sale) async {
+  Future<SaleModel> createSale(CreateSaleRequestModel sale) async {
     try {
       final saleData = jsonEncode(sale.toJson());
       final response = await _dio.instance.post('/sale/create', data: saleData);
 
       if (response.data == null) {
-        return {};
+        throw Exception('Failed to create sale: No data in response');
       }
 
-      return response.data;
+      return SaleModel.fromJson(response.data);
     } catch (e) {
       if (e is DioException) {
         throw Exception(e.error);

@@ -130,13 +130,14 @@ class _$CartItemModelCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _CartItemModel implements CartItemModel {
+class _CartItemModel extends CartItemModel {
   const _CartItemModel(
       {required this.product,
       this.isGantang,
       this.isSpecialPrice,
       required this.price,
-      required this.quantity});
+      required this.quantity})
+      : super._();
   factory _CartItemModel.fromJson(Map<String, dynamic> json) =>
       _$CartItemModelFromJson(json);
 

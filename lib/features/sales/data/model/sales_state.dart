@@ -15,6 +15,7 @@ sealed class SalesState with _$SalesState {
     String? orderId,
     String? error,
     DateTime? selectedDate,
+    SaleModel? saleToPrint,
   }) = _SalesState;
 
   factory SalesState.fromJson(Map<String, dynamic> json) =>

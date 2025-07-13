@@ -20,6 +20,9 @@ _SalesState _$SalesStateFromJson(Map<String, dynamic> json) => _SalesState(
       selectedDate: json['selectedDate'] == null
           ? null
           : DateTime.parse(json['selectedDate'] as String),
+      saleToPrint: json['saleToPrint'] == null
+          ? null
+          : SaleModel.fromJson(json['saleToPrint'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
@@ -30,4 +33,5 @@ Map<String, dynamic> _$SalesStateToJson(_SalesState instance) =>
       'orderId': instance.orderId,
       'error': instance.error,
       'selectedDate': instance.selectedDate?.toIso8601String(),
+      'saleToPrint': instance.saleToPrint,
     };

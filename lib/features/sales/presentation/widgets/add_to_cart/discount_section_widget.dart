@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../data/constants/currency_input_formatter.dart';
 
 class DiscountSectionWidget extends StatelessWidget {
@@ -122,7 +123,7 @@ class DiscountSectionWidget extends StatelessWidget {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    CurrencyInputFormatter(),
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                   ],
                   decoration: _inputDecoration(
                     labelText: 'Unit Price ₱',

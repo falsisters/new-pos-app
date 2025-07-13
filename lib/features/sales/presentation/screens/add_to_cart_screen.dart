@@ -347,18 +347,18 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     });
   }
 
-  bool _isOutOfStock() {
-    if (_selectedSackPriceId != null) {
-      final sackPrice = widget.product.sackPrice
-          .firstWhere((sp) => sp.id == _selectedSackPriceId);
-      final requestedQuantity = int.tryParse(_sackQuantityController.text) ?? 0;
-      return sackPrice.stock < requestedQuantity;
-    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-      final kgQuantity = _getCurrentQuantityInKg();
-      return widget.product.perKiloPrice!.stock < kgQuantity;
-    }
-    return false;
-  }
+  // bool _isOutOfStock() {
+  //   if (_selectedSackPriceId != null) {
+  //     final sackPrice = widget.product.sackPrice
+  //         .firstWhere((sp) => sp.id == _selectedSackPriceId);
+  //     final requestedQuantity = int.tryParse(_sackQuantityController.text) ?? 0;
+  //     return sackPrice.stock < requestedQuantity;
+  //   } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+  //     final kgQuantity = _getCurrentQuantityInKg();
+  //     return widget.product.perKiloPrice!.stock < kgQuantity;
+  //   }
+  //   return false;
+  // }
 
   bool _hasStock() {
     if (_selectedSackPriceId != null) {
@@ -586,9 +586,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
       final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
 
-      final roundedPrice = _isSpecialPrice
-          ? double.parse((sackPrice.specialPrice!.price).toStringAsFixed(2))
-          : double.parse(sackPrice.price.toStringAsFixed(2));
+      final price =
+          _isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price;
+      final roundedPrice = price.ceil().toDouble();
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -605,14 +605,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         discountedPrice: _isDiscounted
             ? double.tryParse(
                     _discountedPriceController.text.replaceAll(',', ''))
-                ?.let((val) => double.parse(val.toStringAsFixed(2)))
+                ?.let((val) => val.ceil().toDouble())
             : null,
       );
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final perKiloPrice = widget.product.perKiloPrice!;
       final kgQuantity = _getCurrentQuantityInKg();
 
-      final roundedPrice = double.parse(perKiloPrice.price.toStringAsFixed(2));
+      final roundedPrice = perKiloPrice.price.ceil().toDouble();
       final roundedQuantity = double.parse(kgQuantity.toStringAsFixed(2));
 
       productDto = ProductDto(
@@ -629,7 +629,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         discountedPrice: _isDiscounted
             ? double.tryParse(
                     _discountedPriceController.text.replaceAll(',', ''))
-                ?.let((val) => double.parse(val.toStringAsFixed(2)))
+                ?.let((val) => val.ceil().toDouble())
             : null,
       );
     } else {
@@ -648,25 +648,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     final bool hasStock = _hasStock();
     final double availableStock = _getAvailableStock();
 
-    return KeyboardListener(
-      focusNode: _keyboardFocusNode,
-      onKeyEvent: _handleKeyEvent,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          centerTitle: true,
-          actions: [
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
-            ),
-          ],
-          title: const Text('Add to Cart',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        body: Container(
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close),
+          ),
+        ],
+        title: const Text('Add to Cart',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      body: KeyboardListener(
+        focusNode: _keyboardFocusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.grey[50]!, Colors.white],

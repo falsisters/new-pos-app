@@ -4,6 +4,7 @@ import 'package:falsisters_pos_android/features/products/data/providers/product_
 import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
@@ -14,11 +15,13 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   final SalesRepository _salesRepository = SalesRepository();
   late SalesQueueService _queueService;
   StreamSubscription? _queueSubscription;
+  StreamSubscription? _processedSaleSubscription;
 
   @override
   Future<SalesState> build() async {
     _queueService = ref.read(salesQueueServiceProvider);
     _setupQueueListener();
+    _setupProcessedSaleListener();
 
     try {
       final today = DateTime.now();
@@ -52,9 +55,27 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     });
   }
 
-  void dispose() {
-    _queueSubscription?.cancel();
+  void _setupProcessedSaleListener() {
+    _processedSaleSubscription =
+        _queueService.processedSaleStream.listen((processedSale) {
+      final currentState = state.value;
+      if (currentState != null) {
+        // Add the new sale to the list and set it as the one to be printed
+        final updatedSales = [processedSale, ...currentState.sales];
+        state = AsyncValue.data(currentState.copyWith(
+          sales: updatedSales,
+          saleToPrint: processedSale,
+        ));
+      }
+    });
   }
+
+  // @override
+  // void dispose() {
+  //   _queueSubscription?.cancel();
+  //   _processedSaleSubscription?.cancel();
+  //   super.dispose();
+  // }
 
   Future<void> deleteSale(String id) async {
     // Don't set loading state to preserve current data
@@ -184,9 +205,10 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   Future<void> submitSale(
       double totalAmount, PaymentMethod paymentMethod) async {
     final preAsyncState = state.value;
+    if (preAsyncState == null) return;
 
     // Instantly clear cart and add to queue
-    final currentCart = preAsyncState!.cart;
+    final currentCart = preAsyncState.cart;
     final orderIdForRequest = preAsyncState.orderId;
 
     final saleRequest = CreateSaleRequestModel(
@@ -217,6 +239,13 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
       await ref.read(salesCheckProvider.notifier).refresh();
     } catch (e) {
       print('Error refreshing providers: $e');
+    }
+  }
+
+  void clearSaleToPrint() {
+    final currentState = state.value;
+    if (currentState != null) {
+      state = AsyncValue.data(currentState.copyWith(saleToPrint: null));
     }
   }
 }

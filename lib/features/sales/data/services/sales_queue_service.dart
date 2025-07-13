@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/pending_sale.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,8 @@ class SalesQueueService {
   final List<PendingSale> _queue = [];
   final StreamController<List<PendingSale>> _queueController =
       StreamController.broadcast();
+  final StreamController<SaleModel> _processedSaleController =
+      StreamController.broadcast();
   Timer? _processTimer;
 
   SalesQueueService(this._salesRepository) {
@@ -17,6 +20,7 @@ class SalesQueueService {
   }
 
   Stream<List<PendingSale>> get queueStream => _queueController.stream;
+  Stream<SaleModel> get processedSaleStream => _processedSaleController.stream;
   List<PendingSale> get currentQueue => List.unmodifiable(_queue);
 
   String addToQueue(CreateSaleRequestModel saleRequest) {
@@ -53,11 +57,13 @@ class SalesQueueService {
     _queueController.add(List.from(_queue));
 
     try {
-      await _salesRepository.createSale(pendingSale.saleRequest);
+      final createdSale =
+          await _salesRepository.createSale(pendingSale.saleRequest);
       _queue.removeAt(processingIndex);
+      _processedSaleController.add(createdSale);
     } catch (e) {
       // Mark with error but don't remove - will retry
-      _queue[processingIndex] = pendingSale.copyWith(
+      _queue[processingIndex] = _queue[processingIndex].copyWith(
         isProcessing: false,
         error: e.toString(),
       );
@@ -74,6 +80,7 @@ class SalesQueueService {
   void dispose() {
     _processTimer?.cancel();
     _queueController.close();
+    _processedSaleController.close();
   }
 }
 
