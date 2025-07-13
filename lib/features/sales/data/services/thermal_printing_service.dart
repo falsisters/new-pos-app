@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:falsisters_pos_android/features/sales/data/model/sale_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
@@ -201,12 +204,13 @@ class ThermalPrintingService {
 
   Future<void> printReceipt({
     required ThermalPrinter printer,
-    required SaleModel sale,
+    required dynamic sale,
     required BuildContext context,
   }) async {
     try {
       debugPrint(
           'Starting thermal print process for: ${printer.name} (${printer.address})');
+      debugPrint('Sale data type: ${sale.runtimeType}');
 
       // Convert to flutter_thermal_printer's Printer model
       final thermalPrinter = printer.toPrinter();
@@ -228,11 +232,9 @@ class ThermalPrintingService {
       await Future.delayed(const Duration(milliseconds: 2000));
       debugPrint('Connected to printer');
 
-      // Since test print works, let's use the same approach as test print
-      debugPrint('Printing receipt using direct ESC/POS commands...');
-
-      // Generate receipt using ESC/POS commands (same as test print method)
-      await _printReceiptWithEscPos(thermalPrinter, sale);
+      // Use the working minimal receipt approach but with full receipt data
+      debugPrint('Printing receipt using working minimal format...');
+      await _printWorkingReceipt(thermalPrinter, sale);
 
       debugPrint('Receipt printing process completed');
     } catch (e) {
@@ -241,11 +243,155 @@ class ThermalPrintingService {
     }
   }
 
-  Future<void> _printReceiptWithEscPos(Printer printer, SaleModel sale) async {
+  Future<void> _printWorkingReceipt(Printer printer, dynamic sale) async {
     try {
-      debugPrint('Generating ESC/POS receipt data...');
+      debugPrint('Generating working receipt format...');
 
-      // Create receipt using ESC/POS commands (similar to test print)
+      // Extract sale data using the same pattern as minimal receipt
+      String total = '0.00';
+      String receiptId = 'RECEIPT';
+      String date = DateTime.now().toString().substring(0, 19);
+      String cashier = 'CASHIER';
+      List<String> itemLines = [];
+
+      if (sale is SaleModel) {
+        total = sale.totalAmount.toStringAsFixed(2);
+        receiptId = sale.id.length > 8
+            ? sale.id.substring(0, 8).toUpperCase()
+            : sale.id.toUpperCase();
+        date = _formatDate(sale.createdAt);
+        cashier = sale.cashierId.length > 8
+            ? sale.cashierId.substring(0, 8)
+            : sale.cashierId;
+
+        debugPrint('Processing ${sale.saleItems.length} items for receipt');
+
+        // Process each item using simplified logic
+        for (int i = 0; i < sale.saleItems.length; i++) {
+          final item = sale.saleItems[i];
+
+          try {
+            String itemName = item.product.name.length > 20
+                ? '${item.product.name.substring(0, 17)}...'
+                : item.product.name;
+
+            double itemPrice = 0.0;
+            String itemQty = '1 pc';
+
+            // Simplified price calculation
+            if (item.isDiscounted && item.discountedPrice != null) {
+              itemPrice = item.discountedPrice!;
+            } else if (item.sackPriceId != null &&
+                item.product.sackPrice.isNotEmpty) {
+              final sackPrice = item.product.sackPrice.firstWhere(
+                (sp) => sp.id == item.sackPriceId,
+                orElse: () => item.product.sackPrice.first,
+              );
+              itemPrice = sackPrice.price * item.quantity;
+              final qty = item.quantity.toInt();
+
+              // Simplified sack type display
+              switch (sackPrice.type.toString().split('.').last) {
+                case 'FIFTY_KG':
+                  itemQty = '$qty x 50kg';
+                  break;
+                case 'TWENTY_FIVE_KG':
+                  itemQty = '$qty x 25kg';
+                  break;
+                case 'FIVE_KG':
+                  itemQty = '$qty x 5kg';
+                  break;
+                default:
+                  itemQty = '$qty sack';
+              }
+            } else if (item.perKiloPriceId != null &&
+                item.product.perKiloPrice != null) {
+              itemPrice = item.product.perKiloPrice!.price * item.quantity;
+              itemQty = '${item.quantity.toStringAsFixed(1)}kg';
+            }
+
+            // Add to item lines (keep simple like working minimal receipt)
+            itemLines.add('${i + 1}. $itemName');
+            itemLines.add('   $itemQty - P${itemPrice.toStringAsFixed(2)}');
+
+            if (item.isDiscounted && item.discountedPrice != null) {
+              itemLines.add('   DISCOUNTED');
+            }
+
+            debugPrint(
+                'Added item: $itemName - $itemQty - P${itemPrice.toStringAsFixed(2)}');
+          } catch (e) {
+            debugPrint('Error processing item ${i + 1}: $e');
+            itemLines.add('${i + 1}. ${item.product.name} - Error');
+          }
+        }
+      }
+
+      // Create receipt using EXACT same structure as working minimal receipt
+      final List<int> receiptBytes = [];
+
+      // Initialize (same as working minimal)
+      receiptBytes.addAll([0x1B, 0x40]); // ESC @
+
+      // Center align (same as working minimal)
+      receiptBytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1
+
+      // Bold on (same as working minimal)
+      receiptBytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1
+      receiptBytes.addAll('RECEIPT\n'.codeUnits);
+      receiptBytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0
+
+      // Left align (same as working minimal)
+      receiptBytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0
+      receiptBytes.addAll('FALSISTERS RICE TRADING\n'.codeUnits);
+      receiptBytes.addAll('Receipt: $receiptId\n'.codeUnits);
+      receiptBytes.addAll('Date: $date\n'.codeUnits);
+      receiptBytes.addAll('Cashier: $cashier\n'.codeUnits);
+      receiptBytes.addAll('------------------------\n'.codeUnits);
+
+      // Add items (same simple format as working minimal)
+      for (final line in itemLines) {
+        receiptBytes.addAll('$line\n'.codeUnits);
+      }
+
+      receiptBytes.addAll('------------------------\n'.codeUnits);
+      receiptBytes.addAll('Total: P$total\n'.codeUnits);
+      receiptBytes.addAll('Thank you!\n'.codeUnits);
+      receiptBytes.addAll('\n\n'.codeUnits);
+
+      // Cut (same as working minimal)
+      receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0
+
+      debugPrint('Generated ${receiptBytes.length} bytes using working format');
+
+      // Use same printing method as working minimal receipt
+      await _flutterThermalPrinter.printData(
+        printer,
+        Uint8List.fromList(receiptBytes),
+      );
+
+      debugPrint('Working receipt data sent successfully');
+    } catch (e) {
+      debugPrint('Working receipt generation failed: $e');
+      throw Exception('Failed to generate working receipt: $e');
+    }
+  }
+
+  // Let's also create a super minimal receipt test
+  Future<void> _printMinimalReceipt(Printer printer, dynamic sale) async {
+    try {
+      debugPrint('Generating minimal receipt...');
+
+      // Get just the essentials
+      String total = '0.00';
+      int itemCount = 0;
+
+      if (sale is SaleModel) {
+        total = sale.totalAmount.toStringAsFixed(2);
+        itemCount = sale.saleItems.length;
+      }
+
+      // Create the most minimal receipt possible
       final List<int> receiptBytes = [];
 
       // Initialize
@@ -254,107 +400,61 @@ class ThermalPrintingService {
       // Center align
       receiptBytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1
 
-      // Store Header (bold)
-      receiptBytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1 - Bold on
-      receiptBytes.addAll('FALSISTERS\n'.codeUnits);
-      receiptBytes.addAll('RICE TRADING\n'.codeUnits);
-      receiptBytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0 - Bold off
+      // Bold on
+      receiptBytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1
+      receiptBytes.addAll('RECEIPT\n'.codeUnits);
+      receiptBytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0
 
-      // Separator
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Left alignment
+      // Left align
       receiptBytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0
-
-      // Receipt details
-      receiptBytes.addAll(
-          'Receipt #: ${sale.id.substring(0, 8).toUpperCase()}\n'.codeUnits);
-      receiptBytes.addAll('Date: ${_formatDate(sale.createdAt)}\n'.codeUnits);
-      receiptBytes
-          .addAll('Cashier: ${sale.cashierId.substring(0, 8)}\n'.codeUnits);
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Items
-      for (final item in sale.saleItems) {
-        final isDiscounted = item.isDiscounted && item.discountedPrice != null;
-        double itemTotal;
-        String quantityDisplay;
-
-        if (item.sackPrice != null) {
-          itemTotal = isDiscounted
-              ? item.discountedPrice!
-              : item.sackPrice!.price * item.quantity;
-          quantityDisplay =
-              '${item.quantity.toInt()} sack${item.quantity > 1 ? "s" : ""}';
-        } else if (item.perKiloPrice != null) {
-          itemTotal = isDiscounted
-              ? item.discountedPrice!
-              : item.perKiloPrice!.price * item.quantity;
-          quantityDisplay = '${item.quantity.toStringAsFixed(2)} kg';
-          if (item.isGantang) {
-            quantityDisplay += ' (Gantang)';
-          }
-        } else {
-          itemTotal = isDiscounted ? item.discountedPrice! : 0;
-          quantityDisplay = '${item.quantity.toInt()} pcs';
-        }
-
-        // Product name (bold)
-        receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-        receiptBytes.addAll('${item.product.name}\n'.codeUnits);
-        receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-
-        // Quantity and price on same line
-        final qtyPriceLine =
-            '$quantityDisplay     P${itemTotal.toStringAsFixed(2)}\n';
-        receiptBytes.addAll(qtyPriceLine.codeUnits);
-
-        if (isDiscounted) {
-          receiptBytes.addAll('DISCOUNTED\n'.codeUnits);
-        }
-        receiptBytes.addAll('\n'.codeUnits); // Extra line for spacing
-      }
-
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Total (bold and larger)
-      receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-      receiptBytes.addAll([0x1D, 0x21, 0x01]); // Double height
-      receiptBytes
-          .addAll('TOTAL: P${sale.totalAmount.toStringAsFixed(2)}\n'.codeUnits);
-      receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
-      receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-
-      receiptBytes.addAll(
-          'Payment: ${sale.paymentMethod.toString().split('.').last.replaceAll('_', ' ')}\n'
-              .codeUnits);
-      receiptBytes.addAll('\n'.codeUnits);
-
-      // Center alignment for footer
-      receiptBytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1
-      receiptBytes.addAll('Thank you for your business!\n'.codeUnits);
-      receiptBytes.addAll('Please come again\n'.codeUnits);
+      receiptBytes.addAll('FALSISTERS\n'.codeUnits);
+      receiptBytes.addAll('Items: $itemCount\n'.codeUnits);
+      receiptBytes.addAll('Total: P$total\n'.codeUnits);
+      receiptBytes.addAll('Thank you!\n'.codeUnits);
       receiptBytes.addAll('\n\n'.codeUnits);
 
       // Cut
       receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0
 
-      debugPrint('Generated ${receiptBytes.length} bytes of receipt data');
+      debugPrint('Generated minimal receipt: ${receiptBytes.length} bytes');
 
-      // Print using printData method (same as test print)
       await _flutterThermalPrinter.printData(
         printer,
         Uint8List.fromList(receiptBytes),
       );
 
-      debugPrint('Receipt data sent successfully');
+      debugPrint('Minimal receipt sent');
     } catch (e) {
-      debugPrint('ESC/POS receipt generation failed: $e');
+      debugPrint('Minimal receipt failed: $e');
       throw e;
     }
   }
 
-  // Update test print to be even simpler for comparison
+  Future<void> debugPrintReceipt({
+    required ThermalPrinter printer,
+    required dynamic sale,
+    required BuildContext context,
+  }) async {
+    try {
+      debugPrint('Starting DEBUG receipt print for: ${printer.name}');
+
+      final thermalPrinter = printer.toPrinter();
+
+      // Connect (same as test print)
+      await _flutterThermalPrinter.connect(thermalPrinter);
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      // Try the most minimal receipt first
+      debugPrint('Trying minimal receipt...');
+      await _printMinimalReceipt(thermalPrinter, sale);
+
+      debugPrint('Debug minimal receipt completed');
+    } catch (e) {
+      debugPrint('Debug receipt failed: $e');
+      throw Exception('Debug receipt failed: $e');
+    }
+  }
+
   Future<void> testPrint({
     required ThermalPrinter printer,
     required BuildContext context,
@@ -413,8 +513,9 @@ class ThermalPrintingService {
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
+      debugPrint('Date parsing error: $e');
       return dateString;
     }
   }

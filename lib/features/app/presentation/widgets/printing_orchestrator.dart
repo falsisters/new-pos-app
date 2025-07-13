@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/features/app/data/services/settings_service.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart';
 import 'package:flutter/material.dart';
@@ -59,14 +60,52 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Printing receipt to ${selectedPrinter.name}...'),
-            duration: const Duration(seconds: 4),
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Printing receipt to ${selectedPrinter.name}...'),
+              ],
+            ),
+            duration: const Duration(seconds: 6),
+            backgroundColor: Colors.blue,
           ),
         );
       }
 
       // 3. Call the thermal printing service
       final printingService = ref.read(thermalPrintingServiceProvider);
+
+      // Add debug logging
+      debugPrint(
+          'Starting print job for sale data type: ${saleToPrint.runtimeType}');
+      debugPrint('Sale data content: ${saleToPrint.toString()}');
+      debugPrint(
+          'Printer: ${selectedPrinter.name} (${selectedPrinter.address})');
+
+      // Try to get some basic info regardless of type
+      try {
+        final saleItems = saleToPrint is SaleModel
+            ? saleToPrint.saleItems
+            : saleToPrint?.saleItems ?? saleToPrint?.SaleItem ?? [];
+        debugPrint('Sale items count: ${saleItems?.length ?? 0}');
+
+        final totalAmount = saleToPrint is SaleModel
+            ? saleToPrint.totalAmount
+            : saleToPrint?.totalAmount ?? 0.0;
+        debugPrint('Total amount: $totalAmount');
+      } catch (e) {
+        debugPrint('Error extracting sale info for debug: $e');
+      }
+
+      // Use the main receipt printing method (now using working format)
       await printingService.printReceipt(
         printer: selectedPrinter,
         sale: saleToPrint,
@@ -76,20 +115,52 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Receipt printed successfully on thermal printer!'),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Receipt printed successfully!'),
+              ],
+            ),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
       debugPrint('Thermal printing error: $e');
+      debugPrint('Sale data: ${saleToPrint?.toString()}');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Thermal printing failed: ${e.toString()}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('Printing failed'),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  e.toString().length > 100
+                      ? '${e.toString().substring(0, 100)}...'
+                      : e.toString(),
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _handleThermalPrinting(saleToPrint),
+            ),
           ),
         );
       }
