@@ -92,6 +92,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final FocusNode _keyboardFocusNode = FocusNode();
 
+  // Add focus nodes for keyboard navigation
+  final FocusNode _pricingOptionsFocusNode = FocusNode();
+  final FocusNode _quantitySectionFocusNode = FocusNode();
+  final FocusNode _decimalQuantityFocusNode = FocusNode();
+  final FocusNode _discountSectionFocusNode = FocusNode();
+
   // State management variables
   bool _isSpecialPrice = false;
   String? _selectedSackPriceId;
@@ -100,7 +106,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   // New state variables
   bool _isDiscounted = false;
-  bool _isGantangMode = false; // Add this new state variable
+  bool _isGantangMode = false;
   late TextEditingController _discountedPriceController;
   late TextEditingController _sackQuantityController;
   late TextEditingController _perKiloQuantityController;
@@ -150,7 +156,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _wholeQuantityController.addListener(_updateCombinedQuantityAndTotal);
     _decimalQuantityController.addListener(_updateCombinedQuantityAndTotal);
 
-    // Request focus for keyboard input - this is the key part that was missing!
+    // Request focus for keyboard input
     _keyboardFocusNode.requestFocus();
   }
 
@@ -172,6 +178,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _decimalQuantityController.removeListener(_updateCombinedQuantityAndTotal);
     _wholeQuantityController.dispose();
     _decimalQuantityController.dispose();
+
+    // Dispose new focus nodes
+    _pricingOptionsFocusNode.dispose();
+    _quantitySectionFocusNode.dispose();
+    _decimalQuantityFocusNode.dispose();
+    _discountSectionFocusNode.dispose();
     _keyboardFocusNode.dispose();
     super.dispose();
   }
@@ -520,6 +532,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
         });
       }
+    } else {
+      setState(() {
+        _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+      });
     }
   }
 
@@ -559,9 +575,181 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-      _addToCart();
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        _addToCart();
+        return;
+      }
+
+      // Handle left/right arrows for pricing options
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        final isRightArrow = event.logicalKey == LogicalKeyboardKey.arrowRight;
+
+        if (_pricingOptionsFocusNode.hasFocus) {
+          _handlePricingOptionsKeyboard(isRightArrow);
+        } else {
+          // Default behavior - focus cycling with left/right
+          _cycleFocus(isRightArrow);
+        }
+      }
+
+      // Handle comma and period for quantity adjustments
+      if (event.logicalKey == LogicalKeyboardKey.comma ||
+          event.logicalKey == LogicalKeyboardKey.period) {
+        final isIncrease = event.logicalKey == LogicalKeyboardKey.comma;
+
+        // Check if any quantity-related focus node is focused
+        if (_quantitySectionFocusNode.hasFocus) {
+          _handleQuantitySectionKeyboard(isIncrease);
+        } else if (_decimalQuantityFocusNode.hasFocus) {
+          _handleDecimalQuantityKeyboard(isIncrease);
+        } else if (_perKiloQuantityFocusNode.hasFocus ||
+            _perKiloTotalPriceFocusNode.hasFocus) {
+          // Handle direct text field focus
+          _handleQuantitySectionKeyboard(isIncrease);
+        } else {
+          // If no specific section is focused, try to focus the first section
+          _pricingOptionsFocusNode.requestFocus();
+        }
+      }
+
+      // Handle up/down arrows for focus navigation only
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+          event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        final isUpArrow = event.logicalKey == LogicalKeyboardKey.arrowUp;
+        _cycleFocusVertical(isUpArrow);
+      }
     }
+  }
+
+  void _cycleFocus(bool isRightArrow) {
+    final focusNodes = [
+      _pricingOptionsFocusNode,
+      _quantitySectionFocusNode,
+      if (_isPerKiloSelected) _decimalQuantityFocusNode,
+      _discountSectionFocusNode,
+    ];
+
+    int currentIndex = -1;
+    for (int i = 0; i < focusNodes.length; i++) {
+      if (focusNodes[i].hasFocus) {
+        currentIndex = i;
+        break;
+      }
+    }
+
+    int nextIndex;
+    if (currentIndex == -1) {
+      nextIndex = 0;
+    } else {
+      if (isRightArrow) {
+        nextIndex = (currentIndex + 1) % focusNodes.length;
+      } else {
+        nextIndex = (currentIndex - 1 + focusNodes.length) % focusNodes.length;
+      }
+    }
+
+    focusNodes[nextIndex].requestFocus();
+  }
+
+  void _handlePricingOptionsKeyboard(bool isRightArrow) {
+    final hasPerKilo = widget.product.perKiloPrice != null;
+    final hasSackPrices = widget.product.sackPrice.isNotEmpty;
+
+    if (!hasPerKilo && !hasSackPrices) return;
+
+    // Create list of available options
+    List<String> availableOptions = [];
+    if (hasPerKilo) availableOptions.add('per_kilo');
+    for (final sack in widget.product.sackPrice) {
+      availableOptions.add(sack.id);
+    }
+
+    if (availableOptions.isEmpty) return;
+
+    // Find current selection index
+    int currentIndex = -1;
+    if (_isPerKiloSelected) {
+      currentIndex = availableOptions.indexOf('per_kilo');
+    } else if (_selectedSackPriceId != null) {
+      currentIndex = availableOptions.indexOf(_selectedSackPriceId!);
+    }
+
+    // Calculate next index
+    int nextIndex;
+    if (currentIndex == -1) {
+      nextIndex = 0;
+    } else {
+      if (isRightArrow) {
+        nextIndex = (currentIndex + 1) % availableOptions.length;
+      } else {
+        nextIndex = (currentIndex - 1 + availableOptions.length) %
+            availableOptions.length;
+      }
+    }
+
+    // Apply selection
+    final selectedOption = availableOptions[nextIndex];
+    if (selectedOption == 'per_kilo') {
+      _selectPerKilo();
+    } else {
+      _selectSackPrice(selectedOption);
+    }
+  }
+
+  void _handleQuantitySectionKeyboard(bool isIncrease) {
+    if (isIncrease) {
+      if (_selectedSackPriceId != null) {
+        _increaseQuantity();
+      } else if (_isPerKiloSelected) {
+        _increaseWholeQuantity();
+      }
+    } else {
+      if (_selectedSackPriceId != null) {
+        _decreaseQuantity();
+      } else if (_isPerKiloSelected) {
+        _decreaseWholeQuantity();
+      }
+    }
+  }
+
+  void _handleDecimalQuantityKeyboard(bool isIncrease) {
+    if (isIncrease) {
+      _increaseDecimalQuantity();
+    } else {
+      _decreaseDecimalQuantity();
+    }
+  }
+
+  void _cycleFocusVertical(bool isUpArrow) {
+    final focusNodes = [
+      _pricingOptionsFocusNode,
+      _quantitySectionFocusNode,
+      if (_isPerKiloSelected) _decimalQuantityFocusNode,
+      _discountSectionFocusNode,
+    ];
+
+    int currentIndex = -1;
+    for (int i = 0; i < focusNodes.length; i++) {
+      if (focusNodes[i].hasFocus) {
+        currentIndex = i;
+        break;
+      }
+    }
+
+    int nextIndex;
+    if (currentIndex == -1) {
+      nextIndex = 0;
+    } else {
+      if (isUpArrow) {
+        nextIndex = (currentIndex - 1 + focusNodes.length) % focusNodes.length;
+      } else {
+        nextIndex = (currentIndex + 1) % focusNodes.length;
+      }
+    }
+
+    focusNodes[nextIndex].requestFocus();
   }
 
   void _addToCart() {
@@ -691,19 +879,23 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       border:
                           Border.all(color: AppColors.primary.withOpacity(0.2)),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Column(
                       children: [
-                        Icon(Icons.keyboard,
-                            size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Press Enter to add to cart',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.keyboard,
+                                size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Enter: Add • ←→: Navigate • ↑↓: Focus • , . : Adjust values',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -722,6 +914,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                     isPerKiloSelected: _isPerKiloSelected,
                     onSelectSackPrice: _selectSackPrice,
                     onSelectPerKilo: _selectPerKilo,
+                    focusNode: _pricingOptionsFocusNode,
                   ),
 
                   const SizedBox(height: 12),
@@ -760,6 +953,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                               }
                             });
                           },
+                          focusNode: _quantitySectionFocusNode,
                         ),
                       ),
 
@@ -780,6 +974,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                     _increaseDecimalQuantity,
                                 onDecreaseDecimalQuantity:
                                     _decreaseDecimalQuantity,
+                                focusNode: _decimalQuantityFocusNode,
                               ),
                               const SizedBox(height: 8),
                             ],
@@ -796,6 +991,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                     _discountedPriceController.clear();
                                 });
                               },
+                              focusNode: _discountSectionFocusNode,
                             ),
                           ],
                         ),

@@ -11,6 +11,7 @@ class PricingOptionsWidget extends StatelessWidget {
   final Function(String id, {bool isSpecial, int? minimumQty})
       onSelectSackPrice;
   final VoidCallback onSelectPerKilo;
+  final FocusNode focusNode;
 
   const PricingOptionsWidget({
     super.key,
@@ -20,54 +21,99 @@ class PricingOptionsWidget extends StatelessWidget {
     required this.isPerKiloSelected,
     required this.onSelectSackPrice,
     required this.onSelectPerKilo,
+    required this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accent.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.payments_outlined,
-                      color: AppColors.accent, size: 16),
+    return Focus(
+      focusNode: focusNode,
+      child: Builder(
+        builder: (context) {
+          final isFocused = focusNode.hasFocus;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isFocused
+                    ? AppColors.accent.withOpacity(0.8)
+                    : AppColors.accent.withOpacity(0.2),
+                width: isFocused ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Pricing Options',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accent,
+                if (isFocused)
+                  BoxShadow(
+                    color: AppColors.accent.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 8),
-            _buildPricingOptions(),
-          ],
-        ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: (isFocused
+                              ? AppColors.accent
+                              : AppColors.accent.withOpacity(0.1)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.payments_outlined,
+                          color: isFocused ? Colors.white : AppColors.accent,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pricing Options',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                      if (isFocused) ...[
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '←→',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPricingOptions(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -7,6 +7,7 @@ class DecimalQuantityWidget extends StatelessWidget {
   final TextEditingController decimalQuantityController;
   final VoidCallback onIncreaseDecimalQuantity;
   final VoidCallback onDecreaseDecimalQuantity;
+  final FocusNode focusNode;
 
   const DecimalQuantityWidget({
     super.key,
@@ -14,54 +15,103 @@ class DecimalQuantityWidget extends StatelessWidget {
     required this.decimalQuantityController,
     required this.onIncreaseDecimalQuantity,
     required this.onDecreaseDecimalQuantity,
+    required this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(Icons.tune_outlined,
-                      color: Colors.purple[700], size: 14),
+    return Focus(
+      focusNode: focusNode,
+      child: Builder(
+        builder: (context) {
+          final isFocused = focusNode.hasFocus;
+
+          return GestureDetector(
+            onTap: () => focusNode.requestFocus(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isFocused
+                      ? Colors.purple.withOpacity(0.8)
+                      : Colors.purple.withOpacity(0.2),
+                  width: isFocused ? 2 : 1,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  isGantangMode ? 'Decimal Gantang' : 'Decimal',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.purple[700],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
+                  if (isFocused)
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isFocused
+                                ? Colors.purple[700]
+                                : Colors.purple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            Icons.tune_outlined,
+                            color:
+                                isFocused ? Colors.white : Colors.purple[700],
+                            size: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isGantangMode ? 'Decimal Gantang' : 'Decimal',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.purple[700],
+                          ),
+                        ),
+                        if (isFocused) ...[
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              ', . ±0.05',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDecimalInput(),
+                  ],
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 8),
-            _buildDecimalInput(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

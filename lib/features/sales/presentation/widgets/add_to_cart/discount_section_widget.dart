@@ -8,6 +8,7 @@ class DiscountSectionWidget extends StatelessWidget {
   final bool isSackSelected;
   final TextEditingController discountedPriceController;
   final Function(bool?) onDiscountToggle;
+  final FocusNode focusNode;
 
   const DiscountSectionWidget({
     super.key,
@@ -15,63 +16,89 @@ class DiscountSectionWidget extends StatelessWidget {
     required this.isSackSelected,
     required this.discountedPriceController,
     required this.onDiscountToggle,
+    required this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withAlpha((0.1 * 255).toInt()),
-                    borderRadius: BorderRadius.circular(6),
+    return Focus(
+      focusNode: focusNode,
+      child: Builder(
+        builder: (context) {
+          final isFocused = focusNode.hasFocus;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isFocused
+                    ? Colors.orange.withOpacity(0.8)
+                    : Colors.orange.withOpacity(0.2),
+                width: isFocused ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+                if (isFocused)
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Icon(Icons.local_offer_outlined,
-                      color: Colors.orange[700], size: 14),
-                ),
-                const SizedBox(width: 12),
-                Checkbox(
-                  value: isDiscounted,
-                  onChanged: onDiscountToggle,
-                  activeColor: Colors.orange[700],
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Discount',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange[700],
-                    ),
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 8),
-            _buildDiscountInput(),
-          ],
-        ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isFocused
+                              ? Colors.orange[700]
+                              : Colors.orange.withAlpha((0.1 * 255).toInt()),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.local_offer_outlined,
+                          color: isFocused ? Colors.white : Colors.orange[700],
+                          size: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Checkbox(
+                        value: isDiscounted,
+                        onChanged: onDiscountToggle,
+                        activeColor: Colors.orange[700],
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Discount',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDiscountInput(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -123,7 +150,8 @@ class DiscountSectionWidget extends StatelessWidget {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}')),
                   ],
                   decoration: _inputDecoration(
                     labelText: 'Unit Price ₱',

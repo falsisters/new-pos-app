@@ -20,6 +20,7 @@ class QuantitySectionWidget extends StatelessWidget {
   final VoidCallback onDecreaseWholeQuantity;
   final Function(double) onSetQuickQuantity;
   final Function(bool) onToggleGantangMode;
+  final FocusNode focusNode;
 
   const QuantitySectionWidget({
     super.key,
@@ -39,62 +40,125 @@ class QuantitySectionWidget extends StatelessWidget {
     required this.onDecreaseWholeQuantity,
     required this.onSetQuickQuantity,
     required this.onToggleGantangMode,
+    required this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(Icons.scale_outlined,
-                      color: AppColors.secondary, size: 14),
+    return Focus(
+      focusNode: focusNode,
+      child: Builder(
+        builder: (context) {
+          final isFocused = focusNode.hasFocus;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isFocused
+                    ? AppColors.secondary.withOpacity(0.8)
+                    : AppColors.secondary.withOpacity(0.2),
+                width: isFocused ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  selectedSackPriceId != null
-                      ? 'Sacks'
-                      : isGantangMode
-                          ? 'Whole Gantang'
-                          : 'Whole Kg',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondary,
+                if (isFocused)
+                  BoxShadow(
+                    color: AppColors.secondary.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                if (isPerKiloSelected) ...[
-                  const Spacer(),
-                  _buildQuantityModeTab(),
-                ],
               ],
             ),
-            const SizedBox(height: 8),
-            _buildMainQuantityInput(),
-          ],
-        ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isFocused
+                              ? AppColors.secondary
+                              : AppColors.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.scale_outlined,
+                          color: isFocused ? Colors.white : AppColors.secondary,
+                          size: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        selectedSackPriceId != null
+                            ? 'Sacks'
+                            : isGantangMode
+                                ? 'Whole Gantang'
+                                : 'Whole Kg',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      if (isPerKiloSelected) ...[
+                        const Spacer(),
+                        _buildQuantityModeTab(),
+                      ] else if (isFocused) ...[
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            ', .',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (isPerKiloSelected && isFocused) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            ', .',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildMainQuantityInput(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
