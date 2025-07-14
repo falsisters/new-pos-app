@@ -47,8 +47,8 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                  'No thermal printer selected. Please select one in Settings.'),
+              content:
+                  Text('No printer selected. Please select one in Settings.'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -56,7 +56,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         return;
       }
 
-      // 2. Show a "Printing..." snackbar
+      // 2. Show a "Printing..." snackbar with connection type info
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,11 +71,16 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
                   ),
                 ),
                 SizedBox(width: 12),
-                Text('Printing receipt to ${selectedPrinter.name}...'),
+                Expanded(
+                  child: Text(
+                    'Printing receipt to ${selectedPrinter.name} via ${selectedPrinter.connectionDisplayName}...',
+                  ),
+                ),
               ],
             ),
-            duration: const Duration(seconds: 6),
-            backgroundColor: Colors.blue,
+            duration: Duration(seconds: selectedPrinter.isUSBPrinter ? 4 : 8),
+            backgroundColor:
+                selectedPrinter.isUSBPrinter ? Colors.orange : Colors.blue,
           ),
         );
       }
@@ -88,7 +93,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
           'Starting print job for sale data type: ${saleToPrint.runtimeType}');
       debugPrint('Sale data content: ${saleToPrint.toString()}');
       debugPrint(
-          'Printer: ${selectedPrinter.name} (${selectedPrinter.address})');
+          'Printer: ${selectedPrinter.name} (${selectedPrinter.connectionDisplayName} - ${selectedPrinter.address})');
 
       // Try to get some basic info regardless of type
       try {
@@ -105,7 +110,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         debugPrint('Error extracting sale info for debug: $e');
       }
 
-      // Use the main receipt printing method (now using working format)
+      // Use the main receipt printing method (now supports both USB and Bluetooth)
       await printingService.printReceipt(
         printer: selectedPrinter,
         sale: saleToPrint,
@@ -114,12 +119,13 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text('Receipt printed successfully!'),
+                Text(
+                    'Receipt printed successfully via ${selectedPrinter.connectionDisplayName}!'),
               ],
             ),
             backgroundColor: Colors.green,

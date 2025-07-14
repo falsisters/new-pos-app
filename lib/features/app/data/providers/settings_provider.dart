@@ -28,26 +28,29 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     try {
       final selectedPrinter = await _settingsService.getSelectedPrinter();
 
-      // Check Bluetooth, then get paired devices
+      // Check Bluetooth status
       final isBluetoothEnabled = await _printingService.isBluetoothEnabled();
       debugPrint('Bluetooth enabled: $isBluetoothEnabled');
 
-      List<ThermalPrinter> pairedPrinters = [];
-      if (isBluetoothEnabled) {
-        pairedPrinters = await _printingService.getPairedPrinters();
-        debugPrint('Found ${pairedPrinters.length} thermal printers:');
-        for (var printer in pairedPrinters) {
-          debugPrint('  - ${printer.name} (${printer.address})');
+      // Get all available printers (USB + Bluetooth)
+      List<ThermalPrinter> allPrinters = [];
+      try {
+        allPrinters = await _printingService.getPairedPrinters();
+        debugPrint('Found ${allPrinters.length} total printers:');
+        for (var printer in allPrinters) {
+          debugPrint('  - ${printer.name} (${printer.connectionDisplayName})');
         }
+      } catch (e) {
+        debugPrint('Error getting printers: $e');
       }
 
       state = AsyncValue.data(SettingsState(
         selectedPrinter: selectedPrinter,
-        availablePrinters: pairedPrinters,
+        availablePrinters: allPrinters,
         isScanning: false,
         isBluetoothEnabled: isBluetoothEnabled,
-        errorMessage: pairedPrinters.isEmpty && isBluetoothEnabled
-            ? 'No thermal printers found. Please pair your PT210 printer in Android Bluetooth settings first.'
+        errorMessage: allPrinters.isEmpty
+            ? 'No printers found. For Bluetooth: pair your printer in Android settings. For USB: connect via USB cable.'
             : null,
       ));
     } catch (e, st) {
@@ -63,20 +66,16 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     state = AsyncValue.data(currentState.copyWith(isScanning: true));
 
     try {
-      // Check Bluetooth first
+      // Check Bluetooth first for Bluetooth printers
       final isBluetoothEnabled = await _printingService.isBluetoothEnabled();
+
       if (!isBluetoothEnabled) {
-        state = AsyncValue.data(currentState.copyWith(
-          isScanning: false,
-          isBluetoothEnabled: false,
-          errorMessage:
-              'Bluetooth scanning requires location services to be enabled. Please enable location services and Bluetooth, then try again.',
-        ));
-        return;
+        // Still allow USB scanning even if Bluetooth is disabled
+        debugPrint('Bluetooth disabled, scanning for USB printers only...');
       }
 
       if (Platform.isAndroid) {
-        // Request permissions for thermal printer
+        // Request permissions for Bluetooth printers
         var bluetoothScanStatus = await Permission.bluetoothScan.request();
         var bluetoothConnectStatus =
             await Permission.bluetoothConnect.request();
@@ -93,25 +92,35 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
         if (bluetoothScanStatus.isDenied ||
             bluetoothConnectStatus.isDenied ||
             locationStatus.isDenied) {
-          throw Exception(
-              'Bluetooth and location permissions are required for thermal printer scanning. Please grant permissions and try again.');
+          debugPrint(
+              'Bluetooth permissions denied, USB scanning may still work');
         }
       }
 
-      // Scan for thermal printers
+      // Scan for all types of printers (USB + Bluetooth)
       final scannedPrinters = await _printingService.scanForPrinters();
-      debugPrint('Scanned thermal printers: ${scannedPrinters.length}');
+      debugPrint('Scanned printers: ${scannedPrinters.length}');
+
+      final usbPrinters = scannedPrinters.where((p) => p.isUSBPrinter).length;
+      final bluetoothPrinters =
+          scannedPrinters.where((p) => !p.isUSBPrinter).length;
+      debugPrint('USB: $usbPrinters, Bluetooth: $bluetoothPrinters');
+
+      String? errorMessage;
+      if (scannedPrinters.isEmpty) {
+        errorMessage = 'No printers found.\n\n'
+            'For Bluetooth printers: Pair in Android Bluetooth settings first and ensure location services are enabled.\n\n'
+            'For USB printers: Connect via USB cable and ensure the device supports USB printing.';
+      }
 
       state = AsyncValue.data(currentState.copyWith(
         availablePrinters: scannedPrinters,
         isScanning: false,
         isBluetoothEnabled: isBluetoothEnabled,
-        errorMessage: scannedPrinters.isEmpty
-            ? 'No thermal printers found. For PT210, please pair it in Android Bluetooth settings first, and ensure location services are enabled.'
-            : null,
+        errorMessage: errorMessage,
       ));
     } catch (e) {
-      debugPrint('Thermal printer scan error: $e');
+      debugPrint('Printer scan error: $e');
       state = AsyncValue.data(currentState.copyWith(
         isScanning: false,
         errorMessage: e.toString(),

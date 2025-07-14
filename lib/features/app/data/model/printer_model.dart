@@ -16,6 +16,10 @@ sealed class ThermalPrinter with _$ThermalPrinter {
     @Default(ConnectionType.BLE) ConnectionType connectionType,
     String? vendorId,
     String? productId,
+    // Add USB specific fields
+    String? devicePath,
+    int? usbVendorId,
+    int? usbProductId,
   }) = _ThermalPrinter;
 
   factory ThermalPrinter.fromJson(Map<String, dynamic> json) =>
@@ -27,10 +31,17 @@ sealed class ThermalPrinter with _$ThermalPrinter {
       name: printer.name ?? 'Unknown Device',
       address: printer.address ?? '',
       isConnected: printer.isConnected ?? false,
-      isBonded: true, // Assume discovered printers are bondable
+      isBonded: printer.connectionType ==
+          ConnectionType.BLE, // BLE devices can be bonded
       connectionType: printer.connectionType ?? ConnectionType.BLE,
       vendorId: printer.vendorId,
       productId: printer.productId,
+      // USB specific mapping
+      devicePath: printer.address, // For USB, address might be device path
+      usbVendorId:
+          printer.vendorId != null ? int.tryParse(printer.vendorId!) : null,
+      usbProductId:
+          printer.productId != null ? int.tryParse(printer.productId!) : null,
     );
   }
 
@@ -44,5 +55,20 @@ sealed class ThermalPrinter with _$ThermalPrinter {
       vendorId: vendorId,
       productId: productId,
     );
+  }
+
+  // Helper to check if this is a USB printer
+  bool get isUSBPrinter => connectionType == ConnectionType.USB;
+
+  // Helper to get display connection type
+  String get connectionDisplayName {
+    switch (connectionType) {
+      case ConnectionType.BLE:
+        return 'Bluetooth';
+      case ConnectionType.USB:
+        return 'USB';
+      default:
+        return connectionType.name.toUpperCase();
+    }
   }
 }

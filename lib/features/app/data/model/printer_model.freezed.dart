@@ -21,7 +21,10 @@ mixin _$ThermalPrinter {
   bool get isBonded;
   ConnectionType get connectionType;
   String? get vendorId;
-  String? get productId;
+  String? get productId; // Add USB specific fields
+  String? get devicePath;
+  int? get usbVendorId;
+  int? get usbProductId;
 
   /// Create a copy of ThermalPrinter
   /// with the given fields replaced by the non-null parameter values.
@@ -50,17 +53,33 @@ mixin _$ThermalPrinter {
             (identical(other.vendorId, vendorId) ||
                 other.vendorId == vendorId) &&
             (identical(other.productId, productId) ||
-                other.productId == productId));
+                other.productId == productId) &&
+            (identical(other.devicePath, devicePath) ||
+                other.devicePath == devicePath) &&
+            (identical(other.usbVendorId, usbVendorId) ||
+                other.usbVendorId == usbVendorId) &&
+            (identical(other.usbProductId, usbProductId) ||
+                other.usbProductId == usbProductId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, name, address, isConnected,
-      isBonded, connectionType, vendorId, productId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      name,
+      address,
+      isConnected,
+      isBonded,
+      connectionType,
+      vendorId,
+      productId,
+      devicePath,
+      usbVendorId,
+      usbProductId);
 
   @override
   String toString() {
-    return 'ThermalPrinter(name: $name, address: $address, isConnected: $isConnected, isBonded: $isBonded, connectionType: $connectionType, vendorId: $vendorId, productId: $productId)';
+    return 'ThermalPrinter(name: $name, address: $address, isConnected: $isConnected, isBonded: $isBonded, connectionType: $connectionType, vendorId: $vendorId, productId: $productId, devicePath: $devicePath, usbVendorId: $usbVendorId, usbProductId: $usbProductId)';
   }
 }
 
@@ -77,7 +96,10 @@ abstract mixin class $ThermalPrinterCopyWith<$Res> {
       bool isBonded,
       ConnectionType connectionType,
       String? vendorId,
-      String? productId});
+      String? productId,
+      String? devicePath,
+      int? usbVendorId,
+      int? usbProductId});
 }
 
 /// @nodoc
@@ -100,6 +122,9 @@ class _$ThermalPrinterCopyWithImpl<$Res>
     Object? connectionType = null,
     Object? vendorId = freezed,
     Object? productId = freezed,
+    Object? devicePath = freezed,
+    Object? usbVendorId = freezed,
+    Object? usbProductId = freezed,
   }) {
     return _then(_self.copyWith(
       name: null == name
@@ -130,6 +155,18 @@ class _$ThermalPrinterCopyWithImpl<$Res>
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
               as String?,
+      devicePath: freezed == devicePath
+          ? _self.devicePath
+          : devicePath // ignore: cast_nullable_to_non_nullable
+              as String?,
+      usbVendorId: freezed == usbVendorId
+          ? _self.usbVendorId
+          : usbVendorId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      usbProductId: freezed == usbProductId
+          ? _self.usbProductId
+          : usbProductId // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -144,7 +181,10 @@ class _ThermalPrinter extends ThermalPrinter {
       this.isBonded = false,
       this.connectionType = ConnectionType.BLE,
       this.vendorId,
-      this.productId})
+      this.productId,
+      this.devicePath,
+      this.usbVendorId,
+      this.usbProductId})
       : super._();
   factory _ThermalPrinter.fromJson(Map<String, dynamic> json) =>
       _$ThermalPrinterFromJson(json);
@@ -166,6 +206,13 @@ class _ThermalPrinter extends ThermalPrinter {
   final String? vendorId;
   @override
   final String? productId;
+// Add USB specific fields
+  @override
+  final String? devicePath;
+  @override
+  final int? usbVendorId;
+  @override
+  final int? usbProductId;
 
   /// Create a copy of ThermalPrinter
   /// with the given fields replaced by the non-null parameter values.
@@ -198,17 +245,33 @@ class _ThermalPrinter extends ThermalPrinter {
             (identical(other.vendorId, vendorId) ||
                 other.vendorId == vendorId) &&
             (identical(other.productId, productId) ||
-                other.productId == productId));
+                other.productId == productId) &&
+            (identical(other.devicePath, devicePath) ||
+                other.devicePath == devicePath) &&
+            (identical(other.usbVendorId, usbVendorId) ||
+                other.usbVendorId == usbVendorId) &&
+            (identical(other.usbProductId, usbProductId) ||
+                other.usbProductId == usbProductId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, name, address, isConnected,
-      isBonded, connectionType, vendorId, productId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      name,
+      address,
+      isConnected,
+      isBonded,
+      connectionType,
+      vendorId,
+      productId,
+      devicePath,
+      usbVendorId,
+      usbProductId);
 
   @override
   String toString() {
-    return 'ThermalPrinter(name: $name, address: $address, isConnected: $isConnected, isBonded: $isBonded, connectionType: $connectionType, vendorId: $vendorId, productId: $productId)';
+    return 'ThermalPrinter(name: $name, address: $address, isConnected: $isConnected, isBonded: $isBonded, connectionType: $connectionType, vendorId: $vendorId, productId: $productId, devicePath: $devicePath, usbVendorId: $usbVendorId, usbProductId: $usbProductId)';
   }
 }
 
@@ -227,7 +290,10 @@ abstract mixin class _$ThermalPrinterCopyWith<$Res>
       bool isBonded,
       ConnectionType connectionType,
       String? vendorId,
-      String? productId});
+      String? productId,
+      String? devicePath,
+      int? usbVendorId,
+      int? usbProductId});
 }
 
 /// @nodoc
@@ -250,6 +316,9 @@ class __$ThermalPrinterCopyWithImpl<$Res>
     Object? connectionType = null,
     Object? vendorId = freezed,
     Object? productId = freezed,
+    Object? devicePath = freezed,
+    Object? usbVendorId = freezed,
+    Object? usbProductId = freezed,
   }) {
     return _then(_ThermalPrinter(
       name: null == name
@@ -280,6 +349,18 @@ class __$ThermalPrinterCopyWithImpl<$Res>
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
               as String?,
+      devicePath: freezed == devicePath
+          ? _self.devicePath
+          : devicePath // ignore: cast_nullable_to_non_nullable
+              as String?,
+      usbVendorId: freezed == usbVendorId
+          ? _self.usbVendorId
+          : usbVendorId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      usbProductId: freezed == usbProductId
+          ? _self.usbProductId
+          : usbProductId // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }

@@ -124,9 +124,11 @@ class SettingsScreen extends ConsumerWidget {
             if (selectedPrinter != null) ...[
               ListTile(
                 leading: Icon(
-                  selectedPrinter.isBonded
-                      ? Icons.bluetooth_connected
-                      : Icons.bluetooth,
+                  selectedPrinter.isUSBPrinter
+                      ? Icons.usb
+                      : selectedPrinter.isBonded
+                          ? Icons.bluetooth_connected
+                          : Icons.bluetooth,
                   color: AppColors.primary,
                 ),
                 title: Text(selectedPrinter.name),
@@ -134,9 +136,13 @@ class SettingsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(selectedPrinter.address),
-                    Text(
-                        'Type: ${selectedPrinter.connectionType.name.toUpperCase()}'),
-                    if (selectedPrinter.isBonded)
+                    Text('Type: ${selectedPrinter.connectionDisplayName}'),
+                    if (selectedPrinter.isUSBPrinter) ...[
+                      if (selectedPrinter.usbVendorId != null)
+                        Text('VID: ${selectedPrinter.usbVendorId}'),
+                      if (selectedPrinter.usbProductId != null)
+                        Text('PID: ${selectedPrinter.usbProductId}'),
+                    ] else if (selectedPrinter.isBonded)
                       Text(
                         'Paired Device',
                         style: TextStyle(
@@ -168,7 +174,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ] else ...[
               const Text(
-                  'No thermal printer selected. Scan and select a printer below.'),
+                  'No printer selected. Scan and select a printer below.'),
             ],
           ],
         ),
@@ -226,13 +232,22 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildAvailablePrintersSection(
       BuildContext context, WidgetRef ref, dynamic state) {
+    // Group printers by connection type with proper type casting
+    final List<ThermalPrinter> allPrinters =
+        List<ThermalPrinter>.from(state.availablePrinters);
+
+    final bluetoothPrinters =
+        allPrinters.where((ThermalPrinter p) => !p.isUSBPrinter).toList();
+    final usbPrinters =
+        allPrinters.where((ThermalPrinter p) => p.isUSBPrinter).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Available Thermal Printers',
+            Text('Available Printers',
                 style: Theme.of(context).textTheme.titleLarge),
             ElevatedButton.icon(
               onPressed: state.isScanning
@@ -244,44 +259,105 @@ class SettingsScreen extends ConsumerWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.refresh),
-              label: Text(state.isScanning ? 'Scanning...' : 'Scan'),
+              label: Text(state.isScanning ? 'Scanning...' : 'Scan All'),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (state.availablePrinters.isEmpty && !state.isScanning)
-          const Text(
-              'No thermal printers found. Tap "Scan" to search for devices.'),
-        ...state.availablePrinters.map<Widget>((ThermalPrinter printer) {
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: ListTile(
-              leading: Icon(
-                printer.isBonded ? Icons.bluetooth_connected : Icons.bluetooth,
-                color: printer.isBonded ? Colors.green : Colors.blue,
+
+        // USB Printers Section
+        if (usbPrinters.isNotEmpty) ...[
+          Text('USB Printers',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[700],
+                  )),
+          const SizedBox(height: 8),
+          ...usbPrinters.map<Widget>((ThermalPrinter printer) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                leading: Icon(
+                  Icons.usb,
+                  color: Colors.orange,
+                ),
+                title: Text(printer.name),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(printer.address),
+                    Text('Type: USB'),
+                    if (printer.usbVendorId != null)
+                      Text('VID: ${printer.usbVendorId}'),
+                    if (printer.usbProductId != null)
+                      Text('PID: ${printer.usbProductId}'),
+                  ],
+                ),
+                onTap: () =>
+                    ref.read(settingsProvider.notifier).selectPrinter(printer),
               ),
-              title: Text(printer.name),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(printer.address),
-                  Text('Type: ${printer.connectionType.name.toUpperCase()}'),
-                  if (printer.isBonded)
-                    Text(
-                      'Paired Device',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+            );
+          }).toList(),
+          const SizedBox(height: 16),
+        ],
+
+        // Bluetooth Printers Section
+        if (bluetoothPrinters.isNotEmpty) ...[
+          Text('Bluetooth Printers',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  )),
+          const SizedBox(height: 8),
+          ...bluetoothPrinters.map<Widget>((ThermalPrinter printer) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                leading: Icon(
+                  printer.isBonded
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth,
+                  color: printer.isBonded ? Colors.green : Colors.blue,
+                ),
+                title: Text(printer.name),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(printer.address),
+                    Text('Type: Bluetooth'),
+                    if (printer.isBonded)
+                      Text(
+                        'Paired Device',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
+                onTap: () =>
+                    ref.read(settingsProvider.notifier).selectPrinter(printer),
               ),
-              onTap: () =>
-                  ref.read(settingsProvider.notifier).selectPrinter(printer),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ],
+
+        // No printers found message
+        if (allPrinters.isEmpty && !state.isScanning)
+          Column(
+            children: [
+              const Text(
+                  'No printers found. Tap "Scan All" to search for devices.'),
+              const SizedBox(height: 8),
+              Text(
+                'For Bluetooth: Pair your printer in Android settings first.\nFor USB: Connect your printer via USB cable.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+            ],
+          ),
       ],
     );
   }

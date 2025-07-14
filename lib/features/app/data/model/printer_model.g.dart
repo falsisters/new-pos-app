@@ -17,6 +17,9 @@ _ThermalPrinter _$ThermalPrinterFromJson(Map<String, dynamic> json) =>
           ConnectionType.BLE,
       vendorId: json['vendorId'] as String?,
       productId: json['productId'] as String?,
+      devicePath: json['devicePath'] as String?,
+      usbVendorId: (json['usbVendorId'] as num?)?.toInt(),
+      usbProductId: (json['usbProductId'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ThermalPrinterToJson(_ThermalPrinter instance) =>
@@ -28,6 +31,9 @@ Map<String, dynamic> _$ThermalPrinterToJson(_ThermalPrinter instance) =>
       'connectionType': _$ConnectionTypeEnumMap[instance.connectionType]!,
       'vendorId': instance.vendorId,
       'productId': instance.productId,
+      'devicePath': instance.devicePath,
+      'usbVendorId': instance.usbVendorId,
+      'usbProductId': instance.usbProductId,
     };
 
 const _$ConnectionTypeEnumMap = {
