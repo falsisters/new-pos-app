@@ -19,87 +19,39 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
   final _driverNameController = TextEditingController();
   DateTime? _deliveryTimeStart;
 
-  void _handleScheduleDelivery() {
+  void _handleScheduleDelivery() async {
     if (_formKey.currentState!.validate() && _deliveryTimeStart != null) {
-      // Show confirmation dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.check_circle_rounded,
-                    color: AppColors.secondary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text('Confirm Delivery'),
-            ],
-          ),
-          content: Text(
-            'Create delivery with driver ${_driverNameController.text} scheduled for ${DateFormat('MMM dd, yyyy - hh:mm a').format(_deliveryTimeStart!)}?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('CANCEL', style: TextStyle(color: Colors.grey[600])),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                navigator.pop(); // Close dialog
+      try {
+        // Process the delivery directly - convert to ISO-8601 format for server
+        await ref.read(deliveryProvider.notifier).createDelivery(
+              _driverNameController.text,
+              _deliveryTimeStart!.toUtc(), // Convert to UTC for server
+            );
 
-                try {
-                  // Process the delivery
-                  await ref.read(deliveryProvider.notifier).createDelivery(
-                        _driverNameController.text,
-                        _deliveryTimeStart!,
-                      );
-
-                  // Check if widget is still mounted before navigation
-                  if (mounted) {
-                    navigator.pop(); // Go back to previous screen
-                  }
-                } catch (e) {
-                  // Handle error and show message if widget is still mounted
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text('Failed to create delivery: $e'),
-                          ],
-                        ),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+        // Check if widget is still mounted before navigation
+        if (mounted) {
+          Navigator.pop(context); // Go back to previous screen
+        }
+      } catch (e) {
+        // Handle error and show message if widget is still mounted
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Failed to create delivery: $e'),
+                ],
               ),
-              child: Text('CONFIRM'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-          ],
-        ),
-      );
+          );
+        }
+      }
     } else {
       // Trigger validation
       _formKey.currentState!.validate();
@@ -618,11 +570,13 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
                                           await showBoardDateTimePicker(
                                         context: context,
                                         pickerType: DateTimePickerType.datetime,
+                                        initialDate: DateTime.now(),
                                       );
 
                                       if (result != null) {
                                         setState(() {
-                                          _deliveryTimeStart = result.toUtc();
+                                          // Store as local time for display, convert to UTC only when sending to server
+                                          _deliveryTimeStart = result;
                                         });
                                       }
                                     },
@@ -669,7 +623,7 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
                                                   : DateFormat(
                                                           'MMM dd, yyyy - hh:mm a')
                                                       .format(
-                                                          _deliveryTimeStart!),
+                                                          _deliveryTimeStart!), // Display in local time
                                               style: TextStyle(
                                                 color:
                                                     _deliveryTimeStart == null

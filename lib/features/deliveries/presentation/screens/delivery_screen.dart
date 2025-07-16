@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/features/deliveries/presentation/screens/confirm_delivery_screen.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/widgets/product_list.dart';
 import 'package:falsisters_pos_android/features/deliveries/presentation/widgets/truck_list.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,9 @@ class DeliveryScreen extends ConsumerWidget {
 
   void _handleConfirmDelivery(BuildContext context, WidgetRef ref) {
     // Navigate to confirm delivery screen
-    Navigator.pushNamed(context, '/confirm-delivery');
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return const ConfirmDeliveryScreen();
+    }));
   }
 
   @override
