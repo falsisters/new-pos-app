@@ -20,10 +20,10 @@ class TransferStockForm extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TransferStockForm> createState() => _TransferStockFormState();
+  ConsumerState<TransferStockForm> createState() => TransferStockFormState();
 }
 
-class _TransferStockFormState extends ConsumerState<TransferStockForm> {
+class TransferStockFormState extends ConsumerState<TransferStockForm> {
   final _formKey = GlobalKey<FormState>();
   final _stockRepository = StockRepository();
   final _quantityController = TextEditingController();
@@ -39,8 +39,16 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
     super.initState();
     if (widget.product.sackPrice.isNotEmpty) {
       _selectedSackIndex = 0;
+      // Set default quantity to 1 if there's stock available
+      if (widget.product.sackPrice[0].stock > 0) {
+        _quantity = 1;
+      }
     } else if (widget.product.perKiloPrice != null) {
       _isPerKilo = true;
+      // Set default quantity to 1 if there's stock available
+      if (widget.product.perKiloPrice!.stock > 0) {
+        _quantity = 1.0;
+      }
     }
     _quantityController.text = _quantity.toStringAsFixed(_isPerKilo ? 1 : 0);
   }
@@ -133,6 +141,20 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
           setState(() => _isLoading = false);
         }
       }
+    }
+  }
+
+  // Public method to trigger submit from parent
+  void triggerSubmit() {
+    if (!_isLoading &&
+        _hasValidStock() &&
+        _formKey.currentState?.validate() == true) {
+      FocusScope.of(context).unfocus();
+      _submitForm().then((_) {
+        if (mounted) {
+          ref.read(productProvider.notifier).getProducts();
+        }
+      });
     }
   }
 
@@ -402,6 +424,9 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                             FocusScope.of(context).unfocus();
                             _submitForm().then((_) {
                               ref.read(productProvider.notifier).getProducts();
+                              if (mounted) {
+                                Navigator.pop(context, true);
+                              }
                             });
                           },
                     child: Padding(
@@ -589,7 +614,9 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                     setState(() {
                       _isPerKilo = true;
                       _selectedSackIndex = -1;
-                      _quantity = 0;
+                      // Set default quantity to 1 if there's stock
+                      _quantity = perKiloInStock ? 1.0 : 0;
+                      _quantityController.text = _quantity.toStringAsFixed(1);
                     });
                   }
                 : null,
@@ -720,7 +747,10 @@ class _TransferStockFormState extends ConsumerState<TransferStockForm> {
                         setState(() {
                           _isPerKilo = false;
                           _selectedSackIndex = index;
-                          _quantity = 0;
+                          // Set default quantity to 1 if there's stock
+                          _quantity = sackInStock ? 1 : 0;
+                          _quantityController.text =
+                              _quantity.toStringAsFixed(0);
                         });
                       }
                     : null,

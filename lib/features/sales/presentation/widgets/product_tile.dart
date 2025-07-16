@@ -256,7 +256,7 @@ class _ProductTileState extends State<ProductTile>
                                   child: Center(
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
+                                        horizontal: 6,
                                         vertical: 8,
                                       ),
                                       decoration: BoxDecoration(
