@@ -17,6 +17,8 @@ sealed class TotalSaleItem with _$TotalSaleItem {
     required double totalAmount,
     required PaymentMethod paymentMethod,
     required bool isSpecialPrice,
+    required bool isDiscounted, // Add this field
+    double? discountedPrice, // Add this field for discounted unit price
     required DateTime saleDate,
     required String formattedTime, // e.g., "14:30"
     required String

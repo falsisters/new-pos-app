@@ -20,6 +20,8 @@ mixin _$GroupedSaleDetail {
   double get totalAmount;
   PaymentMethod get paymentMethod;
   bool get isSpecialPrice;
+  bool get isDiscounted; // Add this field
+  double? get discountedPrice; // Add this field for discounted unit price
   String get formattedSale;
 
   /// Create a copy of GroupedSaleDetail
@@ -48,18 +50,30 @@ mixin _$GroupedSaleDetail {
                 other.paymentMethod == paymentMethod) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
                 other.isSpecialPrice == isSpecialPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
             (identical(other.formattedSale, formattedSale) ||
                 other.formattedSale == formattedSale));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, quantity, unitPrice, totalAmount,
-      paymentMethod, isSpecialPrice, formattedSale);
+  int get hashCode => Object.hash(
+      runtimeType,
+      quantity,
+      unitPrice,
+      totalAmount,
+      paymentMethod,
+      isSpecialPrice,
+      isDiscounted,
+      discountedPrice,
+      formattedSale);
 
   @override
   String toString() {
-    return 'GroupedSaleDetail(quantity: $quantity, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, formattedSale: $formattedSale)';
+    return 'GroupedSaleDetail(quantity: $quantity, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, discountedPrice: $discountedPrice, formattedSale: $formattedSale)';
   }
 }
 
@@ -75,6 +89,8 @@ abstract mixin class $GroupedSaleDetailCopyWith<$Res> {
       double totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
+      bool isDiscounted,
+      double? discountedPrice,
       String formattedSale});
 }
 
@@ -96,6 +112,8 @@ class _$GroupedSaleDetailCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? isSpecialPrice = null,
+    Object? isDiscounted = null,
+    Object? discountedPrice = freezed,
     Object? formattedSale = null,
   }) {
     return _then(_self.copyWith(
@@ -119,6 +137,14 @@ class _$GroupedSaleDetailCopyWithImpl<$Res>
           ? _self.isSpecialPrice
           : isSpecialPrice // ignore: cast_nullable_to_non_nullable
               as bool,
+      isDiscounted: null == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
       formattedSale: null == formattedSale
           ? _self.formattedSale
           : formattedSale // ignore: cast_nullable_to_non_nullable
@@ -136,6 +162,8 @@ class _GroupedSaleDetail implements GroupedSaleDetail {
       required this.totalAmount,
       required this.paymentMethod,
       required this.isSpecialPrice,
+      required this.isDiscounted,
+      this.discountedPrice,
       required this.formattedSale});
   factory _GroupedSaleDetail.fromJson(Map<String, dynamic> json) =>
       _$GroupedSaleDetailFromJson(json);
@@ -150,6 +178,12 @@ class _GroupedSaleDetail implements GroupedSaleDetail {
   final PaymentMethod paymentMethod;
   @override
   final bool isSpecialPrice;
+  @override
+  final bool isDiscounted;
+// Add this field
+  @override
+  final double? discountedPrice;
+// Add this field for discounted unit price
   @override
   final String formattedSale;
 
@@ -183,18 +217,30 @@ class _GroupedSaleDetail implements GroupedSaleDetail {
                 other.paymentMethod == paymentMethod) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
                 other.isSpecialPrice == isSpecialPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
             (identical(other.formattedSale, formattedSale) ||
                 other.formattedSale == formattedSale));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, quantity, unitPrice, totalAmount,
-      paymentMethod, isSpecialPrice, formattedSale);
+  int get hashCode => Object.hash(
+      runtimeType,
+      quantity,
+      unitPrice,
+      totalAmount,
+      paymentMethod,
+      isSpecialPrice,
+      isDiscounted,
+      discountedPrice,
+      formattedSale);
 
   @override
   String toString() {
-    return 'GroupedSaleDetail(quantity: $quantity, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, formattedSale: $formattedSale)';
+    return 'GroupedSaleDetail(quantity: $quantity, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, discountedPrice: $discountedPrice, formattedSale: $formattedSale)';
   }
 }
 
@@ -212,6 +258,8 @@ abstract mixin class _$GroupedSaleDetailCopyWith<$Res>
       double totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
+      bool isDiscounted,
+      double? discountedPrice,
       String formattedSale});
 }
 
@@ -233,6 +281,8 @@ class __$GroupedSaleDetailCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? isSpecialPrice = null,
+    Object? isDiscounted = null,
+    Object? discountedPrice = freezed,
     Object? formattedSale = null,
   }) {
     return _then(_GroupedSaleDetail(
@@ -256,6 +306,14 @@ class __$GroupedSaleDetailCopyWithImpl<$Res>
           ? _self.isSpecialPrice
           : isSpecialPrice // ignore: cast_nullable_to_non_nullable
               as bool,
+      isDiscounted: null == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
       formattedSale: null == formattedSale
           ? _self.formattedSale
           : formattedSale // ignore: cast_nullable_to_non_nullable

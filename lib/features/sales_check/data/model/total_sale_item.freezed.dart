@@ -24,6 +24,8 @@ mixin _$TotalSaleItem {
   double get totalAmount;
   PaymentMethod get paymentMethod;
   bool get isSpecialPrice;
+  bool get isDiscounted; // Add this field
+  double? get discountedPrice; // Add this field for discounted unit price
   DateTime get saleDate;
   String get formattedTime; // e.g., "14:30"
   String get formattedSale;
@@ -59,6 +61,10 @@ mixin _$TotalSaleItem {
                 other.paymentMethod == paymentMethod) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
                 other.isSpecialPrice == isSpecialPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
             (identical(other.saleDate, saleDate) ||
                 other.saleDate == saleDate) &&
             (identical(other.formattedTime, formattedTime) ||
@@ -80,13 +86,15 @@ mixin _$TotalSaleItem {
       totalAmount,
       paymentMethod,
       isSpecialPrice,
+      isDiscounted,
+      discountedPrice,
       saleDate,
       formattedTime,
       formattedSale);
 
   @override
   String toString() {
-    return 'TotalSaleItem(id: $id, saleId: $saleId, quantity: $quantity, product: $product, priceType: $priceType, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, saleDate: $saleDate, formattedTime: $formattedTime, formattedSale: $formattedSale)';
+    return 'TotalSaleItem(id: $id, saleId: $saleId, quantity: $quantity, product: $product, priceType: $priceType, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, discountedPrice: $discountedPrice, saleDate: $saleDate, formattedTime: $formattedTime, formattedSale: $formattedSale)';
   }
 }
 
@@ -106,6 +114,8 @@ abstract mixin class $TotalSaleItemCopyWith<$Res> {
       double totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
+      bool isDiscounted,
+      double? discountedPrice,
       DateTime saleDate,
       String formattedTime,
       String formattedSale});
@@ -135,6 +145,8 @@ class _$TotalSaleItemCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? isSpecialPrice = null,
+    Object? isDiscounted = null,
+    Object? discountedPrice = freezed,
     Object? saleDate = null,
     Object? formattedTime = null,
     Object? formattedSale = null,
@@ -176,6 +188,14 @@ class _$TotalSaleItemCopyWithImpl<$Res>
           ? _self.isSpecialPrice
           : isSpecialPrice // ignore: cast_nullable_to_non_nullable
               as bool,
+      isDiscounted: null == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
       saleDate: null == saleDate
           ? _self.saleDate
           : saleDate // ignore: cast_nullable_to_non_nullable
@@ -215,6 +235,8 @@ class _TotalSaleItem implements TotalSaleItem {
       required this.totalAmount,
       required this.paymentMethod,
       required this.isSpecialPrice,
+      required this.isDiscounted,
+      this.discountedPrice,
       required this.saleDate,
       required this.formattedTime,
       required this.formattedSale});
@@ -240,6 +262,12 @@ class _TotalSaleItem implements TotalSaleItem {
   final PaymentMethod paymentMethod;
   @override
   final bool isSpecialPrice;
+  @override
+  final bool isDiscounted;
+// Add this field
+  @override
+  final double? discountedPrice;
+// Add this field for discounted unit price
   @override
   final DateTime saleDate;
   @override
@@ -283,6 +311,10 @@ class _TotalSaleItem implements TotalSaleItem {
                 other.paymentMethod == paymentMethod) &&
             (identical(other.isSpecialPrice, isSpecialPrice) ||
                 other.isSpecialPrice == isSpecialPrice) &&
+            (identical(other.isDiscounted, isDiscounted) ||
+                other.isDiscounted == isDiscounted) &&
+            (identical(other.discountedPrice, discountedPrice) ||
+                other.discountedPrice == discountedPrice) &&
             (identical(other.saleDate, saleDate) ||
                 other.saleDate == saleDate) &&
             (identical(other.formattedTime, formattedTime) ||
@@ -304,13 +336,15 @@ class _TotalSaleItem implements TotalSaleItem {
       totalAmount,
       paymentMethod,
       isSpecialPrice,
+      isDiscounted,
+      discountedPrice,
       saleDate,
       formattedTime,
       formattedSale);
 
   @override
   String toString() {
-    return 'TotalSaleItem(id: $id, saleId: $saleId, quantity: $quantity, product: $product, priceType: $priceType, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, saleDate: $saleDate, formattedTime: $formattedTime, formattedSale: $formattedSale)';
+    return 'TotalSaleItem(id: $id, saleId: $saleId, quantity: $quantity, product: $product, priceType: $priceType, unitPrice: $unitPrice, totalAmount: $totalAmount, paymentMethod: $paymentMethod, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, discountedPrice: $discountedPrice, saleDate: $saleDate, formattedTime: $formattedTime, formattedSale: $formattedSale)';
   }
 }
 
@@ -332,6 +366,8 @@ abstract mixin class _$TotalSaleItemCopyWith<$Res>
       double totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
+      bool isDiscounted,
+      double? discountedPrice,
       DateTime saleDate,
       String formattedTime,
       String formattedSale});
@@ -362,6 +398,8 @@ class __$TotalSaleItemCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? isSpecialPrice = null,
+    Object? isDiscounted = null,
+    Object? discountedPrice = freezed,
     Object? saleDate = null,
     Object? formattedTime = null,
     Object? formattedSale = null,
@@ -403,6 +441,14 @@ class __$TotalSaleItemCopyWithImpl<$Res>
           ? _self.isSpecialPrice
           : isSpecialPrice // ignore: cast_nullable_to_non_nullable
               as bool,
+      isDiscounted: null == isDiscounted
+          ? _self.isDiscounted
+          : isDiscounted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      discountedPrice: freezed == discountedPrice
+          ? _self.discountedPrice
+          : discountedPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
       saleDate: null == saleDate
           ? _self.saleDate
           : saleDate // ignore: cast_nullable_to_non_nullable

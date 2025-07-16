@@ -12,6 +12,8 @@ sealed class GroupedSaleDetail with _$GroupedSaleDetail {
     required double totalAmount,
     required PaymentMethod paymentMethod,
     required bool isSpecialPrice,
+    required bool isDiscounted, // Add this field
+    double? discountedPrice, // Add this field for discounted unit price
     required String
         formattedSale, // e.g., "1 Rice 50KG = 2500 (CHECK) (special price)"
   }) = _GroupedSaleDetail;

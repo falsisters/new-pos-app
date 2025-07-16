@@ -667,7 +667,17 @@ class _FormattedSaleRow extends StatelessWidget {
       productInfo = parts[0].trim();
 
       if (parts.length > 1) {
-        amount = double.tryParse(parts[1].trim());
+        // Extract the amount part and clean it from any payment method info
+        String amountPart = parts[1].trim();
+
+        // Remove payment method indicators like (CHECK), (BANK TRANSFER), etc.
+        amountPart = amountPart.replaceAll(RegExp(r'\s*\([^)]*\)'), '');
+
+        // Remove discount/special price indicators
+        amountPart = amountPart.replaceAll(RegExp(r'\s*\(discounted\)'), '');
+        amountPart = amountPart.replaceAll(RegExp(r'\s*\(special price\)'), '');
+
+        amount = double.tryParse(amountPart.trim());
         if (amount != null) {
           amountStr = '₱${numberFormat.format(amount)}';
         }
@@ -791,34 +801,97 @@ class _FormattedSaleRow extends StatelessWidget {
                           text: weight,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
+                        // Add discounted indicator if present in formatted sale
+                        if (formattedSale.contains('(discounted)'))
+                          TextSpan(
+                            text: ' (discounted)',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.red[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        // Add special price indicator if present
+                        if (formattedSale.contains('(special price)'))
+                          TextSpan(
+                            text: ' (special)',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.blue[600],
+                              fontSize: 12,
+                            ),
+                          ),
                       ],
                     ),
                   );
                 } else {
-                  // No product type found, display as is
-                  return Text(
-                    productInfo.isNotEmpty
-                        ? productInfo
-                        : (quantity.isEmpty ? formattedSale : ''),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.3,
-                    ),
-                  );
+                  // No product type found, display as is with indicators
+                  String displayText = productInfo.isNotEmpty
+                      ? productInfo
+                      : (quantity.isEmpty ? formattedSale : '');
+
+                  // Check for special indicators
+                  bool isDiscounted = formattedSale.contains('(discounted)');
+                  bool isSpecialPrice =
+                      formattedSale.contains('(special price)');
+
+                  if (isDiscounted || isSpecialPrice) {
+                    return RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.3,
+                          color: Colors.black,
+                        ),
+                        children: [
+                          TextSpan(text: displayText),
+                          if (isDiscounted)
+                            TextSpan(
+                              text: ' (discounted)',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.red[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          if (isSpecialPrice)
+                            TextSpan(
+                              text: ' (special)',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.blue[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return Text(
+                      displayText,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                    );
+                  }
                 }
               },
             ),
           ),
 
-          // Amount column (only show if we have a time column, meaning this is chronological view)
-          if (time != null && amountStr.isNotEmpty)
+          // Amount column - show for both chronological and grouped views
+          if (amountStr.isNotEmpty)
             SizedBox(
               width: 100,
               child: Text(
                 amountStr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
+                  color: formattedSale.contains('(discounted)')
+                      ? Colors.red[600]
+                      : Colors.black,
                 ),
                 textAlign: TextAlign.right,
               ),

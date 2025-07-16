@@ -13,6 +13,8 @@ _GroupedSaleDetail _$GroupedSaleDetailFromJson(Map<String, dynamic> json) =>
       totalAmount: (json['totalAmount'] as num).toDouble(),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       isSpecialPrice: json['isSpecialPrice'] as bool,
+      isDiscounted: json['isDiscounted'] as bool,
+      discountedPrice: (json['discountedPrice'] as num?)?.toDouble(),
       formattedSale: json['formattedSale'] as String,
     );
 
@@ -23,6 +25,8 @@ Map<String, dynamic> _$GroupedSaleDetailToJson(_GroupedSaleDetail instance) =>
       'totalAmount': instance.totalAmount,
       'paymentMethod': _$PaymentMethodEnumMap[instance.paymentMethod]!,
       'isSpecialPrice': instance.isSpecialPrice,
+      'isDiscounted': instance.isDiscounted,
+      'discountedPrice': instance.discountedPrice,
       'formattedSale': instance.formattedSale,
     };
 
