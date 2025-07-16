@@ -20,7 +20,11 @@ sealed class CartItemModel with _$CartItemModel {
       _$CartItemModelFromJson(json);
 
   // Add utility methods for printing calculations
-  double get totalPrice => price * quantity;
+  double get totalPrice {
+    final total = price * quantity;
+    // Apply ceiling rounding
+    return (total * 100).ceil() / 100.0;
+  }
 
   String get displayQuantity {
     if (product.perKiloPrice != null) {
@@ -32,7 +36,9 @@ sealed class CartItemModel with _$CartItemModel {
   }
 
   String get unitPriceDisplay {
-    return '₱${price.toStringAsFixed(2)}';
+    // Apply ceiling rounding to unit price display
+    final ceiledPrice = (price * 100).ceil() / 100.0;
+    return '₱${ceiledPrice.toStringAsFixed(2)}';
   }
 
   String get totalPriceDisplay {
