@@ -15,23 +15,55 @@ sealed class CartModel with _$CartModel {
   factory CartModel.fromJson(Map<String, dynamic> json) =>
       _$CartModelFromJson(json);
 
-  // Add utility methods for calculations
+  // Add utility methods for calculations with improved ceiling rounding
   double get totalAmount {
-    return products.fold(0.0, (sum, product) {
+    // Define ceiling rounding function with improved precision
+    double ceilRoundPrice(double value) {
+      if (value.isNaN || value.isInfinite) return 0.0;
+      if (value < 0) return 0.0;
+
+      // Fix precision loss by converting to string first, then parsing back
+      final valueStr = value.toStringAsFixed(10);
+      final preciseValue = double.parse(valueStr);
+
+      // Use proper rounding to avoid floating point precision issues
+      final centsValue = (preciseValue * 100.0).round();
+      final ceiledCents =
+          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
+
+      return ceiledCents / 100.0;
+    }
+
+    double grandTotal = products.fold(0.0, (sum, product) {
       double itemTotal = 0.0;
 
       if (product.isDiscounted == true && product.discountedPrice != null) {
-        itemTotal = product.discountedPrice!;
+        double quantity = 1.0;
+        if (product.perKiloPrice != null) {
+          quantity = product.perKiloPrice!.quantity;
+        } else if (product.sackPrice != null) {
+          quantity = product.sackPrice!.quantity;
+        }
+        // Use ceiling-rounded discount price
+        final ceiledDiscountPrice = ceilRoundPrice(product.discountedPrice!);
+        itemTotal = ceiledDiscountPrice * quantity;
       } else if (product.sackPrice != null) {
-        itemTotal = product.sackPrice!.price * product.sackPrice!.quantity;
+        // Use ceiling-rounded unit price
+        final ceiledUnitPrice = ceilRoundPrice(product.sackPrice!.price);
+        itemTotal = ceiledUnitPrice * product.sackPrice!.quantity;
       } else if (product.perKiloPrice != null) {
-        itemTotal =
-            product.perKiloPrice!.price * product.perKiloPrice!.quantity;
+        // Use ceiling-rounded unit price
+        final ceiledUnitPrice = ceilRoundPrice(product.perKiloPrice!.price);
+        itemTotal = ceiledUnitPrice * product.perKiloPrice!.quantity;
       }
 
       // Apply ceiling rounding to each item's total before adding to sum
-      return sum + ((itemTotal * 100).ceil() / 100.0);
+      final ceiledItemTotal = ceilRoundPrice(itemTotal);
+      return sum + ceiledItemTotal;
     });
+
+    // Apply ceiling rounding to the final grand total
+    return ceilRoundPrice(grandTotal);
   }
 
   int get itemCount => products.length;

@@ -1,9 +1,8 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../data/constants/currency_input_formatter.dart';
 
-class DiscountSectionWidget extends StatelessWidget {
+class DiscountSectionWidget extends StatefulWidget {
   final bool isDiscounted;
   final bool isSackSelected;
   final TextEditingController discountedPriceController;
@@ -20,12 +19,54 @@ class DiscountSectionWidget extends StatelessWidget {
   });
 
   @override
+  State<DiscountSectionWidget> createState() => _DiscountSectionWidgetState();
+}
+
+class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
+  bool _isInternalUpdate = false;
+
+  // Simplified validation for whole numbers only
+  int? _parseWholeNumber(String value) {
+    if (value.isEmpty) return null;
+    final cleanValue = value.replaceAll(',', '');
+    return int.tryParse(cleanValue);
+  }
+
+  void _handleDiscountPriceChange(String value) {
+    if (_isInternalUpdate) return;
+
+    if (value.isNotEmpty) {
+      final cleanValue = value.replaceAll(',', '');
+      final priceVal = int.tryParse(cleanValue);
+      if (priceVal != null && priceVal > 0) {
+        // Format with commas for display but keep as whole number
+        _isInternalUpdate = true;
+
+        final formattedPrice = priceVal.toString().replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+
+        if (formattedPrice != value) {
+          widget.discountedPriceController.text = formattedPrice;
+          widget.discountedPriceController.selection =
+              TextSelection.fromPosition(
+            TextPosition(offset: formattedPrice.length),
+          );
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _isInternalUpdate = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Focus(
-      focusNode: focusNode,
+      focusNode: widget.focusNode,
       child: Builder(
         builder: (context) {
-          final isFocused = focusNode.hasFocus;
+          final isFocused = widget.focusNode.hasFocus;
 
           return Container(
             decoration: BoxDecoration(
@@ -74,8 +115,8 @@ class DiscountSectionWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Checkbox(
-                        value: isDiscounted,
-                        onChanged: onDiscountToggle,
+                        value: widget.isDiscounted,
+                        onChanged: widget.onDiscountToggle,
                         activeColor: Colors.orange[700],
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -106,7 +147,7 @@ class DiscountSectionWidget extends StatelessWidget {
   Widget _buildDiscountInput() {
     return Column(
       children: [
-        if (isDiscounted)
+        if (widget.isDiscounted)
           Column(
             children: [
               Container(
@@ -124,7 +165,7 @@ class DiscountSectionWidget extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Price per ${isSackSelected ? 'sack' : 'kg'}',
+                        'Whole number price per ${widget.isSackSelected ? 'sack' : 'kg'} (no decimals)',
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontSize: 11,
@@ -146,25 +187,26 @@ class DiscountSectionWidget extends StatelessWidget {
                   ],
                 ),
                 child: TextFormField(
-                  controller: discountedPriceController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  controller: widget.discountedPriceController,
+                  keyboardType: TextInputType.number,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}')),
+                    // Only allow digits and commas (no decimals)
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d,]')),
+                    // Custom formatter for comma formatting
+                    _WholeNumberFormatter(),
                   ],
+                  onChanged: _handleDiscountPriceChange,
                   decoration: _inputDecoration(
                     labelText: 'Unit Price ₱',
                     prefixText: '₱ ',
                   ),
                   validator: (value) {
-                    if (isDiscounted) {
+                    if (widget.isDiscounted) {
                       if (value == null || value.isEmpty)
                         return 'Enter discounted price';
-                      final cleanValue = value.replaceAll(',', '');
-                      final priceVal = double.tryParse(cleanValue);
+                      final priceVal = _parseWholeNumber(value);
                       if (priceVal == null || priceVal <= 0)
-                        return 'Valid price > 0';
+                        return 'Valid whole number > 0';
                     }
                     return null;
                   },
@@ -200,6 +242,39 @@ class DiscountSectionWidget extends StatelessWidget {
       isDense: true,
       filled: true,
       fillColor: Colors.white,
+    );
+  }
+}
+
+// Custom TextInputFormatter for whole numbers with comma formatting
+class _WholeNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue();
+    }
+
+    // Parse as integer
+    final intValue = int.tryParse(digitsOnly);
+    if (intValue == null) {
+      return oldValue;
+    }
+
+    // Format with commas
+    final formatted = intValue.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

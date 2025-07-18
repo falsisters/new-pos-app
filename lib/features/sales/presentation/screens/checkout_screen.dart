@@ -12,7 +12,7 @@ import 'package:flutter/services.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final List<ProductDto> products;
-  final double total;
+  final double total; // This will be ignored in favor of calculated total
 
   const CheckoutScreen({
     super.key,
@@ -29,6 +29,72 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   late PaymentMethod _selectedPaymentMethod;
   final _cashGivenController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  // Add ceiling rounding method for total price consistency with improved precision
+  double _ceilRoundPrice(double value) {
+    if (value.isNaN || value.isInfinite) return 0.0;
+    if (value < 0) return 0.0;
+
+    // Fix precision loss by converting to string first, then parsing back
+    final valueStr = value.toStringAsFixed(10);
+    final preciseValue = double.parse(valueStr);
+
+    // Use proper rounding to avoid floating point precision issues
+    final centsValue = (preciseValue * 100.0).round();
+    final ceiledCents =
+        ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
+
+    return ceiledCents / 100.0;
+  }
+
+  // Calculate individual item total with ceiling rounding
+  double _calculateItemTotal(ProductDto product) {
+    final bool isDiscountApplied =
+        product.isDiscounted == true && product.discountedPrice != null;
+
+    double itemTotal;
+
+    if (isDiscountApplied) {
+      // For discounted items, the discounted price should already be ceiling-rounded
+      // Apply it per quantity
+      double quantity = 1.0;
+      if (product.perKiloPrice != null) {
+        quantity = product.perKiloPrice!.quantity;
+      } else if (product.sackPrice != null) {
+        quantity = product.sackPrice!.quantity;
+      }
+
+      // Use ceiling-rounded discount price
+      final ceiledDiscountPrice = _ceilRoundPrice(product.discountedPrice!);
+      itemTotal = ceiledDiscountPrice * quantity;
+    } else if (product.sackPrice != null) {
+      // Use ceiling-rounded unit price
+      final ceiledUnitPrice = _ceilRoundPrice(product.sackPrice!.price);
+      itemTotal = ceiledUnitPrice * product.sackPrice!.quantity;
+    } else if (product.perKiloPrice != null) {
+      // Use ceiling-rounded unit price
+      final ceiledUnitPrice = _ceilRoundPrice(product.perKiloPrice!.price);
+      itemTotal = ceiledUnitPrice * product.perKiloPrice!.quantity;
+    } else {
+      itemTotal = 0.0;
+    }
+
+    // Apply ceiling rounding to individual item total
+    return _ceilRoundPrice(itemTotal);
+  }
+
+  // Calculate grand total with ceiling rounding
+  double _calculateGrandTotal() {
+    double total = 0.0;
+
+    for (final product in widget.products) {
+      // Add each ceiling-rounded item total
+      total += _calculateItemTotal(product);
+    }
+
+    // Apply final ceiling rounding to the grand total
+    return _ceilRoundPrice(total);
+  }
 
   @override
   void initState() {
@@ -70,6 +136,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
       }
 
+      // Use ceiling-rounded total for calculation
+      final ceiledTotal = _calculateGrandTotal();
+
       if (_selectedPaymentMethod == PaymentMethod.CASH) {
         final String cashGivenText =
             _cashGivenController.text.replaceAll(',', '');
@@ -93,31 +162,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
           return;
         }
-        if (tenderedAmount < widget.total) {
+        if (tenderedAmount < ceiledTotal) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(widget.total)}).'),
+                  'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
               backgroundColor: Colors.redAccent,
             ),
           );
           return;
         }
 
-        // Calculate change
-        changeAmount = tenderedAmount - widget.total;
+        // Calculate change using ceiling-rounded total
+        changeAmount = tenderedAmount - ceiledTotal;
         debugPrint(
-            'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${widget.total.toStringAsFixed(2)})');
+            'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${ceiledTotal.toStringAsFixed(2)})');
       }
 
       final salesNotifier = ref.read(salesProvider.notifier);
       final salesCheckNotifier = ref.read(salesCheckProvider.notifier);
 
-      // Pass change amount, cashier info and name to the sale
+      // Pass change amount, cashier info and name to the sale using ceiling-rounded total
       debugPrint(
           'Submitting sale with change: ₱${changeAmount.toStringAsFixed(2)}');
       salesNotifier.submitSaleWithDetails(
-        widget.total,
+        ceiledTotal, // Use ceiling-rounded total
         _selectedPaymentMethod,
         changeAmount: changeAmount,
         cashierId: cashierId,
@@ -130,6 +199,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ALWAYS use the calculated ceiling-rounded total, never widget.total
+    final ceiledTotal = _calculateGrandTotal();
+
     double cashGiven = 0.0;
     double changeAmount = 0.0;
     bool showChange = false;
@@ -140,8 +212,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final parsedCash = double.tryParse(cleanedText);
       if (parsedCash != null) {
         cashGiven = parsedCash;
-        if (cashGiven >= widget.total) {
-          changeAmount = cashGiven - widget.total;
+        if (cashGiven >= ceiledTotal) {
+          changeAmount = cashGiven - ceiledTotal;
           showChange = true;
         }
       }
@@ -311,25 +383,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         product.isDiscounted == true &&
                                             product.discountedPrice != null;
 
-                                    double itemDisplayPrice;
-                                    String priceDetails;
+                                    // Use ceiling-rounded item total
+                                    final itemDisplayPrice =
+                                        _calculateItemTotal(product);
 
+                                    String priceDetails;
                                     if (product.sackPrice != null) {
-                                      itemDisplayPrice = isDiscountApplied
-                                          ? product.discountedPrice!
-                                          : product.sackPrice!.price *
-                                              product.sackPrice!.quantity;
                                       priceDetails =
                                           '${product.sackPrice!.quantity.toInt()} sack${product.sackPrice!.quantity > 1 ? "s" : ""}';
                                     } else if (product.perKiloPrice != null) {
-                                      itemDisplayPrice = isDiscountApplied
-                                          ? product.discountedPrice!
-                                          : product.perKiloPrice!.price *
-                                              product.perKiloPrice!.quantity;
                                       priceDetails =
                                           '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg';
                                     } else {
-                                      itemDisplayPrice = 0;
                                       priceDetails = "N/A";
                                     }
 
@@ -449,7 +514,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '₱${CurrencyFormatter.formatCurrency(widget.total)}',
+                                          '₱${CurrencyFormatter.formatCurrency(ceiledTotal)}',
                                           style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,

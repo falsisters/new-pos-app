@@ -190,17 +190,36 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   // Add centralized ceiling rounding method for all monetary values
   double _ceilRoundPrice(double value) {
-    // Round to 2 decimal places first, then ceiling
-    return (value * 100).ceil() / 100.0;
+    if (value.isNaN || value.isInfinite) return 0.0;
+    if (value < 0) return 0.0;
+
+    // Fix precision loss by converting to string first, then parsing back
+    final valueStr = value.toStringAsFixed(10);
+    final preciseValue = double.parse(valueStr);
+
+    // Use proper rounding to avoid floating point precision issues
+    final centsValue = (preciseValue * 100.0).round();
+    final ceiledCents =
+        ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
+
+    return ceiledCents / 100.0;
   }
 
   double _ceilRoundQuantity(double value) {
-    // For quantities, round to 2 decimal places with ceiling
-    return (value * 100).ceil() / 100.0;
+    if (value.isNaN || value.isInfinite) return 0.0;
+    if (value < 0) return 0.0;
+
+    // For quantities, use similar precision-safe approach
+    final valueStr = value.toStringAsFixed(10);
+    final preciseValue = double.parse(valueStr);
+    final centiUnits = (preciseValue * 100.0).round();
+    final ceiledCentiUnits = ((centiUnits + 99) ~/ 100) * 100;
+
+    return ceiledCentiUnits / 100.0;
   }
 
   double _customRoundValue(double value) {
-    // Replace custom rounding with ceiling rounding for consistency
+    // Use ceiling rounding for consistency
     return _ceilRoundPrice(value);
   }
 
@@ -256,15 +275,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         if (unitPrice <= 0) {
           _perKiloTotalPriceController.clear();
         } else if (quantity != null && quantity > 0) {
-          // Use ceiling rounding for all price calculations
-          double calculatedTotalPrice = quantity * unitPrice;
-
-          // Ensure non-negative result and apply ceiling rounding
-          if (calculatedTotalPrice < 0) calculatedTotalPrice = 0;
-          calculatedTotalPrice = _ceilRoundPrice(calculatedTotalPrice);
+          // Calculate total with proper precision handling
+          final totalPriceStr = (quantity * unitPrice).toStringAsFixed(10);
+          final preciseTotalPrice = double.parse(totalPriceStr);
+          final ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
 
           _perKiloTotalPriceController.text =
-              calculatedTotalPrice.toStringAsFixed(2);
+              ceiledTotalPrice.toStringAsFixed(2);
         } else {
           if (currentQuantityText.isEmpty &&
               (_perKiloQuantityFocusNode.hasFocus ||
@@ -296,18 +313,21 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           _wholeQuantityController.clear();
           _decimalQuantityController.text = '0';
         } else if (totalPrice != null && totalPrice >= 0) {
-          // Use ceiling rounding for quantity calculations
-          double calculatedQuantity = totalPrice / unitPrice;
+          // Calculate quantity with proper precision handling - NO CEILING on quantity when dividing
+          // The user entered a specific total price, so we calculate the exact quantity needed
+          final calculatedQuantityStr =
+              (totalPrice / unitPrice).toStringAsFixed(10);
+          final preciseCalculatedQuantity = double.parse(calculatedQuantityStr);
 
-          // Ensure non-negative result and apply ceiling rounding
-          if (calculatedQuantity < 0) calculatedQuantity = 0;
-          calculatedQuantity = _ceilRoundQuantity(calculatedQuantity);
+          // For quantity calculation from total price, use the exact calculated quantity
+          // Don't apply ceiling rounding here as we want the exact quantity that matches the price
+          final exactQuantity = preciseCalculatedQuantity;
 
-          _perKiloQuantityController.text =
-              calculatedQuantity.toStringAsFixed(2);
+          // Update the per kilo quantity controller
+          _perKiloQuantityController.text = exactQuantity.toStringAsFixed(2);
 
-          // Update display quantity based on current mode
-          _setQuantityFromKg(calculatedQuantity);
+          // Most importantly: Update the whole and decimal quantity displays
+          _setQuantityFromKg(exactQuantity);
         } else {
           if (currentTotalPriceText.isEmpty &&
               (_perKiloTotalPriceFocusNode.hasFocus ||
@@ -395,8 +415,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     if (widget.product.perKiloPrice != null) {
       final double unitPrice = widget.product.perKiloPrice!.price;
       final double quantity = 1.0;
-      final double totalPrice = quantity * unitPrice;
-      final double ceiledTotalPrice = _ceilRoundPrice(totalPrice);
+      double totalPrice = quantity * unitPrice;
+
+      // Fix precision in initial calculation
+      final preciseTotalPrice = double.parse(totalPrice.toStringAsFixed(6));
+      final double ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
+
       _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
     }
   }
@@ -421,10 +445,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       // Update total price based on kg quantity with ceiling rounding
       if (widget.product.perKiloPrice != null && kgQuantity > 0) {
         final double unitPrice = widget.product.perKiloPrice!.price;
-        double calculatedTotalPrice = kgQuantity * unitPrice;
-        calculatedTotalPrice = _ceilRoundPrice(calculatedTotalPrice);
-        _perKiloTotalPriceController.text =
-            calculatedTotalPrice.toStringAsFixed(2);
+        final totalPriceStr = (kgQuantity * unitPrice).toStringAsFixed(10);
+        final preciseTotalPrice = double.parse(totalPriceStr);
+        final ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
+
+        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
       } else if (kgQuantity == 0) {
         _perKiloTotalPriceController.clear();
       }
@@ -591,9 +616,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       }
 
       // Handle comma and period for quantity adjustments
-      if (event.logicalKey == LogicalKeyboardKey.comma ||
-          event.logicalKey == LogicalKeyboardKey.period) {
-        final isIncrease = event.logicalKey == LogicalKeyboardKey.comma;
+      if (event.logicalKey == LogicalKeyboardKey.keyA ||
+          event.logicalKey == LogicalKeyboardKey.keyD) {
+        final isIncrease = event.logicalKey == LogicalKeyboardKey.keyA;
 
         // Check if any quantity-related focus node is focused
         if (_quantitySectionFocusNode.hasFocus) {
@@ -770,10 +795,29 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
       final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
 
-      final price =
+      final unitPrice =
           _isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price;
-      // Apply ceiling rounding to price
-      final ceiledPrice = _ceilRoundPrice(price);
+
+      // For discounted items, ceil the discount price first
+      final finalDiscountedPrice = _isDiscounted
+          ? double.tryParse(_discountedPriceController.text.replaceAll(',', ''))
+              ?.let((val) => _ceilRoundPrice(val))
+          : null;
+
+      // Use final discount price or original price
+      final effectiveUnitPrice = finalDiscountedPrice ?? unitPrice;
+      final ceiledUnitPrice = _ceilRoundPrice(effectiveUnitPrice);
+
+      debugPrint('=== SACK PRICE CALCULATION ===');
+      debugPrint('Original unit price: ${unitPrice.toStringAsFixed(4)}');
+      debugPrint('Quantity: ${quantity.toStringAsFixed(4)}');
+      debugPrint('Is discounted: $_isDiscounted');
+      debugPrint(
+          'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
+      debugPrint(
+          'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
+      debugPrint('Ceiling unit price: ${ceiledUnitPrice.toStringAsFixed(4)}');
+      debugPrint('Total: ${(ceiledUnitPrice * quantity).toStringAsFixed(4)}');
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -782,24 +826,39 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: _isSpecialPrice,
         sackPrice: SackPriceDto(
           id: sackPrice.id,
-          price: ceiledPrice,
+          price: ceiledUnitPrice,
           quantity: quantity,
           type: sackPrice.type,
         ),
         isDiscounted: _isDiscounted,
-        discountedPrice: _isDiscounted
-            ? double.tryParse(
-                    _discountedPriceController.text.replaceAll(',', ''))
-                ?.let((val) => _ceilRoundPrice(val))
-            : null,
+        discountedPrice: finalDiscountedPrice,
       );
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final perKiloPrice = widget.product.perKiloPrice!;
       final kgQuantity = _getCurrentQuantityInKg();
 
-      // Apply ceiling rounding to price and quantity
-      final ceiledPrice = _ceilRoundPrice(perKiloPrice.price);
-      final ceiledQuantity = _ceilRoundQuantity(kgQuantity);
+      // For discounted items, ceil the discount price first
+      final finalDiscountedPrice = _isDiscounted
+          ? double.tryParse(_discountedPriceController.text.replaceAll(',', ''))
+              ?.let((val) => _ceilRoundPrice(val))
+          : null;
+
+      // Use final discount price or original price
+      final effectiveUnitPrice = finalDiscountedPrice ?? perKiloPrice.price;
+      final ceiledUnitPrice = _ceilRoundPrice(effectiveUnitPrice);
+
+      debugPrint('=== PER KILO CALCULATION ===');
+      debugPrint(
+          'Original unit price: ${perKiloPrice.price.toStringAsFixed(4)}');
+      debugPrint('Quantity: ${kgQuantity.toStringAsFixed(4)}');
+      debugPrint('Is discounted: $_isDiscounted');
+      debugPrint(
+          'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
+      debugPrint(
+          'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
+      debugPrint('Ceiling unit price: ${ceiledUnitPrice.toStringAsFixed(4)}');
+      debugPrint('Total: ${(ceiledUnitPrice * kgQuantity).toStringAsFixed(4)}');
+      debugPrint('Is Gantang: $_isGantangMode');
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -808,15 +867,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
-          price: ceiledPrice,
-          quantity: ceiledQuantity,
+          price: ceiledUnitPrice,
+          quantity: kgQuantity,
         ),
         isDiscounted: _isDiscounted,
-        discountedPrice: _isDiscounted
-            ? double.tryParse(
-                    _discountedPriceController.text.replaceAll(',', ''))
-                ?.let((val) => _ceilRoundPrice(val))
-            : null,
+        discountedPrice: finalDiscountedPrice,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

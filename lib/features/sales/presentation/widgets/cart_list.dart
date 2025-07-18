@@ -24,10 +24,21 @@ class CartList extends ConsumerWidget {
       if (salesState.valueOrNull?.cart.products.isEmpty ?? true) return;
 
       final products = salesState.valueOrNull!.cart.products;
+
+      // Calculate ceiling-rounded total here
+      double ceilingTotal = 0.0;
+      for (final product in products) {
+        ceilingTotal += double.parse(_calculateItemTotal(product));
+      }
+
+      // Apply final ceiling rounding to the grand total
+      final preciseGrandTotal = double.parse(ceilingTotal.toStringAsFixed(10));
+      final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
+
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return CheckoutScreen(
           products: products,
-          total: double.parse(_calculateTotal(salesState)),
+          total: finalCeiledTotal, // Pass ceiling-rounded total
         );
       }));
     }
@@ -542,30 +553,50 @@ class CartList extends ConsumerWidget {
   }
 
   String _calculateItemTotal(ProductDto product) {
+    // Define ceiling rounding function with improved precision
+    double ceilRoundPrice(double value) {
+      if (value.isNaN || value.isInfinite) return 0.0;
+      if (value < 0) return 0.0;
+
+      // Fix precision loss by converting to string first, then parsing back
+      final valueStr = value.toStringAsFixed(10);
+      final preciseValue = double.parse(valueStr);
+
+      // Use proper rounding to avoid floating point precision issues
+      final centsValue = (preciseValue * 100.0).round();
+      final ceiledCents =
+          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
+
+      return ceiledCents / 100.0;
+    }
+
     if (product.isDiscounted == true && product.discountedPrice != null) {
-      // Apply discount per quantity
+      // Apply ceiling-rounded discount per quantity
       double quantity = 1.0;
       if (product.perKiloPrice != null) {
         quantity = product.perKiloPrice!.quantity;
       } else if (product.sackPrice != null) {
         quantity = product.sackPrice!.quantity;
       }
-      return (product.discountedPrice! * quantity).toInt().toString();
+
+      // Use ceiling-rounded discount price
+      final ceiledDiscountPrice = ceilRoundPrice(product.discountedPrice!);
+      final total = ceiledDiscountPrice * quantity;
+      return ceilRoundPrice(total).toString();
     }
 
     double total = 0.0;
     if (product.perKiloPrice != null) {
-      total =
-          (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
-                  .round() /
-              100;
+      // Use ceiling-rounded unit price
+      final ceiledUnitPrice = ceilRoundPrice(product.perKiloPrice!.price);
+      total = ceiledUnitPrice * product.perKiloPrice!.quantity;
     } else if (product.sackPrice != null) {
-      total = (product.sackPrice!.price * product.sackPrice!.quantity * 100)
-              .round() /
-          100;
+      // Use ceiling-rounded unit price
+      final ceiledUnitPrice = ceilRoundPrice(product.sackPrice!.price);
+      total = ceiledUnitPrice * product.sackPrice!.quantity;
     }
 
-    return total.toInt().toString();
+    return ceilRoundPrice(total).toString();
   }
 
   String _calculateTotal(AsyncValue<SalesState> salesState) {
@@ -573,32 +604,30 @@ class CartList extends ConsumerWidget {
       return '0';
     }
 
-    double total = 0.0;
-    for (final product in salesState.valueOrNull!.cart.products) {
-      if (product.isDiscounted == true && product.discountedPrice != null) {
-        // Apply discount per quantity
-        double quantity = 1.0;
-        if (product.perKiloPrice != null) {
-          quantity = product.perKiloPrice!.quantity;
-        } else if (product.sackPrice != null) {
-          quantity = product.sackPrice!.quantity;
-        }
-        total += product.discountedPrice! * quantity;
-      } else if (product.perKiloPrice != null) {
-        double itemTotal =
-            (product.perKiloPrice!.price * product.perKiloPrice!.quantity * 100)
-                    .round() /
-                100;
-        total += itemTotal;
-      } else if (product.sackPrice != null) {
-        double itemTotal =
-            (product.sackPrice!.price * product.sackPrice!.quantity * 100)
-                    .round() /
-                100;
-        total += itemTotal;
-      }
+    // Define ceiling rounding function with improved precision
+    double ceilRoundPrice(double value) {
+      if (value.isNaN || value.isInfinite) return 0.0;
+      if (value < 0) return 0.0;
+
+      // Fix precision loss by converting to string first, then parsing back
+      final valueStr = value.toStringAsFixed(10);
+      final preciseValue = double.parse(valueStr);
+
+      // Use proper rounding to avoid floating point precision issues
+      final centsValue = (preciseValue * 100.0).round();
+      final ceiledCents =
+          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
+
+      return ceiledCents / 100.0;
     }
 
-    return total.toInt().toString();
+    double total = 0.0;
+    for (final product in salesState.valueOrNull!.cart.products) {
+      // Calculate each item's ceiling-rounded total and add to grand total
+      total += double.parse(_calculateItemTotal(product));
+    }
+
+    // Apply ceiling rounding to the final grand total
+    return ceilRoundPrice(total).toString();
   }
 }
