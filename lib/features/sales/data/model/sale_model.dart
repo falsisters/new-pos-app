@@ -17,6 +17,7 @@ sealed class SaleModel with _$SaleModel {
     @Default([]) @JsonKey(name: 'SaleItem') List<SaleItem> saleItems,
     required String createdAt,
     required String updatedAt,
+    Map<String, dynamic>? metadata,
   }) = _SaleModel;
 
   factory SaleModel.fromJson(Map<String, dynamic> json) =>

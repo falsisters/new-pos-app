@@ -23,6 +23,7 @@ mixin _$SaleModel {
   List<SaleItem> get saleItems;
   String get createdAt;
   String get updatedAt;
+  Map<String, dynamic>? get metadata;
 
   /// Create a copy of SaleModel
   /// with the given fields replaced by the non-null parameter values.
@@ -50,7 +51,8 @@ mixin _$SaleModel {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality().equals(other.metadata, metadata));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -63,11 +65,12 @@ mixin _$SaleModel {
       paymentMethod,
       const DeepCollectionEquality().hash(saleItems),
       createdAt,
-      updatedAt);
+      updatedAt,
+      const DeepCollectionEquality().hash(metadata));
 
   @override
   String toString() {
-    return 'SaleModel(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleModel(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, createdAt: $createdAt, updatedAt: $updatedAt, metadata: $metadata)';
   }
 }
 
@@ -83,7 +86,8 @@ abstract mixin class $SaleModelCopyWith<$Res> {
       PaymentMethod paymentMethod,
       @JsonKey(name: 'SaleItem') List<SaleItem> saleItems,
       String createdAt,
-      String updatedAt});
+      String updatedAt,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -105,6 +109,7 @@ class _$SaleModelCopyWithImpl<$Res> implements $SaleModelCopyWith<$Res> {
     Object? saleItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? metadata = freezed,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -135,6 +140,10 @@ class _$SaleModelCopyWithImpl<$Res> implements $SaleModelCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as String,
+      metadata: freezed == metadata
+          ? _self.metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }
@@ -149,8 +158,10 @@ class _SaleModel implements SaleModel {
       required this.paymentMethod,
       @JsonKey(name: 'SaleItem') final List<SaleItem> saleItems = const [],
       required this.createdAt,
-      required this.updatedAt})
-      : _saleItems = saleItems;
+      required this.updatedAt,
+      final Map<String, dynamic>? metadata})
+      : _saleItems = saleItems,
+        _metadata = metadata;
   factory _SaleModel.fromJson(Map<String, dynamic> json) =>
       _$SaleModelFromJson(json);
 
@@ -175,6 +186,15 @@ class _SaleModel implements SaleModel {
   final String createdAt;
   @override
   final String updatedAt;
+  final Map<String, dynamic>? _metadata;
+  @override
+  Map<String, dynamic>? get metadata {
+    final value = _metadata;
+    if (value == null) return null;
+    if (_metadata is EqualUnmodifiableMapView) return _metadata;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
 
   /// Create a copy of SaleModel
   /// with the given fields replaced by the non-null parameter values.
@@ -208,7 +228,8 @@ class _SaleModel implements SaleModel {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality().equals(other._metadata, _metadata));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -221,11 +242,12 @@ class _SaleModel implements SaleModel {
       paymentMethod,
       const DeepCollectionEquality().hash(_saleItems),
       createdAt,
-      updatedAt);
+      updatedAt,
+      const DeepCollectionEquality().hash(_metadata));
 
   @override
   String toString() {
-    return 'SaleModel(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleModel(id: $id, cashierId: $cashierId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, createdAt: $createdAt, updatedAt: $updatedAt, metadata: $metadata)';
   }
 }
 
@@ -244,7 +266,8 @@ abstract mixin class _$SaleModelCopyWith<$Res>
       PaymentMethod paymentMethod,
       @JsonKey(name: 'SaleItem') List<SaleItem> saleItems,
       String createdAt,
-      String updatedAt});
+      String updatedAt,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -266,6 +289,7 @@ class __$SaleModelCopyWithImpl<$Res> implements _$SaleModelCopyWith<$Res> {
     Object? saleItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? metadata = freezed,
   }) {
     return _then(_SaleModel(
       id: null == id
@@ -296,6 +320,10 @@ class __$SaleModelCopyWithImpl<$Res> implements _$SaleModelCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as String,
+      metadata: freezed == metadata
+          ? _self._metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }

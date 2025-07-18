@@ -20,6 +20,10 @@ mixin _$CreateSaleRequestModel {
   PaymentMethod get paymentMethod;
   @JsonKey(name: 'saleItem')
   List<ProductDto> get saleItems;
+  double? get changeAmount;
+  String? get cashierId;
+  String? get cashierName;
+  Map<String, dynamic>? get metadata;
 
   /// Create a copy of CreateSaleRequestModel
   /// with the given fields replaced by the non-null parameter values.
@@ -42,17 +46,32 @@ mixin _$CreateSaleRequestModel {
                 other.totalAmount == totalAmount) &&
             (identical(other.paymentMethod, paymentMethod) ||
                 other.paymentMethod == paymentMethod) &&
-            const DeepCollectionEquality().equals(other.saleItems, saleItems));
+            const DeepCollectionEquality().equals(other.saleItems, saleItems) &&
+            (identical(other.changeAmount, changeAmount) ||
+                other.changeAmount == changeAmount) &&
+            (identical(other.cashierId, cashierId) ||
+                other.cashierId == cashierId) &&
+            (identical(other.cashierName, cashierName) ||
+                other.cashierName == cashierName) &&
+            const DeepCollectionEquality().equals(other.metadata, metadata));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, orderId, totalAmount,
-      paymentMethod, const DeepCollectionEquality().hash(saleItems));
+  int get hashCode => Object.hash(
+      runtimeType,
+      orderId,
+      totalAmount,
+      paymentMethod,
+      const DeepCollectionEquality().hash(saleItems),
+      changeAmount,
+      cashierId,
+      cashierName,
+      const DeepCollectionEquality().hash(metadata));
 
   @override
   String toString() {
-    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
+    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, changeAmount: $changeAmount, cashierId: $cashierId, cashierName: $cashierName, metadata: $metadata)';
   }
 }
 
@@ -66,7 +85,11 @@ abstract mixin class $CreateSaleRequestModelCopyWith<$Res> {
       {String? orderId,
       double totalAmount,
       PaymentMethod paymentMethod,
-      @JsonKey(name: 'saleItem') List<ProductDto> saleItems});
+      @JsonKey(name: 'saleItem') List<ProductDto> saleItems,
+      double? changeAmount,
+      String? cashierId,
+      String? cashierName,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -86,6 +109,10 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? saleItems = null,
+    Object? changeAmount = freezed,
+    Object? cashierId = freezed,
+    Object? cashierName = freezed,
+    Object? metadata = freezed,
   }) {
     return _then(_self.copyWith(
       orderId: freezed == orderId
@@ -104,6 +131,22 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
           ? _self.saleItems
           : saleItems // ignore: cast_nullable_to_non_nullable
               as List<ProductDto>,
+      changeAmount: freezed == changeAmount
+          ? _self.changeAmount
+          : changeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cashierId: freezed == cashierId
+          ? _self.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cashierName: freezed == cashierName
+          ? _self.cashierName
+          : cashierName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metadata: freezed == metadata
+          ? _self.metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }
@@ -115,8 +158,13 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
       {this.orderId,
       required this.totalAmount,
       required this.paymentMethod,
-      @JsonKey(name: 'saleItem') required final List<ProductDto> saleItems})
-      : _saleItems = saleItems;
+      @JsonKey(name: 'saleItem') required final List<ProductDto> saleItems,
+      this.changeAmount,
+      this.cashierId,
+      this.cashierName,
+      final Map<String, dynamic>? metadata})
+      : _saleItems = saleItems,
+        _metadata = metadata;
   factory _CreateSaleRequestModel.fromJson(Map<String, dynamic> json) =>
       _$CreateSaleRequestModelFromJson(json);
 
@@ -133,6 +181,22 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
     if (_saleItems is EqualUnmodifiableListView) return _saleItems;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_saleItems);
+  }
+
+  @override
+  final double? changeAmount;
+  @override
+  final String? cashierId;
+  @override
+  final String? cashierName;
+  final Map<String, dynamic>? _metadata;
+  @override
+  Map<String, dynamic>? get metadata {
+    final value = _metadata;
+    if (value == null) return null;
+    if (_metadata is EqualUnmodifiableMapView) return _metadata;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
   }
 
   /// Create a copy of CreateSaleRequestModel
@@ -162,17 +226,32 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
             (identical(other.paymentMethod, paymentMethod) ||
                 other.paymentMethod == paymentMethod) &&
             const DeepCollectionEquality()
-                .equals(other._saleItems, _saleItems));
+                .equals(other._saleItems, _saleItems) &&
+            (identical(other.changeAmount, changeAmount) ||
+                other.changeAmount == changeAmount) &&
+            (identical(other.cashierId, cashierId) ||
+                other.cashierId == cashierId) &&
+            (identical(other.cashierName, cashierName) ||
+                other.cashierName == cashierName) &&
+            const DeepCollectionEquality().equals(other._metadata, _metadata));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, orderId, totalAmount,
-      paymentMethod, const DeepCollectionEquality().hash(_saleItems));
+  int get hashCode => Object.hash(
+      runtimeType,
+      orderId,
+      totalAmount,
+      paymentMethod,
+      const DeepCollectionEquality().hash(_saleItems),
+      changeAmount,
+      cashierId,
+      cashierName,
+      const DeepCollectionEquality().hash(_metadata));
 
   @override
   String toString() {
-    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems)';
+    return 'CreateSaleRequestModel(orderId: $orderId, totalAmount: $totalAmount, paymentMethod: $paymentMethod, saleItems: $saleItems, changeAmount: $changeAmount, cashierId: $cashierId, cashierName: $cashierName, metadata: $metadata)';
   }
 }
 
@@ -188,7 +267,11 @@ abstract mixin class _$CreateSaleRequestModelCopyWith<$Res>
       {String? orderId,
       double totalAmount,
       PaymentMethod paymentMethod,
-      @JsonKey(name: 'saleItem') List<ProductDto> saleItems});
+      @JsonKey(name: 'saleItem') List<ProductDto> saleItems,
+      double? changeAmount,
+      String? cashierId,
+      String? cashierName,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -208,6 +291,10 @@ class __$CreateSaleRequestModelCopyWithImpl<$Res>
     Object? totalAmount = null,
     Object? paymentMethod = null,
     Object? saleItems = null,
+    Object? changeAmount = freezed,
+    Object? cashierId = freezed,
+    Object? cashierName = freezed,
+    Object? metadata = freezed,
   }) {
     return _then(_CreateSaleRequestModel(
       orderId: freezed == orderId
@@ -226,6 +313,22 @@ class __$CreateSaleRequestModelCopyWithImpl<$Res>
           ? _self._saleItems
           : saleItems // ignore: cast_nullable_to_non_nullable
               as List<ProductDto>,
+      changeAmount: freezed == changeAmount
+          ? _self.changeAmount
+          : changeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cashierId: freezed == cashierId
+          ? _self.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cashierName: freezed == cashierName
+          ? _self.cashierName
+          : cashierName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metadata: freezed == metadata
+          ? _self._metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }

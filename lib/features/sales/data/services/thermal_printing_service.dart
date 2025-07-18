@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
-import 'package:falsisters_pos_android/features/sales/data/model/sale_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +8,6 @@ import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
 import 'package:falsisters_pos_android/features/app/data/model/printer_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
-import 'package:falsisters_pos_android/features/sales/presentation/widgets/receipt_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -330,153 +327,300 @@ class ThermalPrintingService {
       await Future.delayed(const Duration(milliseconds: 2000));
       debugPrint('Connected to Bluetooth printer');
 
-      // Use optimized Bluetooth receipt format with chunking
-      await _printBluetoothOptimizedReceipt(thermalPrinter, sale);
+      // Print two receipts: Cashier's Copy and Customer's Copy
+      await _printUnifiedReceipt(thermalPrinter, sale, "CASHIER'S COPY");
+      await Future.delayed(const Duration(milliseconds: 1000));
+      await _printUnifiedReceipt(thermalPrinter, sale, "CUSTOMER'S COPY");
     } catch (e) {
       debugPrint('Bluetooth printing error: $e');
       throw e;
     }
   }
 
-  Future<void> _printBluetoothOptimizedReceipt(
-      Printer printer, dynamic sale) async {
+  Future<void> _printViaUSB(
+      Printer thermalPrinter, dynamic sale, ThermalPrinter printer) async {
     try {
-      debugPrint('Generating Bluetooth-optimized receipt...');
+      debugPrint('Printing via USB...');
 
-      // Extract sale data with size limits for Bluetooth
+      // USB connection is typically faster and more reliable
+      debugPrint('Connecting to USB printer...');
+      await _flutterThermalPrinter.connect(thermalPrinter);
+
+      // Shorter wait time for USB
+      await Future.delayed(const Duration(milliseconds: 500));
+      debugPrint('Connected to USB printer');
+
+      // Print two receipts: Cashier's Copy and Customer's Copy
+      await _printUnifiedReceipt(thermalPrinter, sale, "CASHIER'S COPY");
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _printUnifiedReceipt(thermalPrinter, sale, "CUSTOMER'S COPY");
+    } catch (e) {
+      debugPrint('USB printing error: $e');
+      throw e;
+    }
+  }
+
+  Future<void> _sendLongLineInChunks(
+      Printer printer, List<int> lineBytes) async {
+    for (int i = 0; i < lineBytes.length; i += _bluetoothChunkSize) {
+      final end = (i + _bluetoothChunkSize < lineBytes.length)
+          ? i + _bluetoothChunkSize
+          : lineBytes.length;
+
+      final chunk = lineBytes.sublist(i, end);
+      await _sendBluetoothChunk(printer, Uint8List.fromList(chunk));
+
+      // Small delay between chunks
+      if (end < lineBytes.length) {
+        await Future.delayed(Duration(milliseconds: _bluetoothChunkDelay));
+      }
+    }
+  }
+
+  Future<void> _sendBluetoothChunk(Printer printer, Uint8List data) async {
+    try {
+      await _flutterThermalPrinter.printData(printer, data);
+    } catch (e) {
+      debugPrint('Bluetooth chunk send error: $e');
+      // Retry once after a brief delay
+      await Future.delayed(Duration(milliseconds: 200));
+      await _flutterThermalPrinter.printData(printer, data);
+    }
+  }
+
+  Future<void> _printUnifiedReceipt(
+      Printer printer, dynamic sale, String copyType) async {
+    try {
+      debugPrint('Generating unified receipt format for $copyType...');
+
+      // Extract sale data
       String total = '0.00';
       String receiptId = 'RECEIPT';
-      String date = DateTime.now().toString().substring(0, 16);
+      String date = DateTime.now().toString().substring(0, 19);
       String cashier = 'CASHIER';
-      List<Map<String, String>> items = [];
+      String paymentMethod = 'CASH';
+      String changeAmount = '0.00';
+      String tenderedAmount = '0.00';
+      List<Map<String, dynamic>> items = [];
 
       if (sale is SaleModel) {
         total = sale.totalAmount.toStringAsFixed(2);
-        receiptId = sale.id.length > 6
-            ? sale.id.substring(0, 6).toUpperCase()
+        receiptId = sale.id.length > 8
+            ? sale.id.substring(0, 8).toUpperCase()
             : sale.id.toUpperCase();
         date = _formatDate(sale.createdAt);
-        cashier = sale.cashierId.length > 6
-            ? sale.cashierId.substring(0, 6)
-            : sale.cashierId;
+
+        debugPrint('=== RECEIPT DATA EXTRACTION ===');
+        debugPrint('Sale ID: ${sale.id}');
+        debugPrint('Sale metadata: ${sale.metadata}');
+        debugPrint('Cashier ID from sale: ${sale.cashierId}');
+
+        // Get cashier name from metadata first, then fallback to cashierId
+        if (sale.metadata != null &&
+            sale.metadata!.containsKey('cashierName')) {
+          cashier = sale.metadata!['cashierName'].toString();
+          debugPrint('Using cashier name from metadata: $cashier');
+        } else {
+          // Fallback to cashier ID if name not available
+          cashier = sale.cashierId.length > 8
+              ? sale.cashierId.substring(0, 8)
+              : sale.cashierId;
+          debugPrint('Using cashier ID as fallback: $cashier');
+        }
+
+        paymentMethod =
+            sale.paymentMethod.toString().split('.').last.replaceAll('_', ' ');
+
+        // Get change amount and tendered amount from sale metadata
+        if (sale.metadata != null && sale.metadata!.containsKey('change')) {
+          changeAmount = sale.metadata!['change'].toString();
+          debugPrint('Found change amount in metadata: $changeAmount');
+        } else {
+          debugPrint('No change amount found in metadata');
+        }
+
+        if (sale.metadata != null &&
+            sale.metadata!.containsKey('tenderedAmount')) {
+          tenderedAmount = sale.metadata!['tenderedAmount'].toString();
+          debugPrint('Found tendered amount in metadata: $tenderedAmount');
+        } else {
+          debugPrint('No tendered amount found in metadata');
+        }
 
         debugPrint(
-            'Processing ${sale.saleItems.length} items for Bluetooth receipt');
+            'Processing ${sale.saleItems.length} items for unified receipt');
 
-        // Process items with length limits
+        // Process each item with full details
         for (int i = 0; i < sale.saleItems.length; i++) {
           final item = sale.saleItems[i];
 
           try {
-            // Truncate item name for Bluetooth bandwidth
-            String itemName = item.product.name.length > 18
-                ? '${item.product.name.substring(0, 15)}...'
-                : item.product.name;
-
+            String itemName = item.product.name;
             double itemPrice = 0.0;
-            String itemQty = '1pc';
+            double unitPrice = 0.0;
+            String itemQty = '1 pc';
 
-            // Simplified price calculation for Bluetooth
+            // Detailed price calculation
             if (item.isDiscounted && item.discountedPrice != null) {
               itemPrice = item.discountedPrice!;
+              unitPrice = itemPrice;
             } else if (item.sackPriceId != null &&
                 item.product.sackPrice.isNotEmpty) {
               final sackPrice = item.product.sackPrice.firstWhere(
                 (sp) => sp.id == item.sackPriceId,
                 orElse: () => item.product.sackPrice.first,
               );
+              unitPrice = sackPrice.price;
               itemPrice = sackPrice.price * item.quantity;
               final qty = item.quantity.toInt();
 
-              // Shortened sack type for Bluetooth
+              // Detailed sack type display
               switch (sackPrice.type.toString().split('.').last) {
                 case 'FIFTY_KG':
-                  itemQty = '${qty}x50kg';
+                  itemQty = '$qty x 50kg sack';
                   break;
                 case 'TWENTY_FIVE_KG':
-                  itemQty = '${qty}x25kg';
+                  itemQty = '$qty x 25kg sack';
                   break;
                 case 'FIVE_KG':
-                  itemQty = '${qty}x5kg';
+                  itemQty = '$qty x 5kg sack';
                   break;
                 default:
-                  itemQty = '${qty}sack';
+                  itemQty = '$qty sack';
               }
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
+              unitPrice = item.product.perKiloPrice!.price;
               itemPrice = item.product.perKiloPrice!.price * item.quantity;
-              itemQty = '${item.quantity.toStringAsFixed(1)}kg';
+              itemQty = '${item.quantity.toStringAsFixed(2)}kg';
+
+              if (item.isGantang) {
+                itemQty += ' (GANTANG)';
+              }
             }
 
             items.add({
               'name': itemName,
-              'qty': itemQty,
-              'price': 'P${itemPrice.toStringAsFixed(2)}',
+              'quantity': itemQty,
+              'unitPrice': unitPrice,
+              'totalPrice': itemPrice,
+              'isDiscounted': item.isDiscounted,
+              'isSpecial': item.isSpecialPrice,
+              'isGantang': item.isGantang,
             });
 
             debugPrint(
-                'Added BT item: $itemName - $itemQty - P${itemPrice.toStringAsFixed(2)}');
+                'Added item: $itemName - $itemQty - Unit: P${unitPrice.toStringAsFixed(2)} - Total: P${itemPrice.toStringAsFixed(2)}');
           } catch (e) {
-            debugPrint('Error processing BT item ${i + 1}: $e');
+            debugPrint('Error processing item ${i + 1}: $e');
+            items.add({
+              'name': item.product.name,
+              'quantity': '1 pc',
+              'unitPrice': 0.0,
+              'totalPrice': 0.0,
+              'isDiscounted': false,
+              'isSpecial': false,
+              'isGantang': false,
+            });
           }
         }
       }
 
-      // Create receipt lines for chunked sending
+      // Create receipt lines for printing
       final List<String> receiptLines = [];
 
-      // Header (keep simple for Bluetooth)
+      // Copy type header
       receiptLines.add('');
-      receiptLines.add(_centerText('FALSISTERS', _maxLineLength));
-      receiptLines.add(_centerText('RICE TRADING', _maxLineLength));
-      receiptLines.add(_padLine('-', _maxLineLength));
+      receiptLines.add(_centerText(copyType, 32));
+      receiptLines.add('');
 
-      // Receipt info (shortened for Bluetooth)
-      receiptLines.add('ID: $receiptId');
+      // Store header
+      receiptLines.add(_centerText('FALSISTERS', 32));
+      receiptLines.add(_centerText('RICE TRADING', 32));
+      receiptLines.add(_padLine('-', 32));
+
+      // Receipt info
+      receiptLines.add('Receipt #: $receiptId');
       receiptLines.add('Date: $date');
       receiptLines.add('Cashier: $cashier');
-      receiptLines.add(_padLine('-', _maxLineLength));
+      receiptLines.add('Payment: $paymentMethod');
+      receiptLines.add(_padLine('-', 32));
 
-      // Items (with proper line wrapping)
+      // Items
+      double subtotal = 0.0;
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
 
-        // Item name line
+        // Item number and name
         receiptLines.add('${i + 1}. ${item['name']}');
+        receiptLines.add('Qty: ${item['quantity']}');
+        receiptLines.add('Unit: P${item['unitPrice'].toStringAsFixed(2)}');
+        receiptLines.add('Total: P${item['totalPrice'].toStringAsFixed(2)}');
 
-        // Quantity and price line (ensure it fits)
-        final qtyPriceLine = '${item['qty']} - ${item['price']}';
-        if (qtyPriceLine.length <= _maxLineLength) {
-          receiptLines.add('   $qtyPriceLine');
-        } else {
-          // Split if too long
-          receiptLines.add('   ${item['qty']}');
-          receiptLines.add('   ${item['price']}');
+        // Special indicators
+        if (item['isDiscounted']) {
+          receiptLines.add('** DISCOUNTED **');
         }
-        receiptLines.add(''); // Empty line between items
+        if (item['isSpecial']) {
+          receiptLines.add('** SPECIAL PRICE **');
+        }
+
+        receiptLines.add('');
+        subtotal += item['totalPrice'];
       }
 
-      receiptLines.add(_padLine('-', _maxLineLength));
+      receiptLines.add(_padLine('-', 32));
+
+      // Summary
+      receiptLines.add('Items: ${items.length}');
+      receiptLines.add('Subtotal: P${subtotal.toStringAsFixed(2)}');
+
+      // Add cash tendered and change if it's a cash payment with change
+      final hasChange = changeAmount != '0.00' &&
+          double.tryParse(changeAmount) != null &&
+          double.parse(changeAmount) > 0;
+
+      debugPrint('=== CHANGE DISPLAY CHECK ===');
+      debugPrint('Payment method: $paymentMethod');
+      debugPrint('Change amount string: "$changeAmount"');
+      debugPrint('Has change: $hasChange');
+      debugPrint('Tendered amount: "$tenderedAmount"');
+
+      if (paymentMethod == 'CASH' && hasChange) {
+        receiptLines.add('Cash Tendered: P$tenderedAmount');
+        receiptLines.add('Change: P$changeAmount');
+        debugPrint('Added change lines to receipt');
+      } else {
+        debugPrint(
+            'Change lines NOT added - Payment: $paymentMethod, HasChange: $hasChange');
+      }
+
       receiptLines.add('TOTAL: P$total');
-      receiptLines.add('');
-      receiptLines.add(_centerText('Thank you!', _maxLineLength));
+      receiptLines.add(_padLine('-', 32));
+
+      // Footer
+      receiptLines.add(_centerText('Thank you and come again', 32));
       receiptLines.add('');
       receiptLines.add('');
 
       debugPrint(
-          'Generated ${receiptLines.length} lines for Bluetooth printing');
+          'Generated ${receiptLines.length} lines for unified receipt ($copyType)');
 
-      // Send receipt using chunked approach
-      await _sendBluetoothChunkedReceipt(printer, receiptLines);
+      // Send receipt using chunked approach for both USB and Bluetooth
+      if (printer.connectionType == ConnectionType.BLE) {
+        await _sendBluetoothChunkedUnifiedReceipt(printer, receiptLines);
+      } else {
+        await _sendUSBUnifiedReceipt(printer, receiptLines);
+      }
 
-      debugPrint('Bluetooth receipt sent successfully');
+      debugPrint('Unified receipt sent successfully ($copyType)');
     } catch (e) {
-      debugPrint('Bluetooth receipt generation failed: $e');
-      throw Exception('Failed to generate Bluetooth receipt: $e');
+      debugPrint('Unified receipt generation failed: $e');
+      throw Exception('Failed to generate unified receipt: $e');
     }
   }
 
-  Future<void> _sendBluetoothChunkedReceipt(
+  Future<void> _sendBluetoothChunkedUnifiedReceipt(
       Printer printer, List<String> lines) async {
     try {
       debugPrint('Sending ${lines.length} lines via Bluetooth chunks...');
@@ -486,30 +630,55 @@ class ThermalPrintingService {
       await _sendBluetoothChunk(printer, Uint8List.fromList(initBytes));
       await Future.delayed(Duration(milliseconds: _bluetoothLineDelay));
 
-      // Send each line with proper timing
+      // Send each line with proper formatting
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i];
-
-        // Handle special formatting
         List<int> lineBytes = [];
 
-        if (line.contains('FALSISTERS')) {
+        if (line.contains("COPY")) {
+          // Bold and center for copy type
+          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.contains('FALSISTERS')) {
           // Bold and center for header
           lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
           lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
           lineBytes.addAll(line.codeUnits);
           lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('TOTAL:')) {
-          // Bold for total
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+        } else if (line.contains('RICE TRADING')) {
+          // Center for subtitle
+          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
           lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.contains('TOTAL: P')) {
+          // Bold and double size for total
+          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+          lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
           lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
         } else if (line.contains('Thank you')) {
           // Center for thank you
           lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
           lineBytes.addAll(line.codeUnits);
           lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.startsWith('Receipt #') ||
+            line.startsWith('Date:') ||
+            line.startsWith('Cashier:') ||
+            line.startsWith('Payment:')) {
+          // Bold for receipt info
+          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+        } else if (RegExp(r'^\d+\.').hasMatch(line)) {
+          // Bold for item numbers
+          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
         } else {
           // Regular line
           lineBytes.addAll(line.codeUnits);
@@ -540,36 +709,93 @@ class ThermalPrintingService {
 
       debugPrint('All lines sent successfully via Bluetooth');
     } catch (e) {
-      debugPrint('Bluetooth chunked sending failed: $e');
+      debugPrint('Bluetooth unified receipt sending failed: $e');
       throw e;
     }
   }
 
-  Future<void> _sendLongLineInChunks(
-      Printer printer, List<int> lineBytes) async {
-    for (int i = 0; i < lineBytes.length; i += _bluetoothChunkSize) {
-      final end = (i + _bluetoothChunkSize < lineBytes.length)
-          ? i + _bluetoothChunkSize
-          : lineBytes.length;
-
-      final chunk = lineBytes.sublist(i, end);
-      await _sendBluetoothChunk(printer, Uint8List.fromList(chunk));
-
-      // Small delay between chunks
-      if (end < lineBytes.length) {
-        await Future.delayed(Duration(milliseconds: _bluetoothChunkDelay));
-      }
-    }
-  }
-
-  Future<void> _sendBluetoothChunk(Printer printer, Uint8List data) async {
+  Future<void> _sendUSBUnifiedReceipt(
+      Printer printer, List<String> lines) async {
     try {
-      await _flutterThermalPrinter.printData(printer, data);
+      debugPrint('Sending unified receipt via USB...');
+
+      final List<int> receiptBytes = [];
+
+      // Initialize
+      receiptBytes.addAll([0x1B, 0x40]); // ESC @
+
+      // Process each line with formatting
+      for (final line in lines) {
+        if (line.contains("COPY")) {
+          // Bold and center for copy type
+          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.contains('FALSISTERS')) {
+          // Bold and center for header
+          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.contains('RICE TRADING')) {
+          // Center for subtitle
+          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.contains('TOTAL: P')) {
+          // Bold and double size for total
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+        } else if (line.contains('Thank you')) {
+          // Center for thank you
+          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+        } else if (line.startsWith('Receipt #') ||
+            line.startsWith('Date:') ||
+            line.startsWith('Cashier:') ||
+            line.startsWith('Payment:')) {
+          // Bold for receipt info
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+        } else if (RegExp(r'^\d+\.').hasMatch(line)) {
+          // Bold for item numbers
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+          receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+        } else {
+          // Regular line
+          receiptBytes.addAll(line.codeUnits);
+        }
+
+        receiptBytes.addAll([0x0A]); // Line feed
+      }
+
+      // Cut
+      receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0
+
+      debugPrint(
+          'Generated ${receiptBytes.length} bytes for unified USB receipt');
+
+      // Print the unified receipt
+      await _flutterThermalPrinter.printData(
+        printer,
+        Uint8List.fromList(receiptBytes),
+      );
+
+      debugPrint('Unified USB receipt sent successfully');
     } catch (e) {
-      debugPrint('Bluetooth chunk send error: $e');
-      // Retry once after a brief delay
-      await Future.delayed(Duration(milliseconds: 200));
-      await _flutterThermalPrinter.printData(printer, data);
+      debugPrint('USB unified receipt generation failed: $e');
+      throw Exception('Failed to generate USB unified receipt: $e');
     }
   }
 
@@ -610,322 +836,6 @@ class ThermalPrintingService {
     } catch (e) {
       debugPrint('Thermal print error: $e');
       throw Exception('Failed to print receipt: $e');
-    }
-  }
-
-  Future<void> _printViaUSB(
-      Printer thermalPrinter, dynamic sale, ThermalPrinter printer) async {
-    try {
-      debugPrint('Printing via USB...');
-
-      // USB connection is typically faster and more reliable
-      debugPrint('Connecting to USB printer...');
-      await _flutterThermalPrinter.connect(thermalPrinter);
-
-      // Shorter wait time for USB
-      await Future.delayed(const Duration(milliseconds: 500));
-      debugPrint('Connected to USB printer');
-
-      // For USB, we can use more detailed receipt format since bandwidth is higher
-      await _printDetailedReceipt(thermalPrinter, sale);
-    } catch (e) {
-      debugPrint('USB printing error: $e');
-      throw e;
-    }
-  }
-
-  Future<void> _printDetailedReceipt(Printer printer, dynamic sale) async {
-    try {
-      debugPrint('Generating detailed USB receipt format...');
-
-      // Extract sale data
-      String total = '0.00';
-      String receiptId = 'RECEIPT';
-      String date = DateTime.now().toString().substring(0, 19);
-      String cashier = 'CASHIER';
-      String paymentMethod = 'CASH';
-      List<Map<String, dynamic>> items = [];
-
-      if (sale is SaleModel) {
-        total = sale.totalAmount.toStringAsFixed(2);
-        receiptId = sale.id.length > 8
-            ? sale.id.substring(0, 8).toUpperCase()
-            : sale.id.toUpperCase();
-        date = _formatDate(sale.createdAt);
-        cashier = sale.cashierId.length > 8
-            ? sale.cashierId.substring(0, 8)
-            : sale.cashierId;
-        paymentMethod =
-            sale.paymentMethod.toString().split('.').last.replaceAll('_', ' ');
-
-        debugPrint(
-            'Processing ${sale.saleItems.length} items for detailed receipt');
-
-        // Process each item with full details
-        for (int i = 0; i < sale.saleItems.length; i++) {
-          final item = sale.saleItems[i];
-
-          try {
-            String itemName = item.product.name;
-            double itemPrice = 0.0;
-            double unitPrice = 0.0;
-            String itemQty = '1 pc';
-            String itemType = 'Unknown';
-
-            // Detailed price calculation for USB (more bandwidth available)
-            if (item.isDiscounted && item.discountedPrice != null) {
-              itemPrice = item.discountedPrice!;
-
-              unitPrice = itemPrice;
-              itemType = 'DISCOUNTED';
-            } else if (item.sackPriceId != null &&
-                item.product.sackPrice.isNotEmpty) {
-              final sackPrice = item.product.sackPrice.firstWhere(
-                (sp) => sp.id == item.sackPriceId,
-                orElse: () => item.product.sackPrice.first,
-              );
-              unitPrice = sackPrice.price;
-              itemPrice = sackPrice.price * item.quantity;
-              final qty = item.quantity.toInt();
-
-              // Detailed sack type display
-              switch (sackPrice.type.toString().split('.').last) {
-                case 'FIFTY_KG':
-                  itemQty = '$qty x 50kg sack';
-                  itemType = '50KG SACK';
-                  break;
-                case 'TWENTY_FIVE_KG':
-                  itemQty = '$qty x 25kg sack';
-                  itemType = '25KG SACK';
-                  break;
-                case 'FIVE_KG':
-                  itemQty = '$qty x 5kg sack';
-                  itemType = '5KG SACK';
-                  break;
-                default:
-                  itemQty = '$qty sack';
-                  itemType = 'SACK';
-              }
-
-              if (item.isSpecialPrice) {
-                itemType += ' (SPECIAL)';
-              }
-            } else if (item.perKiloPriceId != null &&
-                item.product.perKiloPrice != null) {
-              unitPrice = item.product.perKiloPrice!.price;
-              itemPrice = item.product.perKiloPrice!.price * item.quantity;
-              itemQty = '${item.quantity.toStringAsFixed(2)}kg';
-              itemType = 'PER KILO';
-
-              if (item.isGantang) {
-                itemType += ' (GANTANG)';
-              }
-            }
-
-            items.add({
-              'name': itemName,
-              'quantity': itemQty,
-              'unitPrice': unitPrice,
-              'totalPrice': itemPrice,
-              'type': itemType,
-              'isDiscounted': item.isDiscounted,
-              'isSpecial': item.isSpecialPrice,
-              'isGantang': item.isGantang,
-            });
-
-            debugPrint(
-                'Added detailed item: $itemName - $itemQty - Unit: P${unitPrice.toStringAsFixed(2)} - Total: P${itemPrice.toStringAsFixed(2)}');
-          } catch (e) {
-            debugPrint('Error processing item ${i + 1}: $e');
-            items.add({
-              'name': item.product.name,
-              'quantity': '1 pc',
-              'unitPrice': 0.0,
-              'totalPrice': 0.0,
-              'type': 'ERROR',
-              'isDiscounted': false,
-              'isSpecial': false,
-              'isGantang': false,
-            });
-          }
-        }
-      }
-
-      // Create detailed receipt with better formatting for USB
-      final List<int> receiptBytes = [];
-
-      // Initialize
-      receiptBytes.addAll([0x1B, 0x40]); // ESC @
-
-      // Center align and header
-      receiptBytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1
-      receiptBytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1 (Bold on)
-      receiptBytes
-          .addAll([0x1D, 0x21, 0x11]); // GS ! 0x11 (Double height & width)
-      receiptBytes.addAll('FALSISTERS\n'.codeUnits);
-      receiptBytes.addAll([0x1D, 0x21, 0x00]); // GS ! 0x00 (Normal size)
-      receiptBytes.addAll('RICE TRADING\n'.codeUnits);
-      receiptBytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0 (Bold off)
-
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Receipt details
-      receiptBytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0 (Left align)
-      receiptBytes.addAll('Receipt #: $receiptId\n'.codeUnits);
-      receiptBytes.addAll('Date: $date\n'.codeUnits);
-      receiptBytes.addAll('Cashier: $cashier\n'.codeUnits);
-      receiptBytes.addAll('Payment: $paymentMethod\n'.codeUnits);
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Items with detailed formatting
-      double itemTotal = 0.0;
-      for (int i = 0; i < items.length; i++) {
-        final item = items[i];
-
-        // Item name
-        receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-        receiptBytes.addAll('${i + 1}. ${item['name']}\n'.codeUnits);
-        receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-
-        // Item details
-        receiptBytes.addAll('   Type: ${item['type']}\n'.codeUnits);
-        receiptBytes.addAll('   Qty: ${item['quantity']}\n'.codeUnits);
-        receiptBytes.addAll(
-            '   Unit: P${item['unitPrice'].toStringAsFixed(2)}\n'.codeUnits);
-        receiptBytes.addAll(
-            '   Total: P${item['totalPrice'].toStringAsFixed(2)}\n'.codeUnits);
-
-        // Special indicators
-        if (item['isDiscounted']) {
-          receiptBytes.addAll('   ** DISCOUNTED **\n'.codeUnits);
-        }
-        if (item['isSpecial']) {
-          receiptBytes.addAll('   ** SPECIAL PRICE **\n'.codeUnits);
-        }
-        if (item['isGantang']) {
-          receiptBytes.addAll('   ** GANTANG **\n'.codeUnits);
-        }
-
-        receiptBytes.addAll('\n'.codeUnits);
-        itemTotal += item['totalPrice'];
-      }
-
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Summary
-      receiptBytes.addAll('Items: ${items.length}\n'.codeUnits);
-      receiptBytes
-          .addAll('Subtotal: P${itemTotal.toStringAsFixed(2)}\n'.codeUnits);
-
-      // Grand total
-      receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-      receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double size
-      receiptBytes.addAll('TOTAL: P$total\n'.codeUnits);
-      receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
-      receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-
-      receiptBytes.addAll('--------------------------------\n'.codeUnits);
-
-      // Footer
-      receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center align
-      receiptBytes.addAll('Thank you for your business!\n'.codeUnits);
-      receiptBytes.addAll('Please come again\n'.codeUnits);
-      receiptBytes.addAll('\n\n\n'.codeUnits);
-
-      // Cut
-      receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0
-
-      debugPrint(
-          'Generated ${receiptBytes.length} bytes for detailed USB receipt');
-
-      // Print the detailed receipt
-      await _flutterThermalPrinter.printData(
-        printer,
-        Uint8List.fromList(receiptBytes),
-      );
-
-      debugPrint('Detailed USB receipt sent successfully');
-    } catch (e) {
-      debugPrint('Detailed receipt generation failed: $e');
-      throw Exception('Failed to generate detailed receipt: $e');
-    }
-  }
-
-  // Let's also create a super minimal receipt test
-  Future<void> _printMinimalReceipt(Printer printer, dynamic sale) async {
-    try {
-      debugPrint('Generating minimal receipt...');
-
-      // Get just the essentials
-      String total = '0.00';
-      int itemCount = 0;
-
-      if (sale is SaleModel) {
-        total = sale.totalAmount.toStringAsFixed(2);
-        itemCount = sale.saleItems.length;
-      }
-
-      // Create the most minimal receipt possible
-      final List<int> receiptBytes = [];
-
-      // Initialize
-      receiptBytes.addAll([0x1B, 0x40]); // ESC @
-
-      // Center align
-      receiptBytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1
-
-      // Bold on
-      receiptBytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1
-      receiptBytes.addAll('RECEIPT\n'.codeUnits);
-      receiptBytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0
-
-      // Left align
-      receiptBytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0
-      receiptBytes.addAll('FALSISTERS\n'.codeUnits);
-      receiptBytes.addAll('Items: $itemCount\n'.codeUnits);
-      receiptBytes.addAll('Total: P$total\n'.codeUnits);
-      receiptBytes.addAll('Thank you!\n'.codeUnits);
-      receiptBytes.addAll('\n\n'.codeUnits);
-
-      // Cut
-      receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0
-
-      debugPrint('Generated minimal receipt: ${receiptBytes.length} bytes');
-
-      await _flutterThermalPrinter.printData(
-        printer,
-        Uint8List.fromList(receiptBytes),
-      );
-
-      debugPrint('Minimal receipt sent');
-    } catch (e) {
-      debugPrint('Minimal receipt failed: $e');
-      throw e;
-    }
-  }
-
-  Future<void> debugPrintReceipt({
-    required ThermalPrinter printer,
-    required dynamic sale,
-    required BuildContext context,
-  }) async {
-    try {
-      debugPrint('Starting DEBUG receipt print for: ${printer.name}');
-
-      final thermalPrinter = printer.toPrinter();
-
-      // Connect (same as test print)
-      await _flutterThermalPrinter.connect(thermalPrinter);
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      // Try the most minimal receipt first
-      debugPrint('Trying minimal receipt...');
-      await _printMinimalReceipt(thermalPrinter, sale);
-
-      debugPrint('Debug minimal receipt completed');
-    } catch (e) {
-      debugPrint('Debug receipt failed: $e');
-      throw Exception('Debug receipt failed: $e');
     }
   }
 
@@ -1000,16 +910,6 @@ class ThermalPrintingService {
     } catch (e) {
       debugPrint('Test print failed: $e');
       throw Exception('Test print failed: $e');
-    }
-  }
-
-  Future<void> _printWorkingReceipt(Printer printer, dynamic sale) async {
-    try {
-      debugPrint('Using Bluetooth optimized receipt format...');
-      await _printBluetoothOptimizedReceipt(printer, sale);
-    } catch (e) {
-      debugPrint('Working receipt generation failed: $e');
-      throw Exception('Failed to generate working receipt: $e');
     }
   }
 

@@ -21,6 +21,10 @@ sealed class CreateSaleRequestModel with _$CreateSaleRequestModel {
     required double totalAmount,
     required PaymentMethod paymentMethod,
     @JsonKey(name: 'saleItem') required List<ProductDto> saleItems,
+    double? changeAmount,
+    String? cashierId,
+    String? cashierName,
+    Map<String, dynamic>? metadata,
   }) = _CreateSaleRequestModel;
 
   factory CreateSaleRequestModel.fromJson(Map<String, dynamic> json) =>

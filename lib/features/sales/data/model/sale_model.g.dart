@@ -17,6 +17,7 @@ _SaleModel _$SaleModelFromJson(Map<String, dynamic> json) => _SaleModel(
           const [],
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
+      metadata: json['metadata'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$SaleModelToJson(_SaleModel instance) =>
@@ -28,6 +29,7 @@ Map<String, dynamic> _$SaleModelToJson(_SaleModel instance) =>
       'SaleItem': instance.saleItems,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
+      'metadata': instance.metadata,
     };
 
 const _$PaymentMethodEnumMap = {

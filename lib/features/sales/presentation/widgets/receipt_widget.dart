@@ -16,6 +16,22 @@ class ReceiptWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract change information from metadata
+    String changeAmount = '0.00';
+    String tenderedAmount = '0.00';
+    bool hasChange = false;
+
+    if (sale.metadata != null) {
+      if (sale.metadata!.containsKey('change')) {
+        changeAmount = sale.metadata!['change'].toString();
+        final changeValue = double.tryParse(changeAmount) ?? 0.0;
+        hasChange = changeValue > 0;
+      }
+      if (sale.metadata!.containsKey('tenderedAmount')) {
+        tenderedAmount = sale.metadata!['tenderedAmount'].toString();
+      }
+    }
+
     return SizedBox(
       width: 550, // Optimized for thermal printer width
       child: Material(
@@ -150,6 +166,16 @@ class ReceiptWidget extends StatelessWidget {
                 color: Colors.black,
               ),
               SizedBox(height: 16),
+
+              // Add cash tendered and change if applicable
+              if (hasChange &&
+                  sale.paymentMethod.toString().contains('CASH')) ...[
+                _buildReceiptRow('Cash Tendered:',
+                    '₱${CurrencyFormatter.formatCurrency(double.tryParse(tenderedAmount) ?? 0.0)}'),
+                _buildReceiptRow('Change:',
+                    '₱${CurrencyFormatter.formatCurrency(double.tryParse(changeAmount) ?? 0.0)}'),
+                SizedBox(height: 8),
+              ],
 
               // Total
               _buildReceiptRow(

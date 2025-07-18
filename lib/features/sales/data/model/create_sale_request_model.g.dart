@@ -15,6 +15,10 @@ _CreateSaleRequestModel _$CreateSaleRequestModelFromJson(
       saleItems: (json['saleItem'] as List<dynamic>)
           .map((e) => ProductDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      changeAmount: (json['changeAmount'] as num?)?.toDouble(),
+      cashierId: json['cashierId'] as String?,
+      cashierName: json['cashierName'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$CreateSaleRequestModelToJson(
@@ -24,6 +28,10 @@ Map<String, dynamic> _$CreateSaleRequestModelToJson(
       'totalAmount': instance.totalAmount,
       'paymentMethod': _$PaymentMethodEnumMap[instance.paymentMethod]!,
       'saleItem': instance.saleItems,
+      'changeAmount': instance.changeAmount,
+      'cashierId': instance.cashierId,
+      'cashierName': instance.cashierName,
+      'metadata': instance.metadata,
     };
 
 const _$PaymentMethodEnumMap = {

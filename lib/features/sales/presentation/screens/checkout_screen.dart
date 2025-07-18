@@ -5,6 +5,7 @@ import 'package:falsisters_pos_android/features/sales/data/model/create_sale_req
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
+import 'package:falsisters_pos_android/features/shift/data/providers/shift_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,6 +56,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _completePurchase() {
     if (_formKey.currentState!.validate()) {
+      double changeAmount = 0.0;
+      String? cashierId;
+      String? cashierName;
+
+      // Get current shift and cashier info
+      final currentShift = ref.read(currentShiftProvider);
+      if (currentShift?.shift?.employees.isNotEmpty == true) {
+        // First employee is always the cashier
+        final cashierEmployee = currentShift!.shift!.employees[0];
+        cashierId = cashierEmployee.id;
+        cashierName = cashierEmployee.name;
+        debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
+      }
+
       if (_selectedPaymentMethod == PaymentMethod.CASH) {
         final String cashGivenText =
             _cashGivenController.text.replaceAll(',', '');
@@ -88,12 +103,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
           return;
         }
+
+        // Calculate change
+        changeAmount = tenderedAmount - widget.total;
+        debugPrint(
+            'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${widget.total.toStringAsFixed(2)})');
       }
 
       final salesNotifier = ref.read(salesProvider.notifier);
       final salesCheckNotifier = ref.read(salesCheckProvider.notifier);
 
-      salesNotifier.submitSale(widget.total, _selectedPaymentMethod);
+      // Pass change amount, cashier info and name to the sale
+      debugPrint(
+          'Submitting sale with change: ₱${changeAmount.toStringAsFixed(2)}');
+      salesNotifier.submitSaleWithDetails(
+        widget.total,
+        _selectedPaymentMethod,
+        changeAmount: changeAmount,
+        cashierId: cashierId,
+        cashierName: cashierName,
+      );
       salesCheckNotifier.refresh();
       Navigator.pop(context);
     }

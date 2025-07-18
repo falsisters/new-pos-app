@@ -8,6 +8,7 @@ import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/features/sales/data/services/sales_queue_service.dart';
 
@@ -204,19 +205,62 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
 
   Future<void> submitSale(
       double totalAmount, PaymentMethod paymentMethod) async {
+    await submitSaleWithDetails(totalAmount, paymentMethod);
+  }
+
+  Future<void> submitSaleWithDetails(
+    double totalAmount,
+    PaymentMethod paymentMethod, {
+    double? changeAmount,
+    String? cashierId,
+    String? cashierName,
+  }) async {
     final preAsyncState = state.value;
     if (preAsyncState == null) return;
+
+    debugPrint('=== SUBMIT SALE WITH DETAILS ===');
+    debugPrint('Total Amount: ₱${totalAmount.toStringAsFixed(2)}');
+    debugPrint('Payment Method: $paymentMethod');
+    debugPrint(
+        'Change Amount: ${changeAmount != null ? "₱${changeAmount.toStringAsFixed(2)}" : "null"}');
+    debugPrint('Cashier ID: $cashierId');
+    debugPrint('Cashier Name: $cashierName');
 
     // Instantly clear cart and add to queue
     final currentCart = preAsyncState.cart;
     final orderIdForRequest = preAsyncState.orderId;
+
+    // Create metadata for additional receipt information
+    final metadata = <String, dynamic>{};
+    if (changeAmount != null && changeAmount > 0) {
+      metadata['change'] = changeAmount.toStringAsFixed(2);
+      metadata['tenderedAmount'] =
+          (totalAmount + changeAmount).toStringAsFixed(2);
+      debugPrint(
+          'Added to metadata - Change: ${metadata['change']}, Tendered: ${metadata['tenderedAmount']}');
+    }
+    if (cashierId != null) {
+      metadata['cashierId'] = cashierId;
+    }
+    if (cashierName != null) {
+      metadata['cashierName'] = cashierName;
+      debugPrint('Added to metadata - Cashier Name: $cashierName');
+    }
+
+    debugPrint('Final metadata: $metadata');
 
     final saleRequest = CreateSaleRequestModel(
       orderId: orderIdForRequest,
       saleItems: currentCart.products,
       paymentMethod: paymentMethod,
       totalAmount: totalAmount,
+      changeAmount: changeAmount,
+      cashierId: cashierId,
+      cashierName: cashierName,
+      metadata: metadata.isNotEmpty ? metadata : null,
     );
+
+    debugPrint('Sale request created with metadata: ${saleRequest.metadata}');
 
     // Add to queue and clear cart immediately
     _queueService.addToQueue(saleRequest);
