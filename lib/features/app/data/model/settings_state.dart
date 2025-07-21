@@ -19,6 +19,7 @@ sealed class SettingsState with _$SettingsState {
     @Default(false) bool isBluetoothEnabled,
     @Default(PrintCopiesSetting.TWO_COPIES)
     PrintCopiesSetting printCopiesSetting,
+    @Default(false) bool isKioskModeEnabled,
     String? errorMessage,
   }) = _SettingsState;
 

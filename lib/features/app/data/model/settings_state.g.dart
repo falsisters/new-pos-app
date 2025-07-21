@@ -21,6 +21,7 @@ _SettingsState _$SettingsStateFromJson(Map<String, dynamic> json) =>
       printCopiesSetting: $enumDecodeNullable(
               _$PrintCopiesSettingEnumMap, json['printCopiesSetting']) ??
           PrintCopiesSetting.TWO_COPIES,
+      isKioskModeEnabled: json['isKioskModeEnabled'] as bool? ?? false,
       errorMessage: json['errorMessage'] as String?,
     );
 
@@ -32,6 +33,7 @@ Map<String, dynamic> _$SettingsStateToJson(_SettingsState instance) =>
       'isBluetoothEnabled': instance.isBluetoothEnabled,
       'printCopiesSetting':
           _$PrintCopiesSettingEnumMap[instance.printCopiesSetting]!,
+      'isKioskModeEnabled': instance.isKioskModeEnabled,
       'errorMessage': instance.errorMessage,
     };
 

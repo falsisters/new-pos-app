@@ -20,7 +20,6 @@ class ProductEditingScreen extends ConsumerStatefulWidget {
 
 class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
   final _focusNode = FocusNode(); // Add focus node for keyboard events
   final _transferFormKey =
       GlobalKey<TransferStockFormState>(); // Add key to access form methods
@@ -28,12 +27,10 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _focusNode.dispose(); // Dispose focus node
     super.dispose();
   }
@@ -48,9 +45,8 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
         if ((event is KeyDownEvent || event is KeyRepeatEvent) &&
             (event.logicalKey == LogicalKeyboardKey.enter ||
                 event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
-          // Check if we're on the transfer stock tab and trigger submit
-          if (_tabController.index == 0 &&
-              _transferFormKey.currentState != null) {
+          // Trigger submit for transfer form
+          if (_transferFormKey.currentState != null) {
             _transferFormKey.currentState!.triggerSubmit();
           }
         }
@@ -59,7 +55,7 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
+          foregroundColor: Colors.white,
           elevation: 0,
           flexibleSpace: Container(
             decoration: BoxDecoration(
@@ -144,116 +140,86 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Enhanced Product Info Card
+                // Integrated Product Info & Transfer Header Card
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                       children: [
+                        // Transfer Action Header
                         Container(
-                          width: 80,
-                          height: 80,
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
                             gradient: LinearGradient(
                               colors: [
-                                AppColors.primary.withOpacity(0.1),
-                                AppColors.primary.withOpacity(0.05),
+                                AppColors.primary.withOpacity(0.08),
+                                AppColors.primary.withOpacity(0.03),
                               ],
                             ),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                                 color: AppColors.primary.withOpacity(0.1)),
                           ),
-                          child: widget.product.picture ==
-                                  "https://placehold.co/800x800?text=Product"
-                              ? Icon(
-                                  Icons.inventory_2_rounded,
-                                  size: 36,
-                                  color: AppColors.primary,
-                                )
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.network(
-                                    widget.product.picture,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Icon(
-                                        Icons.inventory_2_rounded,
-                                        size: 36,
-                                        color: AppColors.primary,
-                                      );
-                                    },
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                widget.product.name,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          AppColors.primary.withOpacity(0.2)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.tag_rounded,
-                                        size: 14, color: AppColors.primary),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'ID: ${widget.product.id.substring(0, 8).toUpperCase()}',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.primary.withOpacity(0.8)
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
+                                child: Icon(Icons.swap_horiz_rounded,
+                                    color: Colors.white, size: 20),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(Icons.access_time_rounded,
-                                      size: 14, color: Colors.grey[500]),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Updated: ${widget.product.updatedAt.toLocal().toString().split('.')[0]}',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Transfer Stock',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                        letterSpacing: -0.2,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      'Move inventory for ${widget.product.name}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -263,9 +229,9 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Enhanced Tab Section
+                // Transfer Form Section
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -279,71 +245,9 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
                         ),
                       ],
                     ),
-                    child: Column(
-                      children: [
-                        // Tab Bar Header
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primary.withOpacity(0.08),
-                                AppColors.primary.withOpacity(0.03),
-                              ],
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              topRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: TabBar(
-                            controller: _tabController,
-                            labelColor: AppColors.primary,
-                            unselectedLabelColor: Colors.grey.shade600,
-                            indicator: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            padding: const EdgeInsets.all(8),
-                            labelStyle: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                            unselectedLabelStyle: const TextStyle(fontSize: 14),
-                            tabs: const [
-                              Tab(
-                                height: 50,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.swap_horiz_rounded, size: 20),
-                                    SizedBox(width: 8),
-                                    Text("Transfer Stock"),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              SingleChildScrollView(
-                                child: TransferStockForm(
-                                  key: _transferFormKey,
-                                  product: widget.product,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    child: TransferStockForm(
+                      key: _transferFormKey,
+                      product: widget.product,
                     ),
                   ),
                 ),

@@ -43,6 +43,8 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildReceiptStorageSection(context, ref),
                   const SizedBox(height: 24),
+                  _buildKioskModeSection(context, ref, state),
+                  const SizedBox(height: 24),
                   _buildAvailablePrintersSection(context, ref, state),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 16),
@@ -778,5 +780,205 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildKioskModeSection(
+      BuildContext context, WidgetRef ref, dynamic state) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.security,
+                  color: Colors.indigo[700],
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Kiosk Mode',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Kiosk mode prevents users from accessing other apps and system functions. Only this POS app will be available.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enable Kiosk Mode',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        state.isKioskModeEnabled
+                            ? 'Device is in kiosk mode'
+                            : 'Device can access other apps',
+                        style: TextStyle(
+                          color: state.isKioskModeEnabled
+                              ? Colors.orange[700]
+                              : Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: state.isKioskModeEnabled,
+                  onChanged: (value) =>
+                      _showKioskModePasswordDialog(context, ref, value),
+                  activeColor: Colors.indigo[700],
+                ),
+              ],
+            ),
+            if (state.isKioskModeEnabled) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber,
+                        color: Colors.orange[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Kiosk mode is active. Users cannot exit this app or access system functions.',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showKioskModePasswordDialog(
+      BuildContext context, WidgetRef ref, bool targetState) async {
+    final TextEditingController passwordController = TextEditingController();
+    bool isPasswordVisible = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.security,
+                color: Colors.indigo[700],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                targetState ? 'Enable Kiosk Mode' : 'Disable Kiosk Mode',
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                targetState
+                    ? 'Enter password to enable kiosk mode. This will restrict access to other apps.'
+                    : 'Enter password to disable kiosk mode and restore normal device access.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: !isPasswordVisible,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'Enter password',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        isPasswordVisible = !isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    targetState ? Colors.orange[700] : Colors.indigo[700],
+                foregroundColor: Colors.white,
+              ),
+              child: Text(targetState ? 'Enable' : 'Disable'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      final password = passwordController.text;
+      final success =
+          await ref.read(settingsProvider.notifier).toggleKioskMode(password);
+
+      if (!context.mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(targetState
+                ? 'Kiosk mode enabled successfully'
+                : 'Kiosk mode disabled successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid password. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    passwordController.dispose();
   }
 }

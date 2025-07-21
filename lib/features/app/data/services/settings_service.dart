@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String selectedPrinterKey = 'selected_thermal_printer';
 const String printCopiesSettingKey = 'print_copies_setting';
+const String kioskModeEnabledKey = 'kiosk_mode_enabled';
 
 class SettingsService {
   Future<void> saveSelectedPrinter(ThermalPrinter printer) async {
@@ -77,6 +78,19 @@ class SettingsService {
 
     debugPrint('Final loaded setting: $setting (${setting.name})');
     return setting;
+  }
+
+  Future<void> saveKioskModeEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(kioskModeEnabledKey, enabled);
+    debugPrint('Kiosk mode saved: $enabled');
+  }
+
+  Future<bool> getKioskModeEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(kioskModeEnabledKey) ?? false;
+    debugPrint('Kiosk mode loaded: $enabled');
+    return enabled;
   }
 }
 

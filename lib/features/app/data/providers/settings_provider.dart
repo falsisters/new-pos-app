@@ -5,7 +5,9 @@ import 'package:falsisters_pos_android/features/sales/data/services/thermal_prin
 import 'package:falsisters_pos_android/features/app/data/model/printer_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:kiosk_mode/kiosk_mode.dart';
 
 final settingsProvider =
     StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
@@ -28,9 +30,11 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     try {
       final selectedPrinter = await _settingsService.getSelectedPrinter();
       final printCopiesSetting = await _settingsService.getPrintCopiesSetting();
+      final isKioskModeEnabled = await _settingsService.getKioskModeEnabled();
 
       debugPrint('=== SETTINGS LOAD ===');
       debugPrint('Print copies setting loaded: $printCopiesSetting');
+      debugPrint('Kiosk mode enabled: $isKioskModeEnabled');
 
       // Check Bluetooth status
       final isBluetoothEnabled = await _printingService.isBluetoothEnabled();
@@ -54,6 +58,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
         isScanning: false,
         isBluetoothEnabled: isBluetoothEnabled,
         printCopiesSetting: printCopiesSetting,
+        isKioskModeEnabled: isKioskModeEnabled,
         errorMessage: allPrinters.isEmpty
             ? 'No printers found. For Bluetooth: pair your printer in Android settings. For USB: connect via USB cable.'
             : null,
@@ -205,6 +210,46 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     } catch (e, st) {
       debugPrint('Error updating print copies setting: $e');
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<bool> toggleKioskMode(String password) async {
+    const String correctPassword = "7777";
+
+    if (password != correctPassword) {
+      return false; // Invalid password
+    }
+
+    final currentState = state.value;
+    if (currentState == null) return false;
+
+    try {
+      final newKioskMode = !currentState.isKioskModeEnabled;
+
+      if (newKioskMode) {
+        // Enable kiosk mode
+        await startKioskMode();
+        debugPrint('Kiosk mode enabled');
+      } else {
+        // Disable kiosk mode
+        await stopKioskMode();
+        debugPrint('Kiosk mode disabled');
+      }
+
+      await _settingsService.saveKioskModeEnabled(newKioskMode);
+
+      state = AsyncValue.data(currentState.copyWith(
+        isKioskModeEnabled: newKioskMode,
+        errorMessage: null,
+      ));
+
+      return true; // Success
+    } catch (e) {
+      debugPrint('Error toggling kiosk mode: $e');
+      state = AsyncValue.data(currentState.copyWith(
+        errorMessage: e.toString(),
+      ));
+      return false;
     }
   }
 }
