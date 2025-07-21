@@ -27,6 +27,10 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     state = const AsyncValue.loading();
     try {
       final selectedPrinter = await _settingsService.getSelectedPrinter();
+      final printCopiesSetting = await _settingsService.getPrintCopiesSetting();
+
+      debugPrint('=== SETTINGS LOAD ===');
+      debugPrint('Print copies setting loaded: $printCopiesSetting');
 
       // Check Bluetooth status
       final isBluetoothEnabled = await _printingService.isBluetoothEnabled();
@@ -49,10 +53,14 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
         availablePrinters: allPrinters,
         isScanning: false,
         isBluetoothEnabled: isBluetoothEnabled,
+        printCopiesSetting: printCopiesSetting,
         errorMessage: allPrinters.isEmpty
             ? 'No printers found. For Bluetooth: pair your printer in Android settings. For USB: connect via USB cable.'
             : null,
       ));
+
+      debugPrint(
+          'Settings state updated with print copies: $printCopiesSetting');
     } catch (e, st) {
       debugPrint('Error loading initial state: $e');
       state = AsyncValue.error(e, st);
@@ -172,6 +180,31 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       state = AsyncValue.data(currentState.copyWith(
         errorMessage: e.toString(),
       ));
+    }
+  }
+
+  Future<void> updatePrintCopiesSetting(PrintCopiesSetting setting) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    try {
+      debugPrint('=== UPDATING PRINT COPIES SETTING ===');
+      debugPrint('Old setting: ${currentState.printCopiesSetting}');
+      debugPrint('New setting: $setting');
+
+      await _settingsService.savePrintCopiesSetting(setting);
+
+      final newState = currentState.copyWith(
+        printCopiesSetting: setting,
+        errorMessage: null,
+      );
+
+      state = AsyncValue.data(newState);
+      debugPrint('Print copies setting updated successfully to: $setting');
+      debugPrint('Current state setting: ${newState.printCopiesSetting}');
+    } catch (e, st) {
+      debugPrint('Error updating print copies setting: $e');
+      state = AsyncValue.error(e, st);
     }
   }
 }

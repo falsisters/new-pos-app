@@ -4,6 +4,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'settings_state.freezed.dart';
 part 'settings_state.g.dart';
 
+enum PrintCopiesSetting {
+  ONE_COPY,
+  TWO_COPIES,
+  PROMPT_EVERY_SALE,
+}
+
 @freezed
 sealed class SettingsState with _$SettingsState {
   const factory SettingsState({
@@ -11,6 +17,8 @@ sealed class SettingsState with _$SettingsState {
     ThermalPrinter? selectedPrinter,
     @Default(false) bool isScanning,
     @Default(false) bool isBluetoothEnabled,
+    @Default(PrintCopiesSetting.TWO_COPIES)
+    PrintCopiesSetting printCopiesSetting,
     String? errorMessage,
   }) = _SettingsState;
 

@@ -18,6 +18,9 @@ _SettingsState _$SettingsStateFromJson(Map<String, dynamic> json) =>
               json['selectedPrinter'] as Map<String, dynamic>),
       isScanning: json['isScanning'] as bool? ?? false,
       isBluetoothEnabled: json['isBluetoothEnabled'] as bool? ?? false,
+      printCopiesSetting: $enumDecodeNullable(
+              _$PrintCopiesSettingEnumMap, json['printCopiesSetting']) ??
+          PrintCopiesSetting.TWO_COPIES,
       errorMessage: json['errorMessage'] as String?,
     );
 
@@ -27,5 +30,13 @@ Map<String, dynamic> _$SettingsStateToJson(_SettingsState instance) =>
       'selectedPrinter': instance.selectedPrinter,
       'isScanning': instance.isScanning,
       'isBluetoothEnabled': instance.isBluetoothEnabled,
+      'printCopiesSetting':
+          _$PrintCopiesSettingEnumMap[instance.printCopiesSetting]!,
       'errorMessage': instance.errorMessage,
     };
+
+const _$PrintCopiesSettingEnumMap = {
+  PrintCopiesSetting.ONE_COPY: 'ONE_COPY',
+  PrintCopiesSetting.TWO_COPIES: 'TWO_COPIES',
+  PrintCopiesSetting.PROMPT_EVERY_SALE: 'PROMPT_EVERY_SALE',
+};

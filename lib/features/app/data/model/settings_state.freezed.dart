@@ -19,6 +19,7 @@ mixin _$SettingsState {
   ThermalPrinter? get selectedPrinter;
   bool get isScanning;
   bool get isBluetoothEnabled;
+  PrintCopiesSetting get printCopiesSetting;
   String? get errorMessage;
 
   /// Create a copy of SettingsState
@@ -45,6 +46,8 @@ mixin _$SettingsState {
                 other.isScanning == isScanning) &&
             (identical(other.isBluetoothEnabled, isBluetoothEnabled) ||
                 other.isBluetoothEnabled == isBluetoothEnabled) &&
+            (identical(other.printCopiesSetting, printCopiesSetting) ||
+                other.printCopiesSetting == printCopiesSetting) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage));
   }
@@ -57,11 +60,12 @@ mixin _$SettingsState {
       selectedPrinter,
       isScanning,
       isBluetoothEnabled,
+      printCopiesSetting,
       errorMessage);
 
   @override
   String toString() {
-    return 'SettingsState(availablePrinters: $availablePrinters, selectedPrinter: $selectedPrinter, isScanning: $isScanning, isBluetoothEnabled: $isBluetoothEnabled, errorMessage: $errorMessage)';
+    return 'SettingsState(availablePrinters: $availablePrinters, selectedPrinter: $selectedPrinter, isScanning: $isScanning, isBluetoothEnabled: $isBluetoothEnabled, printCopiesSetting: $printCopiesSetting, errorMessage: $errorMessage)';
   }
 }
 
@@ -76,6 +80,7 @@ abstract mixin class $SettingsStateCopyWith<$Res> {
       ThermalPrinter? selectedPrinter,
       bool isScanning,
       bool isBluetoothEnabled,
+      PrintCopiesSetting printCopiesSetting,
       String? errorMessage});
 
   $ThermalPrinterCopyWith<$Res>? get selectedPrinter;
@@ -98,6 +103,7 @@ class _$SettingsStateCopyWithImpl<$Res>
     Object? selectedPrinter = freezed,
     Object? isScanning = null,
     Object? isBluetoothEnabled = null,
+    Object? printCopiesSetting = null,
     Object? errorMessage = freezed,
   }) {
     return _then(_self.copyWith(
@@ -117,6 +123,10 @@ class _$SettingsStateCopyWithImpl<$Res>
           ? _self.isBluetoothEnabled
           : isBluetoothEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      printCopiesSetting: null == printCopiesSetting
+          ? _self.printCopiesSetting
+          : printCopiesSetting // ignore: cast_nullable_to_non_nullable
+              as PrintCopiesSetting,
       errorMessage: freezed == errorMessage
           ? _self.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -147,6 +157,7 @@ class _SettingsState implements SettingsState {
       this.selectedPrinter,
       this.isScanning = false,
       this.isBluetoothEnabled = false,
+      this.printCopiesSetting = PrintCopiesSetting.TWO_COPIES,
       this.errorMessage})
       : _availablePrinters = availablePrinters;
   factory _SettingsState.fromJson(Map<String, dynamic> json) =>
@@ -170,6 +181,9 @@ class _SettingsState implements SettingsState {
   @override
   @JsonKey()
   final bool isBluetoothEnabled;
+  @override
+  @JsonKey()
+  final PrintCopiesSetting printCopiesSetting;
   @override
   final String? errorMessage;
 
@@ -201,6 +215,8 @@ class _SettingsState implements SettingsState {
                 other.isScanning == isScanning) &&
             (identical(other.isBluetoothEnabled, isBluetoothEnabled) ||
                 other.isBluetoothEnabled == isBluetoothEnabled) &&
+            (identical(other.printCopiesSetting, printCopiesSetting) ||
+                other.printCopiesSetting == printCopiesSetting) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage));
   }
@@ -213,11 +229,12 @@ class _SettingsState implements SettingsState {
       selectedPrinter,
       isScanning,
       isBluetoothEnabled,
+      printCopiesSetting,
       errorMessage);
 
   @override
   String toString() {
-    return 'SettingsState(availablePrinters: $availablePrinters, selectedPrinter: $selectedPrinter, isScanning: $isScanning, isBluetoothEnabled: $isBluetoothEnabled, errorMessage: $errorMessage)';
+    return 'SettingsState(availablePrinters: $availablePrinters, selectedPrinter: $selectedPrinter, isScanning: $isScanning, isBluetoothEnabled: $isBluetoothEnabled, printCopiesSetting: $printCopiesSetting, errorMessage: $errorMessage)';
   }
 }
 
@@ -234,6 +251,7 @@ abstract mixin class _$SettingsStateCopyWith<$Res>
       ThermalPrinter? selectedPrinter,
       bool isScanning,
       bool isBluetoothEnabled,
+      PrintCopiesSetting printCopiesSetting,
       String? errorMessage});
 
   @override
@@ -257,6 +275,7 @@ class __$SettingsStateCopyWithImpl<$Res>
     Object? selectedPrinter = freezed,
     Object? isScanning = null,
     Object? isBluetoothEnabled = null,
+    Object? printCopiesSetting = null,
     Object? errorMessage = freezed,
   }) {
     return _then(_SettingsState(
@@ -276,6 +295,10 @@ class __$SettingsStateCopyWithImpl<$Res>
           ? _self.isBluetoothEnabled
           : isBluetoothEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      printCopiesSetting: null == printCopiesSetting
+          ? _self.printCopiesSetting
+          : printCopiesSetting // ignore: cast_nullable_to_non_nullable
+              as PrintCopiesSetting,
       errorMessage: freezed == errorMessage
           ? _self.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable

@@ -9,6 +9,8 @@ import 'package:falsisters_pos_android/features/shift/data/providers/shift_provi
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:falsisters_pos_android/features/app/data/providers/settings_provider.dart';
+import 'package:falsisters_pos_android/features/app/data/model/settings_state.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final List<ProductDto> products;
@@ -122,79 +124,210 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _completePurchase() {
     if (_formKey.currentState!.validate()) {
-      double changeAmount = 0.0;
-      String? cashierId;
-      String? cashierName;
+      // Use watch instead of read to get the current state
+      final settingsAsyncValue = ref.read(settingsProvider);
 
-      // Get current shift and cashier info
-      final currentShift = ref.read(currentShiftProvider);
-      if (currentShift?.shift?.employees.isNotEmpty == true) {
-        // First employee is always the cashier
-        final cashierEmployee = currentShift!.shift!.employees[0];
-        cashierId = cashierEmployee.id;
-        cashierName = cashierEmployee.name;
-        debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
-      }
+      settingsAsyncValue.when(
+        data: (settingsState) {
+          final printCopiesSetting = settingsState.printCopiesSetting;
+          debugPrint('Current print copies setting: $printCopiesSetting');
 
-      // Use ceiling-rounded total for calculation
-      final ceiledTotal = _calculateGrandTotal();
-
-      if (_selectedPaymentMethod == PaymentMethod.CASH) {
-        final String cashGivenText =
-            _cashGivenController.text.replaceAll(',', '');
-        if (cashGivenText.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Please enter the amount tendered for cash payment.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-        final double? tenderedAmount = double.tryParse(cashGivenText);
-        if (tenderedAmount == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid amount tendered.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-        if (tenderedAmount < ceiledTotal) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-          return;
-        }
-
-        // Calculate change using ceiling-rounded total
-        changeAmount = tenderedAmount - ceiledTotal;
-        debugPrint(
-            'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${ceiledTotal.toStringAsFixed(2)})');
-      }
-
-      final salesNotifier = ref.read(salesProvider.notifier);
-      final salesCheckNotifier = ref.read(salesCheckProvider.notifier);
-
-      // Pass change amount, cashier info and name to the sale using ceiling-rounded total
-      debugPrint(
-          'Submitting sale with change: ₱${changeAmount.toStringAsFixed(2)}');
-      salesNotifier.submitSaleWithDetails(
-        ceiledTotal, // Use ceiling-rounded total
-        _selectedPaymentMethod,
-        changeAmount: changeAmount,
-        cashierId: cashierId,
-        cashierName: cashierName,
+          if (printCopiesSetting == PrintCopiesSetting.PROMPT_EVERY_SALE) {
+            debugPrint('Showing print copies dialog for PROMPT_EVERY_SALE');
+            _showPrintCopiesDialog();
+          } else {
+            final copies =
+                printCopiesSetting == PrintCopiesSetting.ONE_COPY ? 1 : 2;
+            debugPrint(
+                'Using setting-based copies: $copies for $printCopiesSetting');
+            _processCheckout(copies);
+          }
+        },
+        loading: () {
+          debugPrint('Settings still loading, using default 2 copies');
+          _processCheckout(2);
+        },
+        error: (error, stack) {
+          debugPrint('Settings error: $error, using default 2 copies');
+          _processCheckout(2);
+        },
       );
-      salesCheckNotifier.refresh();
-      Navigator.pop(context);
     }
+  }
+
+  void _showPrintCopiesDialog() {
+    debugPrint('=== SHOWING PRINT COPIES DIALOG ===');
+
+    // Show dialog immediately, don't use postFrameCallback
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        debugPrint('Print copies dialog builder called');
+
+        return WillPopScope(
+          onWillPop: () async => false, // Prevent back button dismissal
+          child: AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.print, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text('Print Copies'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('How many receipt copies would you like to print?'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You can change this default in Settings',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  debugPrint('Dialog: 1 copy selected');
+                  Navigator.of(dialogContext).pop();
+                  // Add a small delay to ensure dialog is closed before proceeding
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    _processCheckout(1);
+                  });
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.looks_one, size: 18),
+                    const SizedBox(width: 4),
+                    Text('1 Copy'),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  debugPrint('Dialog: 2 copies selected');
+                  Navigator.of(dialogContext).pop();
+                  // Add a small delay to ensure dialog is closed before proceeding
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    _processCheckout(2);
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.looks_two, size: 18),
+                    const SizedBox(width: 4),
+                    Text('2 Copies'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _processCheckout(int copies) {
+    debugPrint('=== PROCESSING CHECKOUT ===');
+    debugPrint('Copies selected: $copies');
+
+    double changeAmount = 0.0;
+    String? cashierId;
+    String? cashierName;
+
+    // Get current shift and cashier info
+    final currentShift = ref.read(currentShiftProvider);
+    if (currentShift?.shift?.employees.isNotEmpty == true) {
+      // First employee is always the cashier
+      final cashierEmployee = currentShift!.shift!.employees[0];
+      cashierId = cashierEmployee.id;
+      cashierName = cashierEmployee.name;
+      debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
+    }
+
+    // Use ceiling-rounded total for calculation
+    final ceiledTotal = _calculateGrandTotal();
+
+    if (_selectedPaymentMethod == PaymentMethod.CASH) {
+      final String cashGivenText =
+          _cashGivenController.text.replaceAll(',', '');
+      if (cashGivenText.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter the amount tendered for cash payment.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+      final double? tenderedAmount = double.tryParse(cashGivenText);
+      if (tenderedAmount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid amount tendered.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+      if (tenderedAmount < ceiledTotal) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // Calculate change using ceiling-rounded total
+      changeAmount = tenderedAmount - ceiledTotal;
+      debugPrint(
+          'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${ceiledTotal.toStringAsFixed(2)})');
+    }
+
+    final salesNotifier = ref.read(salesProvider.notifier);
+    final salesCheckNotifier = ref.read(salesCheckProvider.notifier);
+
+    // Store copies count in metadata for printing orchestrator
+    debugPrint('Submitting sale with $copies copies to print');
+
+    // Submit the sale
+    salesNotifier.submitSaleWithDetails(
+      ceiledTotal, // Use ceiling-rounded total
+      _selectedPaymentMethod,
+      changeAmount: changeAmount,
+      cashierId: cashierId,
+      cashierName: cashierName,
+      printCopies: copies, // Pass copies to sales notifier
+    );
+
+    // Refresh sales check
+    salesCheckNotifier.refresh();
+
+    // Navigate back after a small delay to ensure everything is processed
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (mounted) {
+        debugPrint('Navigating back from checkout');
+        Navigator.pop(context);
+      }
+    });
   }
 
   @override

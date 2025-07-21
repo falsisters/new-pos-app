@@ -214,6 +214,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     double? changeAmount,
     String? cashierId,
     String? cashierName,
+    int? printCopies,
   }) async {
     final preAsyncState = state.value;
     if (preAsyncState == null) return;
@@ -225,6 +226,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         'Change Amount: ${changeAmount != null ? "₱${changeAmount.toStringAsFixed(2)}" : "null"}');
     debugPrint('Cashier ID: $cashierId');
     debugPrint('Cashier Name: $cashierName');
+    debugPrint('Print Copies: ${printCopies ?? "default"}');
 
     // Instantly clear cart and add to queue
     final currentCart = preAsyncState.cart;
@@ -245,6 +247,10 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     if (cashierName != null) {
       metadata['cashierName'] = cashierName;
       debugPrint('Added to metadata - Cashier Name: $cashierName');
+    }
+    if (printCopies != null) {
+      metadata['printCopies'] = printCopies;
+      debugPrint('Added to metadata - Print Copies: $printCopies');
     }
 
     debugPrint('Final metadata: $metadata');

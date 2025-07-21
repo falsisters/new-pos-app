@@ -305,7 +305,8 @@ class ThermalPrintingService {
   }
 
   Future<void> _printViaBluetooth(
-      Printer thermalPrinter, dynamic sale, ThermalPrinter printer) async {
+      Printer thermalPrinter, dynamic sale, ThermalPrinter printer,
+      {int copies = 1}) async {
     try {
       debugPrint('Printing via Bluetooth with chunking...');
 
@@ -327,10 +328,13 @@ class ThermalPrintingService {
       await Future.delayed(const Duration(milliseconds: 2000));
       debugPrint('Connected to Bluetooth printer');
 
-      // Print two receipts: Cashier's Copy and Customer's Copy
-      await _printUnifiedReceipt(thermalPrinter, sale, "CASHIER'S COPY");
-      await Future.delayed(const Duration(milliseconds: 1000));
-      await _printUnifiedReceipt(thermalPrinter, sale, "CUSTOMER'S COPY");
+      // Print the specified number of copies
+      for (int i = 0; i < copies; i++) {
+        await _printUnifiedReceipt(thermalPrinter, sale);
+        if (i < copies - 1) {
+          await Future.delayed(const Duration(milliseconds: 1000));
+        }
+      }
     } catch (e) {
       debugPrint('Bluetooth printing error: $e');
       throw e;
@@ -338,7 +342,8 @@ class ThermalPrintingService {
   }
 
   Future<void> _printViaUSB(
-      Printer thermalPrinter, dynamic sale, ThermalPrinter printer) async {
+      Printer thermalPrinter, dynamic sale, ThermalPrinter printer,
+      {int copies = 1}) async {
     try {
       debugPrint('Printing via USB...');
 
@@ -350,10 +355,13 @@ class ThermalPrintingService {
       await Future.delayed(const Duration(milliseconds: 500));
       debugPrint('Connected to USB printer');
 
-      // Print two receipts: Cashier's Copy and Customer's Copy
-      await _printUnifiedReceipt(thermalPrinter, sale, "CASHIER'S COPY");
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _printUnifiedReceipt(thermalPrinter, sale, "CUSTOMER'S COPY");
+      // Print the specified number of copies
+      for (int i = 0; i < copies; i++) {
+        await _printUnifiedReceipt(thermalPrinter, sale);
+        if (i < copies - 1) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
     } catch (e) {
       debugPrint('USB printing error: $e');
       throw e;
@@ -388,10 +396,9 @@ class ThermalPrintingService {
     }
   }
 
-  Future<void> _printUnifiedReceipt(
-      Printer printer, dynamic sale, String copyType) async {
+  Future<void> _printUnifiedReceipt(Printer printer, dynamic sale) async {
     try {
-      debugPrint('Generating unified receipt format for $copyType...');
+      debugPrint('Generating unified receipt format...');
 
       // Extract sale data
       String total = '0.00';
@@ -529,12 +536,8 @@ class ThermalPrintingService {
       // Create receipt lines for printing
       final List<String> receiptLines = [];
 
-      // Copy type header
+      // Store header (no copy type indicator)
       receiptLines.add('');
-      receiptLines.add(_centerText(copyType, 32));
-      receiptLines.add('');
-
-      // Store header
       receiptLines.add(_centerText('FALSISTERS', 32));
       receiptLines.add(_centerText('RICE TRADING', 32));
       receiptLines.add(_padLine('-', 32));
@@ -603,8 +606,7 @@ class ThermalPrintingService {
       receiptLines.add('');
       receiptLines.add('');
 
-      debugPrint(
-          'Generated ${receiptLines.length} lines for unified receipt ($copyType)');
+      debugPrint('Generated ${receiptLines.length} lines for unified receipt');
 
       // Send receipt using chunked approach for both USB and Bluetooth
       if (printer.connectionType == ConnectionType.BLE) {
@@ -613,7 +615,7 @@ class ThermalPrintingService {
         await _sendUSBUnifiedReceipt(printer, receiptLines);
       }
 
-      debugPrint('Unified receipt sent successfully ($copyType)');
+      debugPrint('Unified receipt sent successfully');
     } catch (e) {
       debugPrint('Unified receipt generation failed: $e');
       throw Exception('Failed to generate unified receipt: $e');
@@ -643,16 +645,18 @@ class ThermalPrintingService {
           lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('FALSISTERS')) {
-          // Bold and center for header
+          // Bold and center for header - REMOVED double size to prevent overflow
           lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
           lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
           lineBytes.addAll(line.codeUnits);
           lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('RICE TRADING')) {
-          // Center for subtitle
+          // Bold and center for subtitle
           lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
           lineBytes.addAll(line.codeUnits);
+          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('TOTAL: P')) {
           // Bold and double size for total
@@ -734,18 +738,18 @@ class ThermalPrintingService {
           receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('FALSISTERS')) {
-          // Bold and center for header
+          // Bold and center for header - REMOVED double size to prevent overflow
           receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
           receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
           receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
           receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('RICE TRADING')) {
-          // Center for subtitle
+          // Bold and center for subtitle
           receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
           receiptBytes.addAll(line.codeUnits);
+          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
           receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
         } else if (line.contains('TOTAL: P')) {
           // Bold and double size for total
@@ -815,21 +819,23 @@ class ThermalPrintingService {
     required ThermalPrinter printer,
     required dynamic sale,
     required BuildContext context,
+    int copies = 1,
   }) async {
     try {
       debugPrint(
           'Starting thermal print process for: ${printer.name} (${printer.connectionDisplayName})');
       debugPrint('Sale data type: ${sale.runtimeType}');
+      debugPrint('Number of copies: $copies');
 
       // Convert to flutter_thermal_printer's Printer model
       final thermalPrinter = printer.toPrinter();
 
       // Different connection strategies for USB vs Bluetooth
       if (printer.isUSBPrinter) {
-        await _printViaUSB(thermalPrinter, sale, printer);
+        await _printViaUSB(thermalPrinter, sale, printer, copies: copies);
       } else {
         // Use optimized Bluetooth printing
-        await _printViaBluetooth(thermalPrinter, sale, printer);
+        await _printViaBluetooth(thermalPrinter, sale, printer, copies: copies);
       }
 
       debugPrint('Receipt printing process completed');
