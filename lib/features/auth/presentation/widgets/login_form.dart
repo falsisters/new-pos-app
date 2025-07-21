@@ -45,6 +45,16 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  void _handleSubmit() {
+    if (widget.nameController.text.isNotEmpty &&
+        widget.accessKeyController.text.isNotEmpty) {
+      widget.onSubmit(
+        widget.nameController.text,
+        widget.accessKeyController.text,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -119,6 +129,8 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             hint: 'Enter your username',
             icon: Icons.person_outline_rounded,
             autofocus: true,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           const SizedBox(height: 20),
           _buildModernTextField(
@@ -127,6 +139,8 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             hint: 'Enter your access key',
             icon: Icons.vpn_key_rounded,
             obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleSubmit(),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
@@ -177,10 +191,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
                               _buttonController.forward().then((_) {
                                 _buttonController.reverse();
                               });
-                              widget.onSubmit(
-                                widget.nameController.text,
-                                widget.accessKeyController.text,
-                              );
+                              _handleSubmit();
                             },
                       child: Center(
                         child: widget.isLoading
@@ -222,6 +233,8 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     bool obscureText = false,
     bool autofocus = false,
     Widget? suffixIcon,
+    TextInputAction? textInputAction,
+    void Function(String)? onFieldSubmitted,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,6 +261,8 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
             controller: controller,
             obscureText: obscureText,
             autofocus: autofocus,
+            textInputAction: textInputAction,
+            onFieldSubmitted: onFieldSubmitted,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 16,
