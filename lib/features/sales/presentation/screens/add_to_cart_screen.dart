@@ -595,9 +595,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     });
   }
 
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      debugPrint('Add to Cart - Key pressed: ${event.logicalKey}');
+
       if (event.logicalKey == LogicalKeyboardKey.enter) {
+        debugPrint('Add to Cart - Enter pressed, adding to cart');
         _addToCart();
         return;
       }
@@ -904,9 +907,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         title: const Text('Add to Cart',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
-      body: KeyboardListener(
+      body: RawKeyboardListener(
         focusNode: _keyboardFocusNode,
-        onKeyEvent: _handleKeyEvent,
+        autofocus: true,
+        onKey: _handleKeyEvent,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

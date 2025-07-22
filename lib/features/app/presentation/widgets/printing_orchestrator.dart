@@ -28,7 +28,8 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
 
       final saleToPrint = next.value?.saleToPrint;
       if (saleToPrint != null) {
-        _handleThermalPrinting(saleToPrint);
+        // Process printing asynchronously without blocking navigation
+        Future.microtask(() => _handleThermalPrinting(saleToPrint));
       }
     });
 
@@ -43,11 +44,17 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
     });
 
     try {
+      debugPrint('=== PRINTING ORCHESTRATOR START ===');
+
+      // Clear the sale to print flag immediately to prevent UI blocking
+      ref.read(salesProvider.notifier).clearSaleToPrint();
+
       // 1. Get the selected thermal printer
       final settingsService = ref.read(settingsServiceProvider);
       final selectedPrinter = await settingsService.getSelectedPrinter();
 
       if (selectedPrinter == null) {
+        debugPrint('No printer selected for printing');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -60,37 +67,73 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         return;
       }
 
-      // 2. Get copies count from sale metadata or settings
-      int copies = 2; // Default
+      // 2. Get copies count - CHECK SETTINGS FIRST, then metadata fallback
+      debugPrint('=== COPIES DETERMINATION ===');
+      debugPrint('Sale type: ${saleToPrint.runtimeType}');
 
-      // First try to get from sale metadata (from checkout dialog)
-      if (saleToPrint is SaleModel &&
-          saleToPrint.metadata != null &&
-          saleToPrint.metadata!.containsKey('printCopies')) {
-        copies = saleToPrint.metadata!['printCopies'] as int;
-        debugPrint('Using copies from sale metadata: $copies');
-      } else {
-        // Fallback to settings
-        final settingsState = ref.read(settingsProvider).value;
-        final printCopiesSetting =
-            settingsState?.printCopiesSetting ?? PrintCopiesSetting.TWO_COPIES;
+      // ALWAYS get the current settings first
+      final settingsState = ref.read(settingsProvider).value;
+      final printCopiesSetting =
+          settingsState?.printCopiesSetting ?? PrintCopiesSetting.TWO_COPIES;
 
-        switch (printCopiesSetting) {
-          case PrintCopiesSetting.ONE_COPY:
-            copies = 1;
-            break;
-          case PrintCopiesSetting.TWO_COPIES:
-            copies = 2;
-            break;
-          case PrintCopiesSetting.PROMPT_EVERY_SALE:
-            copies = 2; // Default fallback if somehow no metadata
-            break;
+      debugPrint('Current settings print copies: $printCopiesSetting');
+
+      int copies = 2; // Default fallback only
+
+      // Start with settings-based copies
+      switch (printCopiesSetting) {
+        case PrintCopiesSetting.ONE_COPY:
+          copies = 1;
+          break;
+        case PrintCopiesSetting.TWO_COPIES:
+          copies = 2;
+          break;
+        case PrintCopiesSetting.PROMPT_EVERY_SALE:
+          copies = 2; // Default for prompt mode
+          break;
+      }
+      debugPrint('Initial copies from settings: $copies');
+
+      // Override with metadata ONLY if it exists and is valid
+      if (saleToPrint is SaleModel) {
+        debugPrint('Sale metadata: ${saleToPrint.metadata}');
+
+        if (saleToPrint.metadata != null &&
+            saleToPrint.metadata!.containsKey('printCopies')) {
+          final metadataCopies = saleToPrint.metadata!['printCopies'];
+          debugPrint(
+              'Found printCopies in metadata: $metadataCopies (${metadataCopies.runtimeType})');
+
+          if (metadataCopies is int && metadataCopies > 0) {
+            copies = metadataCopies;
+            debugPrint('Using copies from sale metadata: $copies');
+          } else if (metadataCopies is String) {
+            final parsedCopies = int.tryParse(metadataCopies);
+            if (parsedCopies != null && parsedCopies > 0) {
+              copies = parsedCopies;
+              debugPrint('Parsed copies from metadata string: $copies');
+            } else {
+              debugPrint(
+                  'Invalid metadata string, keeping settings-based copies: $copies');
+            }
+          } else {
+            debugPrint(
+                'Invalid printCopies type in metadata, keeping settings-based copies: $copies');
+          }
+        } else {
+          debugPrint(
+              'No printCopies in metadata, using settings-based copies: $copies');
         }
-        debugPrint('Using copies from settings: $copies');
+      } else {
+        debugPrint(
+            'Sale is not SaleModel, using settings-based copies: $copies');
       }
 
-      // 3. Show a "Printing..." snackbar with copies info
+      debugPrint('FINAL COPIES COUNT: $copies');
+
+      // 3. Show printing snackbar (non-blocking)
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -118,14 +161,15 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         );
       }
 
-      // 4. Call the thermal printing service with copies
+      // 4. Print in background (non-blocking)
       final printingService = ref.read(thermalPrintingServiceProvider);
 
-      debugPrint('Starting print job with $copies copies');
+      debugPrint('Starting background print job with $copies copies');
       debugPrint('Sale data type: ${saleToPrint.runtimeType}');
       debugPrint(
-          'Printer: ${selectedPrinter.name} (${selectedPrinter.connectionDisplayName} - ${selectedPrinter.address})');
+          'Printer: ${selectedPrinter.name} (${selectedPrinter.connectionDisplayName})');
 
+      // Run printing in background without blocking
       await printingService.printReceipt(
         printer: selectedPrinter,
         sale: saleToPrint,
@@ -133,7 +177,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         copies: copies,
       );
 
-      // 5. Save receipt for reprint and store receipt ID
+      // 5. Save receipt for reprint
       if (saleToPrint is SaleModel) {
         final receiptStorage = ref.read(receiptStorageServiceProvider);
         await receiptStorage.saveReceiptForReprint(saleToPrint);
@@ -141,8 +185,9 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         debugPrint('Receipt ${saleToPrint.id} saved for potential reprint');
       }
 
-      // 6. Show success message with reprint option
+      // 6. Show success message
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -167,11 +212,13 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
           ),
         );
       }
+
+      debugPrint('=== PRINTING ORCHESTRATOR SUCCESS ===');
     } catch (e) {
       debugPrint('Thermal printing error: $e');
-      debugPrint('Sale data: ${saleToPrint?.toString()}');
 
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Column(
@@ -205,13 +252,13 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         );
       }
     } finally {
-      // 7. Clear the sale to print flag and reset printing state
+      // 7. Reset printing state
       if (mounted) {
-        ref.read(salesProvider.notifier).clearSaleToPrint();
         setState(() {
           _isPrinting = false;
         });
       }
+      debugPrint('=== PRINTING ORCHESTRATOR END ===');
     }
   }
 

@@ -88,30 +88,52 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       }
 
       if (Platform.isAndroid) {
-        // Request permissions for Bluetooth printers
-        var bluetoothScanStatus = await Permission.bluetoothScan.request();
-        var bluetoothConnectStatus =
-            await Permission.bluetoothConnect.request();
-        var locationStatus = await Permission.location.request();
+        try {
+          // Request permissions for Bluetooth printers with better error handling
+          var bluetoothScanStatus = await Permission.bluetoothScan.request();
+          var bluetoothConnectStatus =
+              await Permission.bluetoothConnect.request();
+          var locationStatus = await Permission.location.request();
 
-        if (bluetoothScanStatus.isPermanentlyDenied ||
-            bluetoothConnectStatus.isPermanentlyDenied ||
-            locationStatus.isPermanentlyDenied) {
-          await openAppSettings();
-          throw Exception(
-              'Required permissions are permanently denied. Please enable them in Settings.');
-        }
+          if (bluetoothScanStatus.isPermanentlyDenied ||
+              bluetoothConnectStatus.isPermanentlyDenied ||
+              locationStatus.isPermanentlyDenied) {
+            debugPrint(
+                'Some permissions permanently denied, continuing with limited functionality');
+            // Don't throw exception, just log and continue
+          }
 
-        if (bluetoothScanStatus.isDenied ||
-            bluetoothConnectStatus.isDenied ||
-            locationStatus.isDenied) {
-          debugPrint(
-              'Bluetooth permissions denied, USB scanning may still work');
+          if (bluetoothScanStatus.isDenied ||
+              bluetoothConnectStatus.isDenied ||
+              locationStatus.isDenied) {
+            debugPrint(
+                'Some Bluetooth permissions denied, USB scanning may still work');
+          }
+        } catch (permissionError) {
+          debugPrint('Permission request error: $permissionError');
+          // Continue anyway as USB might still work
         }
       }
 
-      // Scan for all types of printers (USB + Bluetooth)
-      final scannedPrinters = await _printingService.scanForPrinters();
+      // Scan for all types of printers (USB + Bluetooth) with timeout
+      List<ThermalPrinter> scannedPrinters = [];
+      try {
+        scannedPrinters = await _printingService
+            .scanForPrinters()
+            .timeout(Duration(seconds: 30));
+      } catch (scanError) {
+        debugPrint('Scanner error: $scanError');
+        // Try to get previously paired printers instead
+        try {
+          scannedPrinters = await _printingService
+              .getPairedPrinters()
+              .timeout(Duration(seconds: 10));
+        } catch (pairedError) {
+          debugPrint('Paired printers error: $pairedError');
+          scannedPrinters = [];
+        }
+      }
+
       debugPrint('Scanned printers: ${scannedPrinters.length}');
 
       final usbPrinters = scannedPrinters.where((p) => p.isUSBPrinter).length;
@@ -136,7 +158,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
       debugPrint('Printer scan error: $e');
       state = AsyncValue.data(currentState.copyWith(
         isScanning: false,
-        errorMessage: e.toString(),
+        errorMessage:
+            'Scanner error: ${e.toString()}\n\nThis may be due to location services or Bluetooth interference. Try restarting the app.',
       ));
     }
   }

@@ -17,6 +17,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   late SalesQueueService _queueService;
   StreamSubscription? _queueSubscription;
   StreamSubscription? _processedSaleSubscription;
+  bool _isSubmitting = false; // Add submission lock
 
   @override
   Future<SalesState> build() async {
@@ -216,79 +217,97 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     String? cashierName,
     int? printCopies,
   }) async {
-    final preAsyncState = state.value;
-    if (preAsyncState == null) return;
+    // Prevent duplicate submissions
+    if (_isSubmitting) {
+      debugPrint('Sale submission already in progress, skipping duplicate');
+      return;
+    }
 
-    debugPrint('=== SUBMIT SALE WITH DETAILS ===');
-    debugPrint('Total Amount: ₱${totalAmount.toStringAsFixed(2)}');
-    debugPrint('Payment Method: $paymentMethod');
-    debugPrint(
-        'Change Amount: ${changeAmount != null ? "₱${changeAmount.toStringAsFixed(2)}" : "null"}');
-    debugPrint('Cashier ID: $cashierId');
-    debugPrint('Cashier Name: $cashierName');
-    debugPrint('Print Copies: ${printCopies ?? "default"}');
+    _isSubmitting = true;
 
-    // Instantly clear cart and add to queue
-    final currentCart = preAsyncState.cart;
-    final orderIdForRequest = preAsyncState.orderId;
+    try {
+      final preAsyncState = state.value;
+      if (preAsyncState == null) return;
 
-    // Create metadata for additional receipt information
-    final metadata = <String, dynamic>{};
-    if (changeAmount != null && changeAmount > 0) {
-      metadata['change'] = changeAmount.toStringAsFixed(2);
-      metadata['tenderedAmount'] =
-          (totalAmount + changeAmount).toStringAsFixed(2);
+      debugPrint('=== SUBMIT SALE WITH DETAILS ===');
+      debugPrint('Total Amount: ₱${totalAmount.toStringAsFixed(2)}');
+      debugPrint('Payment Method: $paymentMethod');
       debugPrint(
-          'Added to metadata - Change: ${metadata['change']}, Tendered: ${metadata['tenderedAmount']}');
-    }
-    if (cashierId != null) {
-      metadata['cashierId'] = cashierId;
-    }
-    if (cashierName != null) {
-      metadata['cashierName'] = cashierName;
-      debugPrint('Added to metadata - Cashier Name: $cashierName');
-    }
-    if (printCopies != null) {
-      metadata['printCopies'] = printCopies;
-      debugPrint('Added to metadata - Print Copies: $printCopies');
-    }
+          'Change Amount: ${changeAmount != null ? "₱${changeAmount.toStringAsFixed(2)}" : "null"}');
+      debugPrint('Cashier ID: $cashierId');
+      debugPrint('Cashier Name: $cashierName');
+      debugPrint('Print Copies: ${printCopies ?? "default"}');
 
-    debugPrint('Final metadata: $metadata');
+      // Immediately clear cart and update state
+      final currentCart = preAsyncState.cart;
+      final orderIdForRequest = preAsyncState.orderId;
 
-    final saleRequest = CreateSaleRequestModel(
-      orderId: orderIdForRequest,
-      saleItems: currentCart.products,
-      paymentMethod: paymentMethod,
-      totalAmount: totalAmount,
-      changeAmount: changeAmount,
-      cashierId: cashierId,
-      cashierName: cashierName,
-      metadata: metadata.isNotEmpty ? metadata : null,
-    );
+      // Create metadata for additional receipt information
+      final metadata = <String, dynamic>{};
+      if (changeAmount != null && changeAmount > 0) {
+        metadata['change'] = changeAmount.toStringAsFixed(2);
+        metadata['tenderedAmount'] =
+            (totalAmount + changeAmount).toStringAsFixed(2);
+        debugPrint(
+            'Added to metadata - Change: ${metadata['change']}, Tendered: ${metadata['tenderedAmount']}');
+      }
+      if (cashierId != null) {
+        metadata['cashierId'] = cashierId;
+      }
+      if (cashierName != null) {
+        metadata['cashierName'] = cashierName;
+        debugPrint('Added to metadata - Cashier Name: $cashierName');
+      }
+      if (printCopies != null) {
+        metadata['printCopies'] = printCopies;
+        debugPrint('Added to metadata - Print Copies: $printCopies');
+      }
 
-    debugPrint('Sale request created with metadata: ${saleRequest.metadata}');
+      debugPrint('Final metadata: $metadata');
 
-    // Add to queue and clear cart immediately
-    _queueService.addToQueue(saleRequest);
+      final saleRequest = CreateSaleRequestModel(
+        orderId: orderIdForRequest,
+        saleItems: currentCart.products,
+        paymentMethod: paymentMethod,
+        totalAmount: totalAmount,
+        changeAmount: changeAmount,
+        cashierId: cashierId,
+        cashierName: cashierName,
+        metadata: metadata.isNotEmpty ? metadata : null,
+      );
 
-    state = await AsyncValue.guard(() async {
-      return SalesState(
+      debugPrint('Sale request created with metadata: ${saleRequest.metadata}');
+
+      // Add to queue and immediately clear cart - this ensures UI updates immediately
+      final queueId = _queueService.addToQueue(saleRequest);
+      debugPrint('Sale added to queue with ID: $queueId');
+
+      // Update state immediately to clear cart
+      state = AsyncValue.data(SalesState(
         cart: CartModel(), // Clear cart immediately
         sales: preAsyncState.sales,
         pendingSales: _queueService.currentQueue,
         orderId: null,
         error: null,
         selectedDate: preAsyncState.selectedDate,
-      );
-    });
+      ));
 
-    // Refresh other providers in background silently
-    try {
-      // Use refresh instead of getProducts to avoid loading state
-      await ref.read(productProvider.notifier).refresh();
-      await ref.read(salesCheckProvider.notifier).refresh();
-    } catch (e) {
-      print('Error refreshing providers: $e');
+      debugPrint('Cart cleared and state updated');
+
+      // Refresh other providers in background without blocking
+      Future.microtask(() async {
+        try {
+          await ref.read(productProvider.notifier).refresh();
+          await ref.read(salesCheckProvider.notifier).refresh();
+          debugPrint('Background providers refreshed');
+        } catch (e) {
+          debugPrint('Error refreshing background providers: $e');
+          // Don't throw, just log
+        }
+      });
+    } finally {
+      _isSubmitting = false;
+      debugPrint('Sale submission lock released');
     }
   }
 

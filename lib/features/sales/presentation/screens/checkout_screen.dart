@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/features/app/data/providers/settings_provider.dart';
 import 'package:falsisters_pos_android/features/app/data/model/settings_state.dart';
+import 'package:falsisters_pos_android/features/app/presentation/screens/home_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final List<ProductDto> products;
@@ -31,6 +32,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   late PaymentMethod _selectedPaymentMethod;
   final _cashGivenController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  bool _isProcessing = false;
+  bool _hasNavigatedBack = false; // Prevent multiple navigation
 
   // Add ceiling rounding method for total price consistency with improved precision
   double _ceilRoundPrice(double value) {
@@ -101,12 +104,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedPaymentMethod = PaymentMethod.CASH; // Initialize with CASH
+    _selectedPaymentMethod = PaymentMethod.CASH;
     _cashGivenController.addListener(() {
-      setState(
-          () {}); // To update UI based on cash given input, e.g., change calculation
+      if (mounted) {
+        setState(() {});
+      }
     });
-    _focusNode.requestFocus(); // Request focus for keyboard input
+    // Don't auto-focus to prevent keyboard issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -116,15 +125,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-      _completePurchase();
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (_isProcessing || _hasNavigatedBack || !mounted) {
+      return KeyEventResult.ignored;
     }
+
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyC) {
+      debugPrint('Checkout - Enter pressed, completing purchase');
+      // Use synchronous call to prevent async deadlock
+      _completePurchase();
+      // Return handled to prevent propagation to parent
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   void _completePurchase() {
-    if (_formKey.currentState!.validate()) {
-      // Use watch instead of read to get the current state
+    if (_isProcessing || _hasNavigatedBack || !mounted) {
+      debugPrint('Purchase already in progress or navigated back - skipping');
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
       final settingsAsyncValue = ref.read(settingsProvider);
 
       settingsAsyncValue.when(
@@ -152,182 +182,238 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _processCheckout(2);
         },
       );
+    } catch (e) {
+      debugPrint('Error in _completePurchase: $e');
+      if (mounted && !_hasNavigatedBack) {
+        setState(() {
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing checkout: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _showPrintCopiesDialog() {
+    if (!mounted || _hasNavigatedBack) {
+      debugPrint(
+          'Not showing dialog - mounted: $mounted, navigated: $_hasNavigatedBack');
+      return;
+    }
+
     debugPrint('=== SHOWING PRINT COPIES DIALOG ===');
 
-    // Show dialog immediately, don't use postFrameCallback
-    showDialog(
+    showDialog<int>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        debugPrint('Print copies dialog builder called');
-
-        return WillPopScope(
-          onWillPop: () async => false, // Prevent back button dismissal
-          child: AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.print, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text('Print Copies'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('How many receipt copies would you like to print?'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'You can change this default in Settings',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.print, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text('Print Copies'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('How many receipt copies would you like to print?'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You can change this default in Settings',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  debugPrint('Dialog: 1 copy selected');
-                  Navigator.of(dialogContext).pop();
-                  // Add a small delay to ensure dialog is closed before proceeding
-                  Future.delayed(Duration(milliseconds: 100), () {
-                    _processCheckout(1);
-                  });
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.looks_one, size: 18),
-                    const SizedBox(width: 4),
-                    Text('1 Copy'),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  debugPrint('Dialog: 2 copies selected');
-                  Navigator.of(dialogContext).pop();
-                  // Add a small delay to ensure dialog is closed before proceeding
-                  Future.delayed(Duration(milliseconds: 100), () {
-                    _processCheckout(2);
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.looks_two, size: 18),
-                    const SizedBox(width: 4),
-                    Text('2 Copies'),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                debugPrint('Dialog: 1 copy selected');
+                Navigator.of(dialogContext).pop();
+                _processCheckout(1);
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.looks_one, size: 18),
+                  const SizedBox(width: 4),
+                  Text('1 Copy'),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                debugPrint('Dialog: 2 copies selected');
+                Navigator.of(dialogContext).pop();
+                _processCheckout(2);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.looks_two, size: 18),
+                  const SizedBox(width: 4),
+                  Text('2 Copies'),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
   void _processCheckout(int copies) {
-    debugPrint('=== PROCESSING CHECKOUT ===');
-    debugPrint('Copies selected: $copies');
-
-    double changeAmount = 0.0;
-    String? cashierId;
-    String? cashierName;
-
-    // Get current shift and cashier info
-    final currentShift = ref.read(currentShiftProvider);
-    if (currentShift?.shift?.employees.isNotEmpty == true) {
-      // First employee is always the cashier
-      final cashierEmployee = currentShift!.shift!.employees[0];
-      cashierId = cashierEmployee.id;
-      cashierName = cashierEmployee.name;
-      debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
+    if (!mounted || _hasNavigatedBack) {
+      debugPrint('Checkout cancelled - not mounted or already navigated back');
+      return;
     }
 
-    // Use ceiling-rounded total for calculation
-    final ceiledTotal = _calculateGrandTotal();
+    try {
+      debugPrint('=== PROCESSING CHECKOUT ===');
+      debugPrint('Copies selected: $copies');
 
-    if (_selectedPaymentMethod == PaymentMethod.CASH) {
-      final String cashGivenText =
-          _cashGivenController.text.replaceAll(',', '');
-      if (cashGivenText.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter the amount tendered for cash payment.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
+      double changeAmount = 0.0;
+      String? cashierId;
+      String? cashierName;
+
+      // Get current shift and cashier info
+      final currentShift = ref.read(currentShiftProvider);
+      if (currentShift?.shift?.employees.isNotEmpty == true) {
+        final cashierEmployee = currentShift!.shift!.employees[0];
+        cashierId = cashierEmployee.id;
+        cashierName = cashierEmployee.name;
+        debugPrint('Cashier found: ID=$cashierId, Name=$cashierName');
       }
-      final double? tenderedAmount = double.tryParse(cashGivenText);
-      if (tenderedAmount == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid amount tendered.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
+
+      final ceiledTotal = _calculateGrandTotal();
+
+      if (_selectedPaymentMethod == PaymentMethod.CASH) {
+        final String cashGivenText =
+            _cashGivenController.text.replaceAll(',', '');
+        if (cashGivenText.isEmpty) {
+          if (mounted && !_hasNavigatedBack) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Please enter the amount tendered for cash payment.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            setState(() {
+              _isProcessing = false;
+            });
+          }
+          return;
+        }
+
+        final double? tenderedAmount = double.tryParse(cashGivenText);
+        if (tenderedAmount == null) {
+          if (mounted && !_hasNavigatedBack) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid amount tendered.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            setState(() {
+              _isProcessing = false;
+            });
+          }
+          return;
+        }
+
+        if (tenderedAmount < ceiledTotal) {
+          if (mounted && !_hasNavigatedBack) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            setState(() {
+              _isProcessing = false;
+            });
+          }
+          return;
+        }
+
+        changeAmount = tenderedAmount - ceiledTotal;
+        debugPrint('Change calculated: ₱${changeAmount.toStringAsFixed(2)}');
       }
-      if (tenderedAmount < ceiledTotal) {
+
+      // Submit the sale
+      debugPrint('Submitting sale with $copies copies to print');
+
+      final salesNotifier = ref.read(salesProvider.notifier);
+
+      salesNotifier.submitSaleWithDetails(
+        ceiledTotal,
+        _selectedPaymentMethod,
+        changeAmount: changeAmount,
+        cashierId: cashierId,
+        cashierName: cashierName,
+        printCopies: copies,
+      );
+
+      debugPrint('Sale submitted successfully');
+
+      // Navigate back to home screen - use pushAndRemoveUntil for clean navigation
+      if (mounted && !_hasNavigatedBack) {
+        setState(() {
+          _hasNavigatedBack = true;
+        });
+
+        debugPrint('Navigating back to home screen using pushAndRemoveUntil');
+
+        // Import the HomeScreen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+          (route) => false, // Remove all previous routes
+        );
+
+        // Refresh sales check in background after navigation
+        Future.microtask(() {
+          try {
+            ref.read(salesCheckProvider.notifier).refresh();
+          } catch (e) {
+            debugPrint('Error refreshing sales check: $e');
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error in _processCheckout: $e');
+      if (mounted && !_hasNavigatedBack) {
+        setState(() {
+          _isProcessing = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
-            backgroundColor: Colors.redAccent,
+            content: Text('Error processing checkout: $e'),
+            backgroundColor: Colors.red,
           ),
         );
-        return;
       }
-
-      // Calculate change using ceiling-rounded total
-      changeAmount = tenderedAmount - ceiledTotal;
-      debugPrint(
-          'Change calculated: ₱${changeAmount.toStringAsFixed(2)} (Tendered: ₱${tenderedAmount.toStringAsFixed(2)}, Total: ₱${ceiledTotal.toStringAsFixed(2)})');
     }
-
-    final salesNotifier = ref.read(salesProvider.notifier);
-    final salesCheckNotifier = ref.read(salesCheckProvider.notifier);
-
-    // Store copies count in metadata for printing orchestrator
-    debugPrint('Submitting sale with $copies copies to print');
-
-    // Submit the sale
-    salesNotifier.submitSaleWithDetails(
-      ceiledTotal, // Use ceiling-rounded total
-      _selectedPaymentMethod,
-      changeAmount: changeAmount,
-      cashierId: cashierId,
-      cashierName: cashierName,
-      printCopies: copies, // Pass copies to sales notifier
-    );
-
-    // Refresh sales check
-    salesCheckNotifier.refresh();
-
-    // Navigate back after a small delay to ensure everything is processed
-    Future.delayed(Duration(milliseconds: 100), () {
-      if (mounted) {
-        debugPrint('Navigating back from checkout');
-        Navigator.pop(context);
-      }
-    });
   }
 
   @override
@@ -352,9 +438,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     }
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: _handleKeyEvent,
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        _handleKeyEvent(event);
+        // Return handled to prevent event propagation
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyC) {
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: AppColors.primary,
@@ -363,11 +457,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: (_isProcessing || _hasNavigatedBack)
+                ? null
+                : () {
+                    setState(() {
+                      _hasNavigatedBack = true;
+                    });
+                    // Use pushAndRemoveUntil here too for consistency
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const HomeScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
           ),
           actions: [
             IconButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: (_isProcessing || _hasNavigatedBack)
+                  ? null
+                  : () {
+                      setState(() {
+                        _hasNavigatedBack = true;
+                      });
+                      // Use pushAndRemoveUntil here too for consistency
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const HomeScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
               icon: const Icon(Icons.close),
             ),
           ],
@@ -892,43 +1012,51 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                       ),
                     ),
+                  const SizedBox(height: 16),
 
-                  const SizedBox(height: 20),
-
-                  // Checkout Button
+                  // Complete Purchase Button
                   Container(
-                    width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.accent,
-                          AppColors.accent.withOpacity(0.8)
-                        ],
-                      ),
+                      color: AppColors.accent.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: _isProcessing
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: AppColors.accent.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: _completePurchase,
+                        onTap: _isProcessing ? null : _completePurchase,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.check_circle_rounded,
-                                  color: Colors.white, size: 20),
+                              if (_isProcessing)
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              else
+                                Icon(Icons.check_circle_rounded,
+                                    color: Colors.white, size: 20),
                               const SizedBox(width: 12),
                               Text(
-                                'Complete Purchase (Enter)',
+                                _isProcessing
+                                    ? 'Processing...'
+                                    : 'Complete Purchase (Enter)',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
