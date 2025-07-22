@@ -43,8 +43,8 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
       onKeyEvent: (KeyEvent event) {
         // Handle Enter key press for transfer stock form
         if ((event is KeyDownEvent || event is KeyRepeatEvent) &&
-            (event.logicalKey == LogicalKeyboardKey.enter ||
-                event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+            (event.logicalKey == LogicalKeyboardKey.keyC ||
+                event.logicalKey == LogicalKeyboardKey.keyC)) {
           // Trigger submit for transfer form
           if (_transferFormKey.currentState != null) {
             _transferFormKey.currentState!.triggerSubmit();
