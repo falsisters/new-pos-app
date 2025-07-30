@@ -23,6 +23,7 @@ class AddToTruckScreen extends ConsumerStatefulWidget {
 class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _quantityController = TextEditingController();
+  final FocusNode _screenFocusNode = FocusNode();
 
   // State management variables
   dynamic _quantity = 1;
@@ -32,24 +33,84 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   @override
   void initState() {
     super.initState();
-    // Default to per kilo if available and no sack prices
-    if (widget.product.sackPrice.isEmpty &&
-        widget.product.perKiloPrice != null) {
-      _isPerKiloSelected = true;
-    } else if (widget.product.sackPrice.isNotEmpty) {
-      // Default to the first sack price if available
-      _selectedSackPriceId = widget.product.sackPrice.first.id;
-      _isPerKiloSelected = false;
-    }
-
-    // Initialize the controller with the initial quantity
+    _initializeDefaultSelection();
     _quantityController.text = _quantity.toString();
   }
 
   @override
   void dispose() {
     _quantityController.dispose();
+    _screenFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Initialize default selection based on available options
+  void _initializeDefaultSelection() {
+    if (widget.product.sackPrice.isEmpty &&
+        widget.product.perKiloPrice != null) {
+      _isPerKiloSelected = true;
+    } else if (widget.product.sackPrice.isNotEmpty) {
+      _selectedSackPriceId = widget.product.sackPrice.first.id;
+      _isPerKiloSelected = false;
+    }
+  }
+
+  /// Handle hardware keyboard events
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    // Only handle key down events to prevent double triggering
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.enter:
+      case LogicalKeyboardKey.numpadEnter:
+        _addToTruck();
+        return KeyEventResult.handled;
+
+      case LogicalKeyboardKey.escape:
+        Navigator.pop(context);
+        return KeyEventResult.handled;
+
+      case LogicalKeyboardKey.arrowUp:
+      case LogicalKeyboardKey.equal:
+      case LogicalKeyboardKey.numpadAdd:
+        _increaseQuantity();
+        return KeyEventResult.handled;
+
+      case LogicalKeyboardKey.arrowDown:
+      case LogicalKeyboardKey.minus:
+      case LogicalKeyboardKey.numpadSubtract:
+        _decreaseQuantity();
+        return KeyEventResult.handled;
+
+      // Quick quantity shortcuts
+      case LogicalKeyboardKey.digit1:
+      case LogicalKeyboardKey.numpad1:
+        if (HardwareKeyboard.instance.isControlPressed) {
+          _setQuickQuantity(_isPerKiloSelected ? 1.0 : 1);
+          return KeyEventResult.handled;
+        }
+        break;
+
+      case LogicalKeyboardKey.digit2:
+      case LogicalKeyboardKey.numpad2:
+        if (HardwareKeyboard.instance.isControlPressed) {
+          _setQuickQuantity(_isPerKiloSelected ? 2.0 : 2);
+          return KeyEventResult.handled;
+        }
+        break;
+
+      case LogicalKeyboardKey.digit5:
+      case LogicalKeyboardKey.numpad5:
+        if (HardwareKeyboard.instance.isControlPressed) {
+          _setQuickQuantity(_isPerKiloSelected ? 5.0 : 5);
+          return KeyEventResult.handled;
+        }
+        break;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   void _selectSackPrice(String id) {
@@ -188,15 +249,9 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   @override
   Widget build(BuildContext context) {
     return Focus(
+      focusNode: _screenFocusNode,
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.enter) {
-          _addToTruck();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
+      onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
@@ -231,14 +286,14 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.local_shipping_rounded, size: 20),
+                child: const Icon(Icons.local_shipping_rounded, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Add to Truck",
                       style: TextStyle(
                         fontSize: 18,
@@ -270,6 +325,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close_rounded, size: 20),
+                tooltip: 'Close (Esc)',
               ),
             ),
           ],
@@ -507,13 +563,13 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
                         ),
                       ),
                       onPressed: _addToTruck,
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.local_shipping_outlined, size: 24),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Text(
-                            'Add to Truck',
+                            'Add to Truck (Enter)',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
