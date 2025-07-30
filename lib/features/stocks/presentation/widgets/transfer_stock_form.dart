@@ -60,102 +60,98 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
   }
 
   Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (_isLoading ||
+        !_hasValidStock() ||
+        _formKey.currentState?.validate() != true) {
+      return;
+    }
 
-      setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
 
-      try {
-        late TransferProductDto productDto;
+    try {
+      late TransferProductDto productDto;
 
-        if (_isPerKilo && widget.product.perKiloPrice != null) {
-          productDto = TransferProductDto(
-            id: widget.product.id,
-            perKiloPrice: TransferPerKiloPriceDto(
-              id: widget.product.perKiloPrice!.id,
-              quantity: _quantity,
-            ),
-          );
-        } else if (_selectedSackIndex >= 0) {
-          final selectedSack = widget.product.sackPrice[_selectedSackIndex];
-          productDto = TransferProductDto(
-            id: widget.product.id,
-            sackPrice: TransferSackPriceDto(
-              id: selectedSack.id,
-              quantity: _quantity.toInt(),
-              type: selectedSack.type,
-            ),
-          );
-        } else {
-          throw Exception("No valid product transfer option selected");
-        }
-
-        final request = TransferProductRequest(
-          product: productDto,
-          transferType: _selectedTransferType,
+      if (_isPerKilo && widget.product.perKiloPrice != null) {
+        productDto = TransferProductDto(
+          id: widget.product.id,
+          perKiloPrice: TransferPerKiloPriceDto(
+            id: widget.product.perKiloPrice!.id,
+            quantity: _quantity,
+          ),
         );
+      } else if (_selectedSackIndex >= 0) {
+        final selectedSack = widget.product.sackPrice[_selectedSackIndex];
+        productDto = TransferProductDto(
+          id: widget.product.id,
+          sackPrice: TransferSackPriceDto(
+            id: selectedSack.id,
+            quantity: _quantity.toInt(),
+            type: selectedSack.type,
+          ),
+        );
+      } else {
+        throw Exception("No valid product transfer option selected");
+      }
 
-        await _stockRepository.transferStock(request);
+      final request = TransferProductRequest(
+        product: productDto,
+        transferType: _selectedTransferType,
+      );
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle_rounded,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 12),
-                  Text('Stock transfer successful'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              margin: const EdgeInsets.all(16),
+      await _stockRepository.transferStock(request);
+
+      // Refresh product list after successful transfer
+      ref.read(productProvider.notifier).getProducts();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Text('Stock transfer successful'),
+              ],
             ),
-          );
-          Navigator.pop(context, true);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.error_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('Error: ${e.toString()}')),
-                ],
-              ),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              margin: const EdgeInsets.all(16),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Error: ${e.toString()}')),
+              ],
             ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
 
   // Public method to trigger submit from parent
   void triggerSubmit() {
-    if (!_isLoading &&
-        _hasValidStock() &&
-        _formKey.currentState?.validate() == true) {
-      FocusScope.of(context).unfocus();
-      _submitForm().then((_) {
-        if (mounted) {
-          ref.read(productProvider.notifier).getProducts();
-        }
-      });
-    }
+    _submitForm();
   }
 
   @override
@@ -350,17 +346,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: _isLoading || !_hasValidStock()
-                        ? null
-                        : () {
-                            FocusScope.of(context).unfocus();
-                            _submitForm().then((_) {
-                              ref.read(productProvider.notifier).getProducts();
-                              if (mounted) {
-                                Navigator.pop(context, true);
-                              }
-                            });
-                          },
+                    onTap: _isLoading || !_hasValidStock() ? null : _submitForm,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       child: Row(
