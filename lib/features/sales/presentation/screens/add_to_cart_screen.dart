@@ -90,37 +90,31 @@ class AddToCartScreen extends ConsumerStatefulWidget {
 
 class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final FocusNode _keyboardFocusNode = FocusNode();
 
-  // Add focus nodes for keyboard navigation
+  // Focus nodes for keyboard navigation
   final FocusNode _pricingOptionsFocusNode = FocusNode();
   final FocusNode _quantitySectionFocusNode = FocusNode();
   final FocusNode _decimalQuantityFocusNode = FocusNode();
   final FocusNode _discountSectionFocusNode = FocusNode();
+  final FocusNode _perKiloQuantityFocusNode = FocusNode();
+  final FocusNode _perKiloTotalPriceFocusNode = FocusNode();
 
   // State management variables
   bool _isSpecialPrice = false;
   String? _selectedSackPriceId;
   String? _selectedSpecialPriceId;
   bool _isPerKiloSelected = false;
-
-  // New state variables
   bool _isDiscounted = false;
   bool _isGantangMode = false;
+  bool _isUpdatingPriceAndQuantityInternally = false;
+
+  // Controllers
   late TextEditingController _discountedPriceController;
   late TextEditingController _sackQuantityController;
   late TextEditingController _perKiloQuantityController;
   late TextEditingController _perKiloTotalPriceController;
-
-  // New separate controllers for whole and decimal quantities
   late TextEditingController _wholeQuantityController;
   late TextEditingController _decimalQuantityController;
-
-  bool _isUpdatingPriceAndQuantityInternally = false;
-
-  // FocusNodes for per kilo inputs
-  final FocusNode _perKiloQuantityFocusNode = FocusNode();
-  final FocusNode _perKiloTotalPriceFocusNode = FocusNode();
 
   // Gantang conversion constant
   static const double gantangToKgRatio = 2.25;
@@ -128,40 +122,57 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   @override
   void initState() {
     super.initState();
-    _discountedPriceController = TextEditingController();
-    _sackQuantityController = TextEditingController(text: '1');
-    _perKiloQuantityController = TextEditingController(text: '1.0');
-    _perKiloTotalPriceController = TextEditingController();
-
-    // Initialize new controllers
-    _wholeQuantityController = TextEditingController(text: '1');
-    _decimalQuantityController = TextEditingController(text: '0');
-
-    if (widget.product.perKiloPrice != null &&
-        widget.product.sackPrice.isEmpty) {
-      _isPerKiloSelected = true;
-      // Calculate and set initial total price for 1.0 kg
-      _calculateInitialPerKiloTotalPrice();
-    } else if (widget.product.sackPrice.isNotEmpty) {
-      // Default to first sack price if no per kilo or if both exist
-      _selectSackPrice(widget.product.sackPrice.first.id);
-    }
-
-    _perKiloQuantityController
-        .addListener(_updatePerKiloTotalPriceFromQuantity);
-    _perKiloTotalPriceController
-        .addListener(_updatePerKiloQuantityFromTotalPrice);
-
-    // Add listeners for new controllers
-    _wholeQuantityController.addListener(_updateCombinedQuantityAndTotal);
-    _decimalQuantityController.addListener(_updateCombinedQuantityAndTotal);
-
-    // Request focus for keyboard input
-    _keyboardFocusNode.requestFocus();
+    _initializeControllers();
+    _setupInitialState();
+    _setupListeners();
+    _registerKeyboardHandler();
   }
 
   @override
   void dispose() {
+    _unregisterKeyboardHandler();
+    _disposeControllers();
+    _disposeFocusNodes();
+    super.dispose();
+  }
+
+  void _initializeControllers() {
+    _discountedPriceController = TextEditingController();
+    _sackQuantityController = TextEditingController(text: '1');
+    _perKiloQuantityController = TextEditingController(text: '1.0');
+    _perKiloTotalPriceController = TextEditingController();
+    _wholeQuantityController = TextEditingController(text: '1');
+    _decimalQuantityController = TextEditingController(text: '0');
+  }
+
+  void _setupInitialState() {
+    if (widget.product.perKiloPrice != null &&
+        widget.product.sackPrice.isEmpty) {
+      _isPerKiloSelected = true;
+      _calculateInitialPerKiloTotalPrice();
+    } else if (widget.product.sackPrice.isNotEmpty) {
+      _selectSackPrice(widget.product.sackPrice.first.id);
+    }
+  }
+
+  void _setupListeners() {
+    _perKiloQuantityController
+        .addListener(_updatePerKiloTotalPriceFromQuantity);
+    _perKiloTotalPriceController
+        .addListener(_updatePerKiloQuantityFromTotalPrice);
+    _wholeQuantityController.addListener(_updateCombinedQuantityAndTotal);
+    _decimalQuantityController.addListener(_updateCombinedQuantityAndTotal);
+  }
+
+  void _registerKeyboardHandler() {
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  void _unregisterKeyboardHandler() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+  }
+
+  void _disposeControllers() {
     _discountedPriceController.dispose();
     _sackQuantityController.dispose();
     _perKiloQuantityController
@@ -170,22 +181,90 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         .removeListener(_updatePerKiloQuantityFromTotalPrice);
     _perKiloQuantityController.dispose();
     _perKiloTotalPriceController.dispose();
-    _perKiloQuantityFocusNode.dispose();
-    _perKiloTotalPriceFocusNode.dispose();
-
-    // Dispose new controllers
     _wholeQuantityController.removeListener(_updateCombinedQuantityAndTotal);
     _decimalQuantityController.removeListener(_updateCombinedQuantityAndTotal);
     _wholeQuantityController.dispose();
     _decimalQuantityController.dispose();
+  }
 
-    // Dispose new focus nodes
+  void _disposeFocusNodes() {
     _pricingOptionsFocusNode.dispose();
     _quantitySectionFocusNode.dispose();
     _decimalQuantityFocusNode.dispose();
     _discountSectionFocusNode.dispose();
-    _keyboardFocusNode.dispose();
-    super.dispose();
+    _perKiloQuantityFocusNode.dispose();
+    _perKiloTotalPriceFocusNode.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      debugPrint('Add to Cart - Key pressed: ${event.logicalKey}');
+
+      // Handle Enter key for adding to cart
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        debugPrint('Add to Cart - Enter pressed, adding to cart');
+        _addToCart();
+        return true;
+      }
+
+      // Handle navigation keys
+      if (_handleNavigationKeys(event)) {
+        return true;
+      }
+
+      // Handle quantity adjustment keys
+      if (_handleQuantityAdjustmentKeys(event)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _handleNavigationKeys(KeyEvent event) {
+    // Handle left/right arrows for pricing options and focus cycling
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      final isRightArrow = event.logicalKey == LogicalKeyboardKey.arrowRight;
+
+      if (_pricingOptionsFocusNode.hasFocus) {
+        _handlePricingOptionsKeyboard(isRightArrow);
+      } else {
+        _cycleFocus(isRightArrow);
+      }
+      return true;
+    }
+
+    // Handle up/down arrows for vertical focus navigation
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+        event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      final isUpArrow = event.logicalKey == LogicalKeyboardKey.arrowUp;
+      _cycleFocusVertical(isUpArrow);
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _handleQuantityAdjustmentKeys(KeyEvent event) {
+    // Handle A and D keys for quantity adjustments
+    if (event.logicalKey == LogicalKeyboardKey.keyA ||
+        event.logicalKey == LogicalKeyboardKey.keyD) {
+      final isIncrease = event.logicalKey == LogicalKeyboardKey.keyA;
+
+      if (_quantitySectionFocusNode.hasFocus) {
+        _handleQuantitySectionKeyboard(isIncrease);
+      } else if (_decimalQuantityFocusNode.hasFocus) {
+        _handleDecimalQuantityKeyboard(isIncrease);
+      } else if (_perKiloQuantityFocusNode.hasFocus ||
+          _perKiloTotalPriceFocusNode.hasFocus) {
+        _handleQuantitySectionKeyboard(isIncrease);
+      } else {
+        _pricingOptionsFocusNode.requestFocus();
+      }
+      return true;
+    }
+
+    return false;
   }
 
   // Add centralized ceiling rounding method for all monetary values
@@ -223,7 +302,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     return _ceilRoundPrice(value);
   }
 
-  // Add new helper methods for Gantang conversion
+  // Gantang conversion helpers
   double _convertGantangToKg(double gantangValue) {
     return gantangValue * gantangToKgRatio;
   }
@@ -375,19 +454,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       }
     });
   }
-
-  // bool _isOutOfStock() {
-  //   if (_selectedSackPriceId != null) {
-  //     final sackPrice = widget.product.sackPrice
-  //         .firstWhere((sp) => sp.id == _selectedSackPriceId);
-  //     final requestedQuantity = int.tryParse(_sackQuantityController.text) ?? 0;
-  //     return sackPrice.stock < requestedQuantity;
-  //   } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-  //     final kgQuantity = _getCurrentQuantityInKg();
-  //     return widget.product.perKiloPrice!.stock < kgQuantity;
-  //   }
-  //   return false;
-  // }
 
   bool _hasStock() {
     if (_selectedSackPriceId != null) {
@@ -593,58 +659,6 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         }
       }
     });
-  }
-
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
-      debugPrint('Add to Cart - Key pressed: ${event.logicalKey}');
-
-      if (event.logicalKey == LogicalKeyboardKey.enter) {
-        debugPrint('Add to Cart - Enter pressed, adding to cart');
-        _addToCart();
-        return;
-      }
-
-      // Handle left/right arrows for pricing options
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-          event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        final isRightArrow = event.logicalKey == LogicalKeyboardKey.arrowRight;
-
-        if (_pricingOptionsFocusNode.hasFocus) {
-          _handlePricingOptionsKeyboard(isRightArrow);
-        } else {
-          // Default behavior - focus cycling with left/right
-          _cycleFocus(isRightArrow);
-        }
-      }
-
-      // Handle comma and period for quantity adjustments
-      if (event.logicalKey == LogicalKeyboardKey.keyA ||
-          event.logicalKey == LogicalKeyboardKey.keyD) {
-        final isIncrease = event.logicalKey == LogicalKeyboardKey.keyA;
-
-        // Check if any quantity-related focus node is focused
-        if (_quantitySectionFocusNode.hasFocus) {
-          _handleQuantitySectionKeyboard(isIncrease);
-        } else if (_decimalQuantityFocusNode.hasFocus) {
-          _handleDecimalQuantityKeyboard(isIncrease);
-        } else if (_perKiloQuantityFocusNode.hasFocus ||
-            _perKiloTotalPriceFocusNode.hasFocus) {
-          // Handle direct text field focus
-          _handleQuantitySectionKeyboard(isIncrease);
-        } else {
-          // If no specific section is focused, try to focus the first section
-          _pricingOptionsFocusNode.requestFocus();
-        }
-      }
-
-      // Handle up/down arrows for focus navigation only
-      if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
-          event.logicalKey == LogicalKeyboardKey.arrowDown) {
-        final isUpArrow = event.logicalKey == LogicalKeyboardKey.arrowUp;
-        _cycleFocusVertical(isUpArrow);
-      }
-    }
   }
 
   void _cycleFocus(bool isRightArrow) {
@@ -907,10 +921,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         title: const Text('Add to Cart',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
-      body: RawKeyboardListener(
-        focusNode: _keyboardFocusNode,
+      body: Focus(
         autofocus: true,
-        onKey: _handleKeyEvent,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -945,7 +957,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                 size: 16, color: AppColors.primary),
                             const SizedBox(width: 8),
                             Text(
-                              'Enter: Add • ←→: Navigate • ↑↓: Focus • , . : Adjust values',
+                              'Enter: Add • ←→: Navigate • ↑↓: Focus • A D : Adjust values',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.primary,

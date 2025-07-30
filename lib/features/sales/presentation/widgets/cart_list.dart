@@ -11,44 +11,54 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/widgets/pending_sales_indicator.dart';
 import 'package:intl/intl.dart';
 
-class CartList extends ConsumerWidget {
+class CartList extends ConsumerStatefulWidget {
   const CartList({
     super.key,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final salesState = ref.watch(salesProvider);
+  ConsumerState<CartList> createState() => _CartListState();
+}
 
-    void proceedToCheckout() {
-      try {
-        if (salesState.valueOrNull?.cart.products.isEmpty ?? true) return;
+class _CartListState extends ConsumerState<CartList> {
+  final FocusNode _focusNode = FocusNode();
 
-        final products = salesState.valueOrNull!.cart.products;
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
-        // Calculate ceiling-rounded total here
-        double ceilingTotal = 0.0;
-        for (final product in products) {
-          ceilingTotal += double.parse(_calculateItemTotal(product));
-        }
+  void _proceedToCheckout() {
+    final salesState = ref.read(salesProvider);
+    try {
+      if (salesState.valueOrNull?.cart.products.isEmpty ?? true) return;
 
-        // Apply final ceiling rounding to the grand total
-        final preciseGrandTotal =
-            double.parse(ceilingTotal.toStringAsFixed(10));
-        final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
+      final products = salesState.valueOrNull!.cart.products;
 
-        // Use pushAndRemoveUntil to ensure we don't stack checkout screens
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => CheckoutScreen(
-              products: products,
-              total: finalCeiledTotal, // Pass ceiling-rounded total
-            ),
+      // Calculate ceiling-rounded total here
+      double ceilingTotal = 0.0;
+      for (final product in products) {
+        ceilingTotal += double.parse(_calculateItemTotal(product));
+      }
+
+      // Apply final ceiling rounding to the grand total
+      final preciseGrandTotal = double.parse(ceilingTotal.toStringAsFixed(10));
+      final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
+
+      // Use pushAndRemoveUntil to ensure we don't stack checkout screens
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => CheckoutScreen(
+            products: products,
+            total: finalCeiledTotal, // Pass ceiling-rounded total
           ),
-        );
-      } catch (e) {
-        debugPrint('Error in proceedToCheckout: $e');
-        // Show error to user but don't crash
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error in proceedToCheckout: $e');
+      // Show error to user but don't crash
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error proceeding to checkout: $e'),
@@ -57,31 +67,40 @@ class CartList extends ConsumerWidget {
         );
       }
     }
+  }
 
-    return RawKeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKey: (RawKeyEvent event) {
-        try {
-          // Only handle key down events to prevent double triggering
-          if (event is RawKeyDownEvent) {
-            debugPrint('Cart List - Key pressed: ${event.logicalKey}');
-            if (event.logicalKey == LogicalKeyboardKey.enter) {
-              // Check if cart is not empty before proceeding
-              if (salesState.valueOrNull?.cart.products.isNotEmpty == true) {
-                debugPrint('Cart List - Enter pressed, proceeding to checkout');
-                // Use a microtask to prevent blocking the UI thread
-                Future.microtask(() => proceedToCheckout());
-              } else {
-                debugPrint('Cart List - Enter pressed but cart is empty');
-              }
-            }
-          }
-        } catch (e) {
-          debugPrint('Error in keyboard handler: $e');
-          // Don't rethrow to prevent crashes
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    final salesState = ref.read(salesProvider);
+    try {
+      // Only handle key down events to prevent double triggering
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.enter) {
+        debugPrint('Cart List - Key pressed: ${event.logicalKey}');
+        // Check if cart is not empty before proceeding
+        if (salesState.valueOrNull?.cart.products.isNotEmpty == true) {
+          debugPrint('Cart List - Enter pressed, proceeding to checkout');
+          // Use a microtask to prevent blocking the UI thread
+          Future.microtask(() => _proceedToCheckout());
+          return KeyEventResult.handled;
+        } else {
+          debugPrint('Cart List - Enter pressed but cart is empty');
         }
-      },
+      }
+    } catch (e) {
+      debugPrint('Error in keyboard handler: $e');
+      // Don't rethrow to prevent crashes
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final salesState = ref.watch(salesProvider);
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -474,7 +493,7 @@ class CartList extends ConsumerWidget {
                       onPressed:
                           salesState.valueOrNull?.cart.products.isEmpty ?? true
                               ? null
-                              : proceedToCheckout,
+                              : _proceedToCheckout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.secondary,
                         foregroundColor: Colors.white,
