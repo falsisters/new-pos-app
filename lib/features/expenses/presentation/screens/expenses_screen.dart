@@ -59,12 +59,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   List<ExpenseItemDto> _itemsForSubmission = [];
   String? _loadedExpenseListId;
   final _formKey = GlobalKey<FormState>();
+  final _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchExpensesForSelectedDate();
+      _focusNode.requestFocus();
     });
   }
 
@@ -225,10 +227,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+      _saveExpenses();
+    }
+  }
+
   @override
   void dispose() {
     _expenseNameController.dispose();
     _expenseAmountController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -275,432 +284,441 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+    return KeyboardListener(
+      focusNode: _focusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
             ),
           ),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(Icons.receipt_outlined, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Expenses',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  Text(
-                    'Track daily expenses',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.8),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: () => _selectDate(context),
-          ),
-          if (_loadedExpenseListId != null)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _deleteExpenseList,
-            ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header section with gradient
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
+                child: Icon(Icons.receipt_outlined, size: 24),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Date selector card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.2)),
+                    Text(
+                      'Expenses',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_month_outlined,
-                            color: AppColors.white,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Selected Date',
-                                  style: TextStyle(
-                                    color: AppColors.white.withOpacity(0.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  dateFormatter.format(_selectedDate),
-                                  style: const TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => _selectDate(context),
-                            icon: const Icon(Icons.edit_outlined, size: 16),
-                            label: const Text('Change'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.white,
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
+                    ),
+                    Text(
+                      'Track daily expenses',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.calendar_today_outlined),
+              onPressed: () => _selectDate(context),
             ),
-
-            // Content section
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  // Add expense form card
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            if (_loadedExpenseListId != null)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: _deleteExpenseList,
+              ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header section with gradient
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Date selector card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.2)),
+                        ),
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.add_circle_outline,
-                                    color: AppColors.secondary),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Add New Expense',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              color: AppColors.white,
+                              size: 24,
                             ),
-                            const SizedBox(height: 20),
-
-                            // Form fields
-                            TextFormField(
-                              controller: _expenseNameController,
-                              decoration: InputDecoration(
-                                labelText: 'Expense Name',
-                                hintText:
-                                    'e.g., Office Supplies, Transportation',
-                                prefixIcon:
-                                    const Icon(Icons.receipt_long_outlined),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: AppColors.primary, width: 2),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Selected Date',
+                                    style: TextStyle(
+                                      color: AppColors.white.withOpacity(0.8),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    dateFormatter.format(_selectedDate),
+                                    style: const TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => _selectDate(context),
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Change'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.white,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter expense name';
-                                }
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _expenseAmountController,
-                                    inputFormatters: [NumberFormatter()],
-                                    decoration: InputDecoration(
-                                      labelText: 'Amount',
-                                      hintText: '0.00',
-                                      prefixIcon: Container(
-                                        width: 48,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '₱',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                            color: Colors.grey.shade300),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                            color: AppColors.primary, width: 2),
-                                      ),
-                                    ),
-                                    keyboardType:
-                                        TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    validator: (value) {
-                                      if (value == null ||
-                                          value.trim().isEmpty) {
-                                        return 'Please enter amount';
-                                      }
-                                      final amountText =
-                                          value.replaceAll(',', '');
-                                      final amount =
-                                          double.tryParse(amountText);
-                                      if (amount == null || amount <= 0) {
-                                        return 'Please enter valid amount';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  height: 56,
-                                  child: ElevatedButton(
-                                    onPressed: _addItem,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.secondary,
-                                      foregroundColor: AppColors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 2,
-                                    ),
-                                    child: const Icon(Icons.add, size: 24),
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
                       ),
-                    ),
+                    ],
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: 24),
-
-                  // Status indicator
-                  if (_loadedExpenseListId != null)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: AppColors.secondary.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined,
-                              color: AppColors.secondary, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Editing existing expense list',
-                            style: TextStyle(
-                              color: AppColors.secondary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Expense list display
-                  expenseState.when(
-                    data: (state) {
-                      debugPrint(
-                          "BUILDING UI WITH ${_itemsForSubmission.length} ITEMS");
-                      return ExpenseListWidget(
-                        items: _itemsForSubmission,
-                        onItemRemove: _removeItem,
-                      );
-                    },
-                    loading: () => Card(
+              // Content section
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    // Add expense form card
+                    Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
-                      child: Container(
-                        height: 200,
-                        child: const Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Form(
+                          key: _formKey,
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text('Loading expenses...'),
+                              Row(
+                                children: [
+                                  Icon(Icons.add_circle_outline,
+                                      color: AppColors.secondary),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Add New Expense',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Form fields
+                              TextFormField(
+                                controller: _expenseNameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Expense Name',
+                                  hintText:
+                                      'e.g., Office Supplies, Transportation',
+                                  prefixIcon:
+                                      const Icon(Icons.receipt_long_outlined),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                        color: AppColors.primary, width: 2),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter expense name';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _expenseAmountController,
+                                      inputFormatters: [NumberFormatter()],
+                                      decoration: InputDecoration(
+                                        labelText: 'Amount',
+                                        hintText: '0.00',
+                                        prefixIcon: Container(
+                                          width: 48,
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            '₱',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: AppColors.primary,
+                                              width: 2),
+                                        ),
+                                      ),
+                                      keyboardType:
+                                          TextInputType.numberWithOptions(
+                                              decimal: true),
+                                      validator: (value) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
+                                          return 'Please enter amount';
+                                        }
+                                        final amountText =
+                                            value.replaceAll(',', '');
+                                        final amount =
+                                            double.tryParse(amountText);
+                                        if (amount == null || amount <= 0) {
+                                          return 'Please enter valid amount';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    height: 56,
+                                    child: ElevatedButton(
+                                      onPressed: _addItem,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.secondary,
+                                        foregroundColor: AppColors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        elevation: 2,
+                                      ),
+                                      child: const Icon(Icons.add, size: 24),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    error: (error, _) => Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
+
+                    const SizedBox(height: 24),
+
+                    // Status indicator
+                    if (_loadedExpenseListId != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: AppColors.secondary.withOpacity(0.3)),
+                        ),
+                        child: Row(
                           children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 48),
-                            const SizedBox(height: 12),
+                            Icon(Icons.edit_outlined,
+                                color: AppColors.secondary, size: 16),
+                            const SizedBox(width: 8),
                             Text(
-                              'Error loading expenses',
+                              'Editing existing expense list',
+                              style: TextStyle(
+                                color: AppColors.secondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Expense list display
+                    expenseState.when(
+                      data: (state) {
+                        debugPrint(
+                            "BUILDING UI WITH ${_itemsForSubmission.length} ITEMS");
+                        return ExpenseListWidget(
+                          items: _itemsForSubmission,
+                          onItemRemove: _removeItem,
+                        );
+                      },
+                      loading: () => Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        child: Container(
+                          height: 200,
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Loading expenses...'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      error: (error, _) => Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              Icon(Icons.error_outline,
+                                  color: Colors.red, size: 48),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Error loading expenses',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                error.toString(),
+                                style: const TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Save button with modern design
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _saveExpenses,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          shadowColor: AppColors.primary.withOpacity(0.3),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.save_outlined, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'SAVE EXPENSES',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.red.shade700,
+                                letterSpacing: 0.5,
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              error.toString(),
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
-
-                  // Save button with modern design
-                  Container(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _saveExpenses,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 4,
-                        shadowColor: AppColors.primary.withOpacity(0.3),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.save_outlined, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'SAVE EXPENSES',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
