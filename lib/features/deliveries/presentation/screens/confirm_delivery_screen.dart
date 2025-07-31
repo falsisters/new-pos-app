@@ -60,6 +60,12 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
     // Prevent multiple simultaneous submissions
     if (_isProcessing) return;
 
+    final deliveryState = ref.read(deliveryProvider);
+    if (deliveryState.valueOrNull?.truck.products.isEmpty ?? true) {
+      _showErrorMessage('Cannot schedule an empty delivery.');
+      return;
+    }
+
     if (_formKey.currentState!.validate() && _deliveryTimeStart != null) {
       setState(() => _isProcessing = true);
 

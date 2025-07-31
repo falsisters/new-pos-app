@@ -18,38 +18,18 @@ class TruckList extends ConsumerStatefulWidget {
 }
 
 class _TruckListState extends ConsumerState<TruckList> {
-  @override
-  void initState() {
-    super.initState();
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
-  }
-
-  @override
-  void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
-    super.dispose();
-  }
-
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-      final deliveryState = ref.read(deliveryProvider);
-      final state = deliveryState.valueOrNull;
-
-      if (state != null && state.truck.products.isNotEmpty) {
-        _handleConfirmDelivery(context);
-        return true;
-      }
-    }
-    return false;
-  }
-
   void _handleConfirmDelivery(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ConfirmDeliveryScreen(),
-      ),
-    );
+    final deliveryState = ref.read(deliveryProvider);
+    final state = deliveryState.valueOrNull;
+
+    if (state != null && state.truck.products.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ConfirmDeliveryScreen(),
+        ),
+      );
+    }
   }
 
   @override
