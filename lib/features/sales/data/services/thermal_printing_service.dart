@@ -465,23 +465,15 @@ class ThermalPrintingService {
             String itemName = item.product.name;
             double itemPrice = 0.0;
             double unitPrice = 0.0;
-            String itemQty = '1 pc';
+            String itemQty = '1 pc'; // Default value
 
-            // Detailed price calculation
-            if (item.isDiscounted && item.discountedPrice != null) {
-              itemPrice = item.discountedPrice!;
-              unitPrice = itemPrice;
-            } else if (item.sackPriceId != null &&
-                item.product.sackPrice.isNotEmpty) {
+            // Determine quantity string first, regardless of discount status.
+            if (item.sackPriceId != null && item.product.sackPrice.isNotEmpty) {
               final sackPrice = item.product.sackPrice.firstWhere(
                 (sp) => sp.id == item.sackPriceId,
                 orElse: () => item.product.sackPrice.first,
               );
-              unitPrice = sackPrice.price;
-              itemPrice = sackPrice.price * item.quantity;
               final qty = item.quantity.toInt();
-
-              // Detailed sack type display
               switch (sackPrice.type.toString().split('.').last) {
                 case 'FIFTY_KG':
                   itemQty = '$qty x 50kg sack';
@@ -497,13 +489,28 @@ class ThermalPrintingService {
               }
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
-              unitPrice = item.product.perKiloPrice!.price;
-              itemPrice = item.product.perKiloPrice!.price * item.quantity;
               itemQty = '${item.quantity.toStringAsFixed(2)}kg';
-
               if (item.isGantang) {
                 itemQty += ' (GANTANG)';
               }
+            }
+
+            // Detailed price calculation
+            if (item.isDiscounted && item.discountedPrice != null) {
+              unitPrice = item.discountedPrice!;
+              itemPrice = unitPrice * item.quantity;
+            } else if (item.sackPriceId != null &&
+                item.product.sackPrice.isNotEmpty) {
+              final sackPrice = item.product.sackPrice.firstWhere(
+                (sp) => sp.id == item.sackPriceId,
+                orElse: () => item.product.sackPrice.first,
+              );
+              unitPrice = sackPrice.price;
+              itemPrice = sackPrice.price * item.quantity;
+            } else if (item.perKiloPriceId != null &&
+                item.product.perKiloPrice != null) {
+              unitPrice = item.product.perKiloPrice!.price;
+              itemPrice = item.product.perKiloPrice!.price * item.quantity;
             }
 
             items.add({
