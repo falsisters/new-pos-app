@@ -38,15 +38,23 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    // Safety checks to prevent interference from disposed widgets or processing states
+    if (!mounted || _isProcessing) {
+      debugPrint('Confirm Delivery - Key event ignored: mounted=$mounted, processing=$_isProcessing');
+      return KeyEventResult.ignored;
+    }
+
     // Only handle key down events to prevent duplicate triggers
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.enter ||
           event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        debugPrint('Confirm Delivery - Enter pressed, scheduling delivery');
         _handleScheduleDelivery();
         return KeyEventResult.handled;
       }
       // Handle Escape key to go back
       if (event.logicalKey == LogicalKeyboardKey.escape) {
+        debugPrint('Confirm Delivery - Escape pressed, going back');
         if (mounted && !_isProcessing) {
           Navigator.pop(context);
         }
@@ -139,6 +147,7 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
 
     return Focus(
       focusNode: _focusNode,
+      autofocus: !_isProcessing, // Don't autofocus during processing
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: Colors.grey[50],

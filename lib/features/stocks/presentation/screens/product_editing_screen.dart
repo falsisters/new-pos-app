@@ -26,16 +26,27 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
   @override
   void initState() {
     super.initState();
-    HardwareKeyboard.instance.addHandler(_onKeyEvent);
+    // Use post-frame callback to prevent race conditions
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        HardwareKeyboard.instance.addHandler(_onKeyEvent);
+      }
+    });
   }
 
   @override
   void dispose() {
+    // Remove handler first before disposing other resources
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     super.dispose();
   }
 
   bool _onKeyEvent(KeyEvent event) {
+    // Safety check to prevent interference from disposed widgets
+    if (!mounted) {
+      return false;
+    }
+    
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
       _transferFormKey.currentState?.triggerSubmit();
       return true; // Mark event as handled

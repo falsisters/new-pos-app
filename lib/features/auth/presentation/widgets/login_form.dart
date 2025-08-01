@@ -41,19 +41,29 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     );
     _formFocusNode = FocusNode();
 
-    // Add hardware keyboard listener
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    // Add hardware keyboard listener with post-frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+      }
+    });
   }
 
   @override
   void dispose() {
+    // Remove handler first before disposing other resources
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _buttonController.dispose();
     _formFocusNode.dispose();
-    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     super.dispose();
   }
 
   bool _handleKeyEvent(KeyEvent event) {
+    // Safety check to prevent interference from disposed widgets
+    if (!mounted) {
+      return false;
+    }
+    
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
       if (!widget.isLoading) {
         _handleSubmit();

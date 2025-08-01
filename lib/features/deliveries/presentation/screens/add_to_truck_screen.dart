@@ -29,6 +29,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   dynamic _quantity = 1;
   String? _selectedSackPriceId;
   bool _isPerKiloSelected = false;
+  bool _isProcessing = false; // Track processing state
 
   @override
   void initState() {
@@ -57,6 +58,12 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
 
   /// Handle hardware keyboard events
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    // Safety checks to prevent interference from disposed widgets or processing states
+    if (!mounted || _isProcessing) {
+      debugPrint('Add to Truck - Key event ignored: mounted=$mounted, processing=$_isProcessing');
+      return KeyEventResult.ignored;
+    }
+
     // Only handle key down events to prevent double triggering
     if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
@@ -65,10 +72,12 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
     switch (event.logicalKey) {
       case LogicalKeyboardKey.enter:
       case LogicalKeyboardKey.numpadEnter:
+        debugPrint('Add to Truck - Enter pressed, adding to truck');
         _addToTruck();
         return KeyEventResult.handled;
 
       case LogicalKeyboardKey.escape:
+        debugPrint('Add to Truck - Escape pressed, closing screen');
         Navigator.pop(context);
         return KeyEventResult.handled;
 
@@ -186,6 +195,11 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   }
 
   void _addToTruck() {
+    if (_isProcessing || !mounted) {
+      debugPrint('Add to Truck - Already processing or not mounted, skipping');
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     // Ensure a pricing option is selected
@@ -210,47 +224,69 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
       return;
     }
 
-    final deliveryNotifier = ref.read(deliveryProvider.notifier);
+    setState(() {
+      _isProcessing = true;
+    });
 
-    if (_selectedSackPriceId != null) {
-      // Using a sack price
-      final sackPrice = widget.product.sackPrice
-          .firstWhere((sp) => sp.id == _selectedSackPriceId);
+    try {
+      final deliveryNotifier = ref.read(deliveryProvider.notifier);
 
-      final productDto = DeliveryProductDtoModel(
-        id: widget.product.id,
-        name: widget.product.name,
-        sackPrice: DeliverySackPriceDtoModel(
-          id: sackPrice.id,
-          quantity: _quantity.toDouble(),
-          type: sackPrice.type,
-        ),
-      );
+      if (_selectedSackPriceId != null) {
+        // Using a sack price
+        final sackPrice = widget.product.sackPrice
+            .firstWhere((sp) => sp.id == _selectedSackPriceId);
 
-      deliveryNotifier.addProductToTruck(productDto);
-    } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-      // Using per kilo price
-      final perKiloPrice = widget.product.perKiloPrice!;
+        final productDto = DeliveryProductDtoModel(
+          id: widget.product.id,
+          name: widget.product.name,
+          sackPrice: DeliverySackPriceDtoModel(
+            id: sackPrice.id,
+            quantity: _quantity.toDouble(),
+            type: sackPrice.type,
+          ),
+        );
 
-      final productDto = DeliveryProductDtoModel(
-        id: widget.product.id,
-        name: widget.product.name,
-        perKiloPrice: DeliveryPerKiloPriceDtoModel(
-          id: perKiloPrice.id,
-          quantity: _quantity,
-        ),
-      );
+        deliveryNotifier.addProductToTruck(productDto);
+      } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
+        // Using per kilo price
+        final perKiloPrice = widget.product.perKiloPrice!;
 
-      deliveryNotifier.addProductToTruck(productDto);
+        final productDto = DeliveryProductDtoModel(
+          id: widget.product.id,
+          name: widget.product.name,
+          perKiloPrice: DeliveryPerKiloPriceDtoModel(
+            id: perKiloPrice.id,
+            quantity: _quantity,
+          ),
+        );
+
+        deliveryNotifier.addProductToTruck(productDto);
+      }
+      
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('Error in _addToTruck: $e');
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding to truck: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Focus(
       focusNode: _screenFocusNode,
-      autofocus: true,
+      autofocus: !_isProcessing, // Don't autofocus during processing
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: Colors.grey[50],

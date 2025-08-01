@@ -130,6 +130,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   @override
   void dispose() {
+    // Remove keyboard handler first to prevent any race conditions
     _unregisterKeyboardHandler();
     _disposeControllers();
     _disposeFocusNodes();
@@ -165,7 +166,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   void _registerKeyboardHandler() {
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    // Use post-frame callback to prevent race conditions
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+      }
+    });
   }
 
   void _unregisterKeyboardHandler() {
@@ -197,6 +203,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
+    // Safety checks to prevent interference from disposed widgets
+    if (!mounted) {
+      debugPrint('Add to Cart - Key event ignored: widget not mounted');
+      return false;
+    }
+
     if (event is KeyDownEvent) {
       debugPrint('Add to Cart - Key pressed: ${event.logicalKey}');
 

@@ -114,16 +114,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
+        // Add handler after widget is built to prevent race conditions
+        HardwareKeyboard.instance.addHandler(_handleKeyEvent);
       }
     });
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
   }
 
   @override
   void dispose() {
+    // Remove handler first before disposing other resources
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _cashGivenController.dispose();
     _focusNode.dispose();
-    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     super.dispose();
   }
 

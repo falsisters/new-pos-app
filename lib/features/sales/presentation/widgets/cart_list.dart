@@ -22,6 +22,7 @@ class CartList extends ConsumerStatefulWidget {
 
 class _CartListState extends ConsumerState<CartList> {
   final FocusNode _focusNode = FocusNode();
+  bool _isNavigating = false; // Track navigation state
 
   @override
   void dispose() {
@@ -30,9 +31,18 @@ class _CartListState extends ConsumerState<CartList> {
   }
 
   void _proceedToCheckout() {
+    if (_isNavigating || !mounted) {
+      debugPrint('Cart List - Navigation already in progress or widget not mounted');
+      return;
+    }
+    
     final salesState = ref.read(salesProvider);
     try {
       if (salesState.valueOrNull?.cart.products.isEmpty ?? true) return;
+
+      setState(() {
+        _isNavigating = true;
+      });
 
       final products = salesState.valueOrNull!.cart.products;
 
@@ -46,7 +56,7 @@ class _CartListState extends ConsumerState<CartList> {
       final preciseGrandTotal = double.parse(ceilingTotal.toStringAsFixed(10));
       final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
 
-      // Use pushAndRemoveUntil to ensure we don't stack checkout screens
+      // Use push instead of pushAndRemoveUntil to allow proper back navigation
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => CheckoutScreen(
@@ -54,11 +64,21 @@ class _CartListState extends ConsumerState<CartList> {
             total: finalCeiledTotal, // Pass ceiling-rounded total
           ),
         ),
-      );
+      ).then((_) {
+        // Reset navigation state when returning from checkout
+        if (mounted) {
+          setState(() {
+            _isNavigating = false;
+          });
+        }
+      });
     } catch (e) {
       debugPrint('Error in proceedToCheckout: $e');
-      // Show error to user but don't crash
+      // Reset navigation state on error
       if (mounted) {
+        setState(() {
+          _isNavigating = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error proceeding to checkout: $e'),
@@ -70,6 +90,12 @@ class _CartListState extends ConsumerState<CartList> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    // Safety checks to prevent interference from disposed widgets or navigation states
+    if (!mounted || _isNavigating) {
+      debugPrint('Cart List - Key event ignored: mounted=$mounted, navigating=$_isNavigating');
+      return KeyEventResult.ignored;
+    }
+
     final salesState = ref.read(salesProvider);
     try {
       // Only handle key down events to prevent double triggering
@@ -79,8 +105,8 @@ class _CartListState extends ConsumerState<CartList> {
         // Check if cart is not empty before proceeding
         if (salesState.valueOrNull?.cart.products.isNotEmpty == true) {
           debugPrint('Cart List - Enter pressed, proceeding to checkout');
-          // Use a microtask to prevent blocking the UI thread
-          Future.microtask(() => _proceedToCheckout());
+          // Use synchronous call to prevent async race conditions
+          _proceedToCheckout();
           return KeyEventResult.handled;
         } else {
           debugPrint('Cart List - Enter pressed but cart is empty');
@@ -99,7 +125,7 @@ class _CartListState extends ConsumerState<CartList> {
 
     return Focus(
       focusNode: _focusNode,
-      autofocus: true,
+      autofocus: !_isNavigating, // Don't autofocus during navigation
       onKeyEvent: _handleKeyEvent,
       child: Container(
         decoration: BoxDecoration(
