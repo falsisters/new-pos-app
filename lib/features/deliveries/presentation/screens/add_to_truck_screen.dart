@@ -60,7 +60,8 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     // Safety checks to prevent interference from disposed widgets or processing states
     if (!mounted || _isProcessing) {
-      debugPrint('Add to Truck - Key event ignored: mounted=$mounted, processing=$_isProcessing');
+      debugPrint(
+          'Add to Truck - Key event ignored: mounted=$mounted, processing=$_isProcessing');
       return KeyEventResult.ignored;
     }
 
@@ -262,7 +263,7 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
 
         deliveryNotifier.addProductToTruck(productDto);
       }
-      
+
       if (mounted) {
         Navigator.pop(context);
       }

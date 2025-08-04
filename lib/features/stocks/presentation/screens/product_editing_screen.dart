@@ -46,7 +46,7 @@ class _ProductEditingScreenState extends ConsumerState<ProductEditingScreen>
     if (!mounted) {
       return false;
     }
-    
+
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
       _transferFormKey.currentState?.triggerSubmit();
       return true; // Mark event as handled

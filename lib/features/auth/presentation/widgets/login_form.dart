@@ -63,7 +63,7 @@ class _LoginFormState extends State<LoginForm> with TickerProviderStateMixin {
     if (!mounted) {
       return false;
     }
-    
+
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
       if (!widget.isLoading) {
         _handleSubmit();

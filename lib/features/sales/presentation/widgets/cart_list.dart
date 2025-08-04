@@ -32,10 +32,11 @@ class _CartListState extends ConsumerState<CartList> {
 
   void _proceedToCheckout() {
     if (_isNavigating || !mounted) {
-      debugPrint('Cart List - Navigation already in progress or widget not mounted');
+      debugPrint(
+          'Cart List - Navigation already in progress or widget not mounted');
       return;
     }
-    
+
     final salesState = ref.read(salesProvider);
     try {
       if (salesState.valueOrNull?.cart.products.isEmpty ?? true) return;
@@ -57,14 +58,16 @@ class _CartListState extends ConsumerState<CartList> {
       final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
 
       // Use push instead of pushAndRemoveUntil to allow proper back navigation
-      Navigator.of(context).push(
+      Navigator.of(context)
+          .push(
         MaterialPageRoute(
           builder: (context) => CheckoutScreen(
             products: products,
             total: finalCeiledTotal, // Pass ceiling-rounded total
           ),
         ),
-      ).then((_) {
+      )
+          .then((_) {
         // Reset navigation state when returning from checkout
         if (mounted) {
           setState(() {
@@ -92,7 +95,8 @@ class _CartListState extends ConsumerState<CartList> {
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     // Safety checks to prevent interference from disposed widgets or navigation states
     if (!mounted || _isNavigating) {
-      debugPrint('Cart List - Key event ignored: mounted=$mounted, navigating=$_isNavigating');
+      debugPrint(
+          'Cart List - Key event ignored: mounted=$mounted, navigating=$_isNavigating');
       return KeyEventResult.ignored;
     }
 

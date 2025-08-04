@@ -40,7 +40,8 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     // Safety checks to prevent interference from disposed widgets or processing states
     if (!mounted || _isProcessing) {
-      debugPrint('Confirm Delivery - Key event ignored: mounted=$mounted, processing=$_isProcessing');
+      debugPrint(
+          'Confirm Delivery - Key event ignored: mounted=$mounted, processing=$_isProcessing');
       return KeyEventResult.ignored;
     }
 
