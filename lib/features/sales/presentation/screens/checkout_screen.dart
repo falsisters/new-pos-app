@@ -12,10 +12,11 @@ import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/features/app/data/providers/settings_provider.dart';
 import 'package:falsisters_pos_android/features/app/data/model/settings_state.dart';
 import 'package:falsisters_pos_android/features/app/presentation/screens/home_screen.dart';
+import 'package:decimal/decimal.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final List<ProductDto> products;
-  final double total; // This will be ignored in favor of calculated total
+  final Decimal total; // Changed to Decimal
 
   const CheckoutScreen({
     super.key,
@@ -33,36 +34,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _cashGivenController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isProcessing = false;
-  bool _hasNavigatedBack = false; // Prevent multiple navigation
+  bool _hasNavigatedBack = false;
 
-  // Add ceiling rounding method for total price consistency with improved precision
-  double _ceilRoundPrice(double value) {
-    if (value.isNaN || value.isInfinite) return 0.0;
-    if (value < 0) return 0.0;
+  // Update ceiling rounding method to work with Decimal
+  Decimal _ceilRoundPrice(Decimal value) {
+    // Check if value is valid (Decimal doesn't have isNaN/isFinite, but we can check for negative or zero)
+    if (value < Decimal.zero) return Decimal.zero;
 
-    // Fix precision loss by converting to string first, then parsing back
-    final valueStr = value.toStringAsFixed(10);
-    final preciseValue = double.parse(valueStr);
+    // Convert to cents, ceiling round, then back to decimal
+    final centsValue = (value * Decimal.fromInt(100)).ceil();
+    final ceiledCents = ((centsValue.toBigInt().toInt() + 99) ~/ 100) * 100;
 
-    // Use proper rounding to avoid floating point precision issues
-    final centsValue = (preciseValue * 100.0).round();
-    final ceiledCents =
-        ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
-
-    return ceiledCents / 100.0;
+    return (Decimal.fromInt(ceiledCents) / Decimal.fromInt(100)).toDecimal();
   }
 
-  // Calculate individual item total with ceiling rounding
-  double _calculateItemTotal(ProductDto product) {
+  // Calculate individual item total with ceiling rounding using Decimal
+  Decimal _calculateItemTotal(ProductDto product) {
     final bool isDiscountApplied =
         product.isDiscounted == true && product.discountedPrice != null;
 
-    double itemTotal;
+    Decimal itemTotal;
 
     if (isDiscountApplied) {
-      // For discounted items, the discounted price should already be ceiling-rounded
-      // Apply it per quantity
-      double quantity = 1.0;
+      Decimal quantity = Decimal.one;
       if (product.perKiloPrice != null) {
         quantity = product.perKiloPrice!.quantity;
       } else if (product.sackPrice != null) {
@@ -70,7 +64,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
 
       // Use ceiling-rounded discount price
-      final ceiledDiscountPrice = _ceilRoundPrice(product.discountedPrice!);
+      final ceiledDiscountPrice =
+          _ceilRoundPrice(Decimal.parse(product.discountedPrice!.toString()));
       itemTotal = ceiledDiscountPrice * quantity;
     } else if (product.sackPrice != null) {
       // Use ceiling-rounded unit price
@@ -81,16 +76,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final ceiledUnitPrice = _ceilRoundPrice(product.perKiloPrice!.price);
       itemTotal = ceiledUnitPrice * product.perKiloPrice!.quantity;
     } else {
-      itemTotal = 0.0;
+      itemTotal = Decimal.zero;
     }
 
     // Apply ceiling rounding to individual item total
     return _ceilRoundPrice(itemTotal);
   }
 
-  // Calculate grand total with ceiling rounding
-  double _calculateGrandTotal() {
-    double total = 0.0;
+  // Calculate grand total with ceiling rounding using Decimal
+  Decimal _calculateGrandTotal() {
+    Decimal total = Decimal.zero;
 
     for (final product in widget.products) {
       // Add each ceiling-rounded item total
@@ -295,7 +290,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       debugPrint('=== PROCESSING CHECKOUT ===');
       debugPrint('Copies selected: $copies');
 
-      double changeAmount = 0.0;
+      Decimal changeAmount = Decimal.zero;
       String? cashierId;
       String? cashierName;
 
@@ -329,7 +324,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           return;
         }
 
-        final double? tenderedAmount = double.tryParse(cashGivenText);
+        final Decimal? tenderedAmount = Decimal.tryParse(cashGivenText);
         if (tenderedAmount == null) {
           if (mounted && !_hasNavigatedBack) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -350,7 +345,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount)}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal)}).'),
+                    'Cash tendered (₱${CurrencyFormatter.formatCurrency(tenderedAmount.toDouble())}) is less than the total amount (₱${CurrencyFormatter.formatCurrency(ceiledTotal.toDouble())}).'),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -427,14 +422,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // ALWAYS use the calculated ceiling-rounded total, never widget.total
     final ceiledTotal = _calculateGrandTotal();
 
-    double cashGiven = 0.0;
-    double changeAmount = 0.0;
+    Decimal cashGiven = Decimal.zero;
+    Decimal changeAmount = Decimal.zero;
     bool showChange = false;
     if (_selectedPaymentMethod == PaymentMethod.CASH &&
         _cashGivenController.text.isNotEmpty) {
       // Remove commas and parse cash given
       final cleanedText = _cashGivenController.text.replaceAll(',', '');
-      final parsedCash = double.tryParse(cleanedText);
+      final parsedCash = Decimal.tryParse(cleanedText);
       if (parsedCash != null) {
         cashGiven = parsedCash;
         if (cashGiven >= ceiledTotal) {
@@ -628,14 +623,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       product.isDiscounted == true &&
                                           product.discountedPrice != null;
 
-                                  // Use ceiling-rounded item total
+                                  // Use ceiling-rounded item total with Decimal
                                   final itemDisplayPrice =
                                       _calculateItemTotal(product);
 
                                   String priceDetails;
                                   if (product.sackPrice != null) {
                                     priceDetails =
-                                        '${product.sackPrice!.quantity.toInt()} sack${product.sackPrice!.quantity > 1 ? "s" : ""}';
+                                        '${product.sackPrice!.quantity.toBigInt().toInt()} sack${product.sackPrice!.quantity > Decimal.one ? "s" : ""}';
                                   } else if (product.perKiloPrice != null) {
                                     priceDetails =
                                         '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg';
@@ -681,7 +676,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '₱${CurrencyFormatter.formatCurrency(itemDisplayPrice)}',
+                                          '₱${CurrencyFormatter.formatCurrency(itemDisplayPrice.toDouble())}',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -717,7 +712,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 fontSize: 12,
                                                 color: Colors.grey[600])),
                                         Text(
-                                            '₱${CurrencyFormatter.formatCurrency(cashGiven)}',
+                                            '₱${CurrencyFormatter.formatCurrency(cashGiven.toDouble())}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey[800])),
@@ -734,7 +729,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                 color: AppColors.secondary,
                                                 fontWeight: FontWeight.w500)),
                                         Text(
-                                            '₱${CurrencyFormatter.formatCurrency(changeAmount)}',
+                                            '₱${CurrencyFormatter.formatCurrency(changeAmount.toDouble())}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 color: AppColors.secondary,
@@ -757,7 +752,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '₱${CurrencyFormatter.formatCurrency(ceiledTotal)}',
+                                        '₱${CurrencyFormatter.formatCurrency(ceiledTotal.toDouble())}',
                                         style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,

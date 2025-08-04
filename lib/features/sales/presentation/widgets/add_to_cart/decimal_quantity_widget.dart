@@ -153,11 +153,7 @@ class DecimalQuantityWidget extends StatelessWidget {
           if (value.isNotEmpty) {
             final intValue = int.tryParse(value);
             if (intValue != null && intValue >= 0 && intValue <= 99) {
-              // Update the controller with proper padding if needed
-              if (value.length == 1 && intValue > 0) {
-                // Don't auto-pad single digits to allow 0.9 vs 0.09 distinction
-                return;
-              }
+              // This logic is now handled in the screen's listener
             }
           }
         },

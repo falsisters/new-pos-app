@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -463,8 +464,8 @@ class ThermalPrintingService {
 
           try {
             String itemName = item.product.name;
-            double itemPrice = 0.0;
-            double unitPrice = 0.0;
+            Decimal itemPrice = Decimal.zero;
+            Decimal unitPrice = Decimal.zero;
             String itemQty = '1 pc'; // Default value
 
             // Determine quantity string first, regardless of discount status.
@@ -473,7 +474,7 @@ class ThermalPrintingService {
                 (sp) => sp.id == item.sackPriceId,
                 orElse: () => item.product.sackPrice.first,
               );
-              final qty = item.quantity.toInt();
+              final qty = item.quantity.toBigInt().toInt();
               switch (sackPrice.type.toString().split('.').last) {
                 case 'FIFTY_KG':
                   itemQty = '$qty x 50kg sack';
@@ -505,19 +506,20 @@ class ThermalPrintingService {
                 (sp) => sp.id == item.sackPriceId,
                 orElse: () => item.product.sackPrice.first,
               );
-              unitPrice = sackPrice.price;
-              itemPrice = sackPrice.price * item.quantity;
+              unitPrice = Decimal.parse(sackPrice.price.toString());
+              itemPrice = unitPrice * item.quantity;
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
-              unitPrice = item.product.perKiloPrice!.price;
-              itemPrice = item.product.perKiloPrice!.price * item.quantity;
+              unitPrice =
+                  Decimal.parse(item.product.perKiloPrice!.price.toString());
+              itemPrice = unitPrice * item.quantity;
             }
 
             items.add({
               'name': itemName,
               'quantity': itemQty,
-              'unitPrice': unitPrice,
-              'totalPrice': itemPrice,
+              'unitPrice': unitPrice.toDouble(),
+              'totalPrice': itemPrice.toDouble(),
               'isDiscounted': item.isDiscounted,
               'isSpecial': item.isSpecialPrice,
               'isGantang': item.isGantang,

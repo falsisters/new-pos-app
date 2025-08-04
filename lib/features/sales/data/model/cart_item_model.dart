@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:decimal/decimal.dart';
 
 part 'cart_item_model.freezed.dart';
 part 'cart_item_model.g.dart';
@@ -32,7 +33,7 @@ sealed class CartItemModel with _$CartItemModel {
     if (product.perKiloPrice != null) {
       return '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg';
     } else if (product.sackPrice != null) {
-      return '${product.sackPrice!.quantity.toInt()} sack${product.sackPrice!.quantity > 1 ? "s" : ""}';
+      return '${product.sackPrice!.quantity.toBigInt().toInt()} sack${product.sackPrice!.quantity > Decimal.fromInt(1) ? "s" : ""}';
     }
     return '$quantity pcs';
   }

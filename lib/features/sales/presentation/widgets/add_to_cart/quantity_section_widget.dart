@@ -292,7 +292,7 @@ class QuantitySectionWidget extends StatelessWidget {
           final qty = int.tryParse(value);
           if (qty == null || qty <= 0) return 'Valid quantity > 0';
           if (qty > availableStock) {
-            return 'Only ${availableStock.toInt()} available';
+            return 'Only ${availableStock.toStringAsFixed(0)} available';
           }
           return null;
         },

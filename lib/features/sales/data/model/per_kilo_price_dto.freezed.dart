@@ -16,8 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PerKiloPriceDto {
   String get id;
-  double get quantity;
-  double get price;
+  @DecimalConverter()
+  Decimal get quantity;
+  @DecimalConverter()
+  Decimal get price;
 
   /// Create a copy of PerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -57,7 +59,10 @@ abstract mixin class $PerKiloPriceDtoCopyWith<$Res> {
           PerKiloPriceDto value, $Res Function(PerKiloPriceDto) _then) =
       _$PerKiloPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double quantity, double price});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal price});
 }
 
 /// @nodoc
@@ -85,11 +90,11 @@ class _$PerKiloPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }
@@ -98,16 +103,20 @@ class _$PerKiloPriceDtoCopyWithImpl<$Res>
 @JsonSerializable()
 class _PerKiloPriceDto implements PerKiloPriceDto {
   const _PerKiloPriceDto(
-      {required this.id, required this.quantity, required this.price});
+      {required this.id,
+      @DecimalConverter() required this.quantity,
+      @DecimalConverter() required this.price});
   factory _PerKiloPriceDto.fromJson(Map<String, dynamic> json) =>
       _$PerKiloPriceDtoFromJson(json);
 
   @override
   final String id;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
 
   /// Create a copy of PerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -153,7 +162,10 @@ abstract mixin class _$PerKiloPriceDtoCopyWith<$Res>
       __$PerKiloPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double quantity, double price});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal price});
 }
 
 /// @nodoc
@@ -181,11 +193,11 @@ class __$PerKiloPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }

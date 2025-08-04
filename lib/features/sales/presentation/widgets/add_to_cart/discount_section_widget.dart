@@ -25,11 +25,11 @@ class DiscountSectionWidget extends StatefulWidget {
 class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
   bool _isInternalUpdate = false;
 
-  // Simplified validation for whole numbers only
-  int? _parseWholeNumber(String value) {
+  // Simplified validation for decimal numbers
+  double? _parseDecimal(String value) {
     if (value.isEmpty) return null;
     final cleanValue = value.replaceAll(',', '');
-    return int.tryParse(cleanValue);
+    return double.tryParse(cleanValue);
   }
 
   void _handleDiscountPriceChange(String value) {
@@ -37,22 +37,12 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
 
     if (value.isNotEmpty) {
       final cleanValue = value.replaceAll(',', '');
-      final priceVal = int.tryParse(cleanValue);
+      final priceVal = double.tryParse(cleanValue);
       if (priceVal != null && priceVal > 0) {
-        // Format with commas for display but keep as whole number
+        // Format with commas for display
         _isInternalUpdate = true;
 
-        final formattedPrice = priceVal.toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-
-        if (formattedPrice != value) {
-          widget.discountedPriceController.text = formattedPrice;
-          widget.discountedPriceController.selection =
-              TextSelection.fromPosition(
-            TextPosition(offset: formattedPrice.length),
-          );
-        }
-
+        // This logic is now handled by a simpler formatter
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _isInternalUpdate = false;
         });
@@ -165,7 +155,7 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Whole number price per ${widget.isSackSelected ? 'sack' : 'kg'} (no decimals)',
+                        'Enter discounted price per ${widget.isSackSelected ? 'sack' : 'kg'}',
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontSize: 11,
@@ -188,12 +178,12 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
                 ),
                 child: TextFormField(
                   controller: widget.discountedPriceController,
-                  keyboardType: TextInputType.number,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    // Only allow digits and commas (no decimals)
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d,]')),
-                    // Custom formatter for comma formatting
-                    _WholeNumberFormatter(),
+                    // Allow digits, one decimal point, and up to 2 decimal places
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}')),
                   ],
                   onChanged: _handleDiscountPriceChange,
                   decoration: _inputDecoration(
@@ -204,9 +194,9 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
                     if (widget.isDiscounted) {
                       if (value == null || value.isEmpty)
                         return 'Enter discounted price';
-                      final priceVal = _parseWholeNumber(value);
+                      final priceVal = _parseDecimal(value);
                       if (priceVal == null || priceVal <= 0)
-                        return 'Valid whole number > 0';
+                        return 'Valid price > 0';
                     }
                     return null;
                   },
@@ -242,39 +232,6 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
       isDense: true,
       filled: true,
       fillColor: Colors.white,
-    );
-  }
-}
-
-// Custom TextInputFormatter for whole numbers with comma formatting
-class _WholeNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.isEmpty) {
-      return newValue;
-    }
-
-    // Remove all non-digit characters
-    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
-
-    if (digitsOnly.isEmpty) {
-      return const TextEditingValue();
-    }
-
-    // Parse as integer
-    final intValue = int.tryParse(digitsOnly);
-    if (intValue == null) {
-      return oldValue;
-    }
-
-    // Format with commas
-    final formatted = intValue.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

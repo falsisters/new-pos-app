@@ -16,11 +16,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CreateSaleRequestModel {
   String? get orderId;
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentMethod get paymentMethod;
   @JsonKey(name: 'saleItem')
   List<ProductDto> get saleItems;
-  double? get changeAmount;
+  @NullableDecimalConverter()
+  Decimal? get changeAmount;
   String? get cashierId;
   String? get cashierName;
   Map<String, dynamic>? get metadata;
@@ -83,10 +85,10 @@ abstract mixin class $CreateSaleRequestModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String? orderId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'saleItem') List<ProductDto> saleItems,
-      double? changeAmount,
+      @NullableDecimalConverter() Decimal? changeAmount,
       String? cashierId,
       String? cashierName,
       Map<String, dynamic>? metadata});
@@ -122,7 +124,7 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -134,7 +136,7 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
       changeAmount: freezed == changeAmount
           ? _self.changeAmount
           : changeAmount // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       cashierId: freezed == cashierId
           ? _self.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable
@@ -156,10 +158,10 @@ class _$CreateSaleRequestModelCopyWithImpl<$Res>
 class _CreateSaleRequestModel implements CreateSaleRequestModel {
   const _CreateSaleRequestModel(
       {this.orderId,
-      required this.totalAmount,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentMethod,
       @JsonKey(name: 'saleItem') required final List<ProductDto> saleItems,
-      this.changeAmount,
+      @NullableDecimalConverter() this.changeAmount,
       this.cashierId,
       this.cashierName,
       final Map<String, dynamic>? metadata})
@@ -171,7 +173,8 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
   @override
   final String? orderId;
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentMethod paymentMethod;
   final List<ProductDto> _saleItems;
@@ -184,7 +187,8 @@ class _CreateSaleRequestModel implements CreateSaleRequestModel {
   }
 
   @override
-  final double? changeAmount;
+  @NullableDecimalConverter()
+  final Decimal? changeAmount;
   @override
   final String? cashierId;
   @override
@@ -265,10 +269,10 @@ abstract mixin class _$CreateSaleRequestModelCopyWith<$Res>
   @useResult
   $Res call(
       {String? orderId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'saleItem') List<ProductDto> saleItems,
-      double? changeAmount,
+      @NullableDecimalConverter() Decimal? changeAmount,
       String? cashierId,
       String? cashierName,
       Map<String, dynamic>? metadata});
@@ -304,7 +308,7 @@ class __$CreateSaleRequestModelCopyWithImpl<$Res>
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -316,7 +320,7 @@ class __$CreateSaleRequestModelCopyWithImpl<$Res>
       changeAmount: freezed == changeAmount
           ? _self.changeAmount
           : changeAmount // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       cashierId: freezed == cashierId
           ? _self.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable

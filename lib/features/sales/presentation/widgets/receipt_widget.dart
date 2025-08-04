@@ -1,8 +1,5 @@
-import 'package:falsisters_pos_android/features/sales/data/constants/parse_payment_method.dart';
-import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
-import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
-import 'package:falsisters_pos_android/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -24,8 +21,8 @@ class ReceiptWidget extends StatelessWidget {
     if (sale.metadata != null) {
       if (sale.metadata!.containsKey('change')) {
         changeAmount = sale.metadata!['change'].toString();
-        final changeValue = double.tryParse(changeAmount) ?? 0.0;
-        hasChange = changeValue > 0;
+        final changeValue = Decimal.tryParse(changeAmount) ?? Decimal.zero;
+        hasChange = changeValue > Decimal.zero;
       }
       if (sale.metadata!.containsKey('tenderedAmount')) {
         tenderedAmount = sale.metadata!['tenderedAmount'].toString();
@@ -89,26 +86,29 @@ class ReceiptWidget extends StatelessWidget {
               ...sale.saleItems.map((item) {
                 final isDiscounted =
                     item.isDiscounted && item.discountedPrice != null;
-                double itemTotal;
+                Decimal itemTotal;
                 String quantityDisplay;
 
                 if (item.sackPrice != null) {
                   itemTotal = isDiscounted
                       ? item.discountedPrice!
-                      : item.sackPrice!.price * item.quantity;
+                      : Decimal.parse(item.sackPrice!.price.toString()) *
+                          item.quantity;
                   quantityDisplay =
-                      '${item.quantity.toInt()} sack${item.quantity > 1 ? "s" : ""}';
+                      '${item.quantity.toBigInt()} sack${item.quantity > Decimal.one ? "s" : ""}';
                 } else if (item.perKiloPrice != null) {
                   itemTotal = isDiscounted
                       ? item.discountedPrice!
-                      : item.perKiloPrice!.price * item.quantity;
+                      : Decimal.parse(item.perKiloPrice!.price.toString()) *
+                          item.quantity;
                   quantityDisplay = '${item.quantity.toStringAsFixed(2)} kg';
                   if (item.isGantang) {
                     quantityDisplay += ' (Gantang)';
                   }
                 } else {
-                  itemTotal = isDiscounted ? item.discountedPrice! : 0;
-                  quantityDisplay = '${item.quantity.toInt()} pcs';
+                  itemTotal =
+                      isDiscounted ? item.discountedPrice! : Decimal.zero;
+                  quantityDisplay = '${item.quantity.toBigInt()} pcs';
                 }
 
                 return Column(
@@ -127,7 +127,7 @@ class ReceiptWidget extends StatelessWidget {
                         Expanded(
                           flex: 2,
                           child: Text(
-                            '₱${CurrencyFormatter.formatCurrency(itemTotal)}',
+                            '₱${NumberFormat('#,##0.00').format(itemTotal)}',
                             style: TextStyle(fontSize: 14),
                             textAlign: TextAlign.right,
                           ),
@@ -171,16 +171,16 @@ class ReceiptWidget extends StatelessWidget {
               if (hasChange &&
                   sale.paymentMethod.toString().contains('CASH')) ...[
                 _buildReceiptRow('Cash Tendered:',
-                    '₱${CurrencyFormatter.formatCurrency(double.tryParse(tenderedAmount) ?? 0.0)}'),
+                    '₱${NumberFormat('#,##0.00').format(Decimal.tryParse(tenderedAmount) ?? Decimal.zero)}'),
                 _buildReceiptRow('Change:',
-                    '₱${CurrencyFormatter.formatCurrency(double.tryParse(changeAmount) ?? 0.0)}'),
+                    '₱${NumberFormat('#,##0.00').format(Decimal.tryParse(changeAmount) ?? Decimal.zero)}'),
                 SizedBox(height: 8),
               ],
 
               // Total
               _buildReceiptRow(
                 'TOTAL:',
-                '₱${CurrencyFormatter.formatCurrency(sale.totalAmount)}',
+                '₱${NumberFormat('#,##0.00').format(sale.totalAmount)}',
                 isBold: true,
                 fontSize: 18,
               ),

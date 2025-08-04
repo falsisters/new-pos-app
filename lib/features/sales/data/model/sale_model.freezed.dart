@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$SaleModel {
   String get id;
   String get cashierId;
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentMethod get paymentMethod;
   @JsonKey(name: 'SaleItem')
   List<SaleItem> get saleItems;
@@ -82,7 +83,7 @@ abstract mixin class $SaleModelCopyWith<$Res> {
   $Res call(
       {String id,
       String cashierId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'SaleItem') List<SaleItem> saleItems,
       String createdAt,
@@ -123,7 +124,7 @@ class _$SaleModelCopyWithImpl<$Res> implements $SaleModelCopyWith<$Res> {
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -154,7 +155,7 @@ class _SaleModel implements SaleModel {
   const _SaleModel(
       {required this.id,
       required this.cashierId,
-      required this.totalAmount,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentMethod,
       @JsonKey(name: 'SaleItem') final List<SaleItem> saleItems = const [],
       required this.createdAt,
@@ -170,7 +171,8 @@ class _SaleModel implements SaleModel {
   @override
   final String cashierId;
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentMethod paymentMethod;
   final List<SaleItem> _saleItems;
@@ -262,7 +264,7 @@ abstract mixin class _$SaleModelCopyWith<$Res>
   $Res call(
       {String id,
       String cashierId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       @JsonKey(name: 'SaleItem') List<SaleItem> saleItems,
       String createdAt,
@@ -303,7 +305,7 @@ class __$SaleModelCopyWithImpl<$Res> implements _$SaleModelCopyWith<$Res> {
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable

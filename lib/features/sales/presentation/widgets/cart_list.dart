@@ -1,5 +1,6 @@
 // ignore_for_file: unused_result
 
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
@@ -48,14 +49,17 @@ class _CartListState extends ConsumerState<CartList> {
       final products = salesState.valueOrNull!.cart.products;
 
       // Calculate ceiling-rounded total here
-      double ceilingTotal = 0.0;
+      Decimal ceilingTotal = Decimal.zero;
       for (final product in products) {
-        ceilingTotal += double.parse(_calculateItemTotal(product));
+        ceilingTotal += Decimal.parse(_calculateItemTotal(product));
       }
 
       // Apply final ceiling rounding to the grand total
-      final preciseGrandTotal = double.parse(ceilingTotal.toStringAsFixed(10));
-      final finalCeiledTotal = (preciseGrandTotal * 100).ceil() / 100.0;
+      final preciseGrandTotal = Decimal.parse(ceilingTotal.toStringAsFixed(10));
+      final finalCeiledTotal =
+          ((preciseGrandTotal * Decimal.fromInt(100)).ceil() /
+                  Decimal.fromInt(100))
+              .toDecimal();
 
       // Use push instead of pushAndRemoveUntil to allow proper back navigation
       Navigator.of(context)
@@ -401,7 +405,7 @@ class _CartListState extends ConsumerState<CartList> {
                                       ),
                                     ),
                                     Text(
-                                      '₱${NumberFormat('#,##0').format(double.parse(_calculateItemTotal(product)))}',
+                                      '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateItemTotal(product)))}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
@@ -502,7 +506,7 @@ class _CartListState extends ConsumerState<CartList> {
                           ],
                         ),
                         Text(
-                          '₱${NumberFormat('#,##0').format(double.parse(_calculateTotal(salesState)))}',
+                          '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateTotal(salesState)))}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
@@ -618,7 +622,7 @@ class _CartListState extends ConsumerState<CartList> {
       );
     } else if (product.sackPrice != null) {
       return Text(
-        '${product.sackPrice!.quantity} sack(s)',
+        '${product.sackPrice!.quantity.toBigInt()} sack(s)',
         style: TextStyle(
           color: Colors.grey[700],
           fontSize: 14,
@@ -632,25 +636,20 @@ class _CartListState extends ConsumerState<CartList> {
 
   String _calculateItemTotal(ProductDto product) {
     // Define ceiling rounding function with improved precision
-    double ceilRoundPrice(double value) {
-      if (value.isNaN || value.isInfinite) return 0.0;
-      if (value < 0) return 0.0;
+    Decimal ceilRoundPrice(Decimal value) {
+      if (value <= Decimal.zero) return Decimal.zero;
 
-      // Fix precision loss by converting to string first, then parsing back
-      final valueStr = value.toStringAsFixed(10);
-      final preciseValue = double.parse(valueStr);
+      // Convert to cents and ceiling round
+      final centsValue = value * Decimal.fromInt(100);
+      final ceiledCents = centsValue.ceil();
 
-      // Use proper rounding to avoid floating point precision issues
-      final centsValue = (preciseValue * 100.0).round();
-      final ceiledCents =
-          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
-
-      return ceiledCents / 100.0;
+      // Convert back to decimal value
+      return Decimal.parse((ceiledCents / Decimal.fromInt(100)).toString());
     }
 
     if (product.isDiscounted == true && product.discountedPrice != null) {
       // Apply ceiling-rounded discount per quantity
-      double quantity = 1.0;
+      Decimal quantity = Decimal.one;
       if (product.perKiloPrice != null) {
         quantity = product.perKiloPrice!.quantity;
       } else if (product.sackPrice != null) {
@@ -658,12 +657,13 @@ class _CartListState extends ConsumerState<CartList> {
       }
 
       // Use ceiling-rounded discount price
-      final ceiledDiscountPrice = ceilRoundPrice(product.discountedPrice!);
+      final ceiledDiscountPrice =
+          ceilRoundPrice(Decimal.parse(product.discountedPrice!.toString()));
       final total = ceiledDiscountPrice * quantity;
       return ceilRoundPrice(total).toString();
     }
 
-    double total = 0.0;
+    Decimal total = Decimal.zero;
     if (product.perKiloPrice != null) {
       // Use ceiling-rounded unit price
       final ceiledUnitPrice = ceilRoundPrice(product.perKiloPrice!.price);
@@ -683,26 +683,21 @@ class _CartListState extends ConsumerState<CartList> {
     }
 
     // Define ceiling rounding function with improved precision
-    double ceilRoundPrice(double value) {
-      if (value.isNaN || value.isInfinite) return 0.0;
-      if (value < 0) return 0.0;
+    Decimal ceilRoundPrice(Decimal value) {
+      if (value <= Decimal.zero) return Decimal.zero;
 
-      // Fix precision loss by converting to string first, then parsing back
-      final valueStr = value.toStringAsFixed(10);
-      final preciseValue = double.parse(valueStr);
+      // Convert to cents and ceiling round
+      final centsValue = value * Decimal.fromInt(100);
+      final ceiledCents = centsValue.ceil();
 
-      // Use proper rounding to avoid floating point precision issues
-      final centsValue = (preciseValue * 100.0).round();
-      final ceiledCents =
-          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
-
-      return ceiledCents / 100.0;
+      // Convert back to decimal value
+      return Decimal.parse((ceiledCents / Decimal.fromInt(100)).toString());
     }
 
-    double total = 0.0;
+    Decimal total = Decimal.zero;
     for (final product in salesState.valueOrNull!.cart.products) {
       // Calculate each item's ceiling-rounded total and add to grand total
-      total += double.parse(_calculateItemTotal(product));
+      total += Decimal.parse(_calculateItemTotal(product));
     }
 
     // Apply ceiling rounding to the final grand total

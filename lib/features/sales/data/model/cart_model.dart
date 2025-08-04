@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -16,54 +17,34 @@ sealed class CartModel with _$CartModel {
       _$CartModelFromJson(json);
 
   // Add utility methods for calculations with improved ceiling rounding
-  double get totalAmount {
-    // Define ceiling rounding function with improved precision
-    double ceilRoundPrice(double value) {
-      if (value.isNaN || value.isInfinite) return 0.0;
-      if (value < 0) return 0.0;
+  Decimal get totalAmount {
+    Decimal grandTotal = Decimal.zero;
 
-      // Fix precision loss by converting to string first, then parsing back
-      final valueStr = value.toStringAsFixed(10);
-      final preciseValue = double.parse(valueStr);
+    for (final product in products) {
+      Decimal itemTotal = Decimal.zero;
+      Decimal quantity = Decimal.one;
 
-      // Use proper rounding to avoid floating point precision issues
-      final centsValue = (preciseValue * 100.0).round();
-      final ceiledCents =
-          ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
-
-      return ceiledCents / 100.0;
-    }
-
-    double grandTotal = products.fold(0.0, (sum, product) {
-      double itemTotal = 0.0;
-
-      if (product.isDiscounted == true && product.discountedPrice != null) {
-        double quantity = 1.0;
-        if (product.perKiloPrice != null) {
-          quantity = product.perKiloPrice!.quantity;
-        } else if (product.sackPrice != null) {
-          quantity = product.sackPrice!.quantity;
-        }
-        // Use ceiling-rounded discount price
-        final ceiledDiscountPrice = ceilRoundPrice(product.discountedPrice!);
-        itemTotal = ceiledDiscountPrice * quantity;
+      if (product.perKiloPrice != null) {
+        quantity = product.perKiloPrice!.quantity;
       } else if (product.sackPrice != null) {
-        // Use ceiling-rounded unit price
-        final ceiledUnitPrice = ceilRoundPrice(product.sackPrice!.price);
-        itemTotal = ceiledUnitPrice * product.sackPrice!.quantity;
-      } else if (product.perKiloPrice != null) {
-        // Use ceiling-rounded unit price
-        final ceiledUnitPrice = ceilRoundPrice(product.perKiloPrice!.price);
-        itemTotal = ceiledUnitPrice * product.perKiloPrice!.quantity;
+        quantity = product.sackPrice!.quantity;
       }
 
-      // Apply ceiling rounding to each item's total before adding to sum
-      final ceiledItemTotal = ceilRoundPrice(itemTotal);
-      return sum + ceiledItemTotal;
-    });
+      if (product.isDiscounted == true && product.discountedPrice != null) {
+        itemTotal =
+            Decimal.parse(product.discountedPrice!.toString()) * quantity;
+      } else if (product.sackPrice != null) {
+        itemTotal = product.sackPrice!.price * quantity;
+      } else if (product.perKiloPrice != null) {
+        itemTotal = product.perKiloPrice!.price * quantity;
+      }
 
-    // Apply ceiling rounding to the final grand total
-    return ceilRoundPrice(grandTotal);
+      grandTotal += itemTotal;
+    }
+
+    // The backend likely handles rounding, so we send the precise value.
+    // If frontend rounding is needed, it should be done at the display layer.
+    return grandTotal;
   }
 
   int get itemCount => products.length;

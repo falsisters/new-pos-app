@@ -1,5 +1,7 @@
 // ignore_for_file: invalid_annotation_target, constant_identifier_names
 
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -18,10 +20,10 @@ enum SackType {
 sealed class CreateSaleRequestModel with _$CreateSaleRequestModel {
   const factory CreateSaleRequestModel({
     String? orderId,
-    required double totalAmount,
+    @DecimalConverter() required Decimal totalAmount,
     required PaymentMethod paymentMethod,
     @JsonKey(name: 'saleItem') required List<ProductDto> saleItems,
-    double? changeAmount,
+    @NullableDecimalConverter() Decimal? changeAmount,
     String? cashierId,
     String? cashierName,
     Map<String, dynamic>? metadata,

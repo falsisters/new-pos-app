@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/app/data/providers/home_provider.dart';
 import 'package:falsisters_pos_android/features/orders/data/models/order_item_model.dart';
@@ -622,16 +623,16 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 if (item.perKiloPrice != null && item.perKiloPriceId != null) {
                   perKiloPriceDto = PerKiloPriceDto(
                     id: item.perKiloPriceId!,
-                    quantity: item.quantity,
-                    price: item.perKiloPrice!.price,
+                    quantity: Decimal.parse(item.quantity.toString()),
+                    price: Decimal.parse(item.perKiloPrice!.price.toString()),
                   );
                 }
 
                 if (item.sackPrice != null && item.sackPriceId != null) {
                   sackPriceDto = SackPriceDto(
                     id: item.sackPriceId!,
-                    quantity: item.quantity,
-                    price: item.sackPrice!.price,
+                    quantity: Decimal.parse(item.quantity.toString()),
+                    price: Decimal.parse(item.sackPrice!.price.toString()),
                     type: item.sackPrice!.type,
                   );
                 }

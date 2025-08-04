@@ -18,8 +18,10 @@ mixin _$SaleItem {
   String get id;
   String get productId;
   Product get product;
-  double get quantity;
-  double? get discountedPrice;
+  @DecimalConverter()
+  Decimal get quantity;
+  @NullableDecimalConverter()
+  Decimal? get discountedPrice;
   @JsonKey(name: 'SackPrice')
   SackPrice? get sackPrice;
   String? get sackPriceId;
@@ -115,8 +117,8 @@ abstract mixin class $SaleItemCopyWith<$Res> {
       {String id,
       String productId,
       Product product,
-      double quantity,
-      double? discountedPrice,
+      @DecimalConverter() Decimal quantity,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
       String? sackPriceId,
       SackType? sackType,
@@ -179,11 +181,11 @@ class _$SaleItemCopyWithImpl<$Res> implements $SaleItemCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       sackPrice: freezed == sackPrice
           ? _self.sackPrice
           : sackPrice // ignore: cast_nullable_to_non_nullable
@@ -277,8 +279,8 @@ class _SaleItem implements SaleItem {
       {required this.id,
       required this.productId,
       required this.product,
-      required this.quantity,
-      this.discountedPrice,
+      @DecimalConverter() required this.quantity,
+      @NullableDecimalConverter() this.discountedPrice,
       @JsonKey(name: 'SackPrice') this.sackPrice,
       this.sackPriceId,
       this.sackType,
@@ -300,9 +302,11 @@ class _SaleItem implements SaleItem {
   @override
   final Product product;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
-  final double? discountedPrice;
+  @NullableDecimalConverter()
+  final Decimal? discountedPrice;
   @override
   @JsonKey(name: 'SackPrice')
   final SackPrice? sackPrice;
@@ -416,8 +420,8 @@ abstract mixin class _$SaleItemCopyWith<$Res>
       {String id,
       String productId,
       Product product,
-      double quantity,
-      double? discountedPrice,
+      @DecimalConverter() Decimal quantity,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
       String? sackPriceId,
       SackType? sackType,
@@ -483,11 +487,11 @@ class __$SaleItemCopyWithImpl<$Res> implements _$SaleItemCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       sackPrice: freezed == sackPrice
           ? _self.sackPrice
           : sackPrice // ignore: cast_nullable_to_non_nullable

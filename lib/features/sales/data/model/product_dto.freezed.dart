@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$ProductDto {
   String get id;
   String get name;
-  double? get discountedPrice;
+  @NullableDecimalConverter()
+  Decimal? get discountedPrice;
   bool? get isDiscounted;
   bool? get isGantang;
   bool? get isSpecialPrice;
@@ -75,7 +76,7 @@ abstract mixin class $ProductDtoCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       bool? isDiscounted,
       bool? isGantang,
       bool? isSpecialPrice,
@@ -119,7 +120,7 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       isDiscounted: freezed == isDiscounted
           ? _self.isDiscounted
           : isDiscounted // ignore: cast_nullable_to_non_nullable
@@ -178,7 +179,7 @@ class _ProductDto implements ProductDto {
   const _ProductDto(
       {required this.id,
       required this.name,
-      this.discountedPrice,
+      @NullableDecimalConverter() this.discountedPrice,
       this.isDiscounted,
       this.isGantang,
       this.isSpecialPrice,
@@ -192,7 +193,8 @@ class _ProductDto implements ProductDto {
   @override
   final String name;
   @override
-  final double? discountedPrice;
+  @NullableDecimalConverter()
+  final Decimal? discountedPrice;
   @override
   final bool? isDiscounted;
   @override
@@ -262,7 +264,7 @@ abstract mixin class _$ProductDtoCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       bool? isDiscounted,
       bool? isGantang,
       bool? isSpecialPrice,
@@ -308,7 +310,7 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       isDiscounted: freezed == isDiscounted
           ? _self.isDiscounted
           : isDiscounted // ignore: cast_nullable_to_non_nullable

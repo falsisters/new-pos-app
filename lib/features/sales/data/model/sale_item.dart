@@ -1,5 +1,7 @@
 // ignore_for_file: invalid_annotation_target
 
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:falsisters_pos_android/features/products/data/models/per_kilo_price_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/sack_price_model.dart';
@@ -15,8 +17,8 @@ sealed class SaleItem with _$SaleItem {
     required String id,
     required String productId,
     required Product product,
-    required double quantity,
-    double? discountedPrice,
+    @DecimalConverter() required Decimal quantity,
+    @NullableDecimalConverter() Decimal? discountedPrice,
     @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
     String? sackPriceId,
     SackType? sackType,

@@ -9,7 +9,8 @@ part of 'sale_model.dart';
 _SaleModel _$SaleModelFromJson(Map<String, dynamic> json) => _SaleModel(
       id: json['id'] as String,
       cashierId: json['cashierId'] as String,
-      totalAmount: (json['totalAmount'] as num).toDouble(),
+      totalAmount:
+          const DecimalConverter().fromJson(json['totalAmount'] as String),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       saleItems: (json['SaleItem'] as List<dynamic>?)
               ?.map((e) => SaleItem.fromJson(e as Map<String, dynamic>))
@@ -24,7 +25,7 @@ Map<String, dynamic> _$SaleModelToJson(_SaleModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'cashierId': instance.cashierId,
-      'totalAmount': instance.totalAmount,
+      'totalAmount': const DecimalConverter().toJson(instance.totalAmount),
       'paymentMethod': _$PaymentMethodEnumMap[instance.paymentMethod]!,
       'SaleItem': instance.saleItems,
       'createdAt': instance.createdAt,

@@ -16,8 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SackPriceDto {
   String get id;
-  double get quantity;
-  double get price;
+  @DecimalConverter()
+  Decimal get quantity;
+  @DecimalConverter()
+  Decimal get price;
   SackType get type;
 
   /// Create a copy of SackPriceDto
@@ -59,7 +61,11 @@ abstract mixin class $SackPriceDtoCopyWith<$Res> {
           SackPriceDto value, $Res Function(SackPriceDto) _then) =
       _$SackPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double quantity, double price, SackType type});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal price,
+      SackType type});
 }
 
 /// @nodoc
@@ -87,11 +93,11 @@ class _$SackPriceDtoCopyWithImpl<$Res> implements $SackPriceDtoCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -105,8 +111,8 @@ class _$SackPriceDtoCopyWithImpl<$Res> implements $SackPriceDtoCopyWith<$Res> {
 class _SackPriceDto implements SackPriceDto {
   const _SackPriceDto(
       {required this.id,
-      required this.quantity,
-      required this.price,
+      @DecimalConverter() required this.quantity,
+      @DecimalConverter() required this.price,
       required this.type});
   factory _SackPriceDto.fromJson(Map<String, dynamic> json) =>
       _$SackPriceDtoFromJson(json);
@@ -114,9 +120,11 @@ class _SackPriceDto implements SackPriceDto {
   @override
   final String id;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
   final SackType type;
 
@@ -165,7 +173,11 @@ abstract mixin class _$SackPriceDtoCopyWith<$Res>
       __$SackPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double quantity, double price, SackType type});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal price,
+      SackType type});
 }
 
 /// @nodoc
@@ -194,11 +206,11 @@ class __$SackPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable

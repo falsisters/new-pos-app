@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_payment_method.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
@@ -18,8 +19,8 @@ class SalesListWidget extends ConsumerWidget {
   }
 
   String _determineItemQuantityDisplay(SaleItem item) {
-    String quantityStr =
-        item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1);
+    String quantityStr = item.quantity
+        .toStringAsFixed((item.quantity % Decimal.one) == Decimal.zero ? 0 : 1);
     String unit;
 
     if (item.sackPrice != null) {
@@ -35,12 +36,13 @@ class SalesListWidget extends ConsumerWidget {
   String _determineItemPriceInfoDisplay(SaleItem item) {
     if (item.discountedPrice != null &&
         (item.isDiscounted || item.isSpecialPrice)) {
-      double unitPrice = 0;
-      if (item.quantity > 0) {
-        unitPrice = item.discountedPrice! / item.quantity;
+      Decimal unitPrice = Decimal.zero;
+      if (item.quantity > Decimal.zero) {
+        unitPrice =
+            Decimal.parse((item.discountedPrice! / item.quantity).toString());
       }
       String type = item.isDiscounted ? "Discounted" : "Special";
-      if (unitPrice > 0)
+      if (unitPrice > Decimal.zero)
         return "$type: @ ₱${unitPrice.toStringAsFixed(2)} per ${item.sackPrice != null ? _formatSackType(item.sackType) : item.isGantang ? 'gantang' : 'kg'}";
       return type;
     }
@@ -56,17 +58,17 @@ class SalesListWidget extends ConsumerWidget {
     return "Price: N/A";
   }
 
-  double _calculateItemSubtotal(SaleItem item) {
+  Decimal _calculateItemSubtotal(SaleItem item) {
     if (item.discountedPrice != null) {
       return item.discountedPrice!;
     }
     if (item.sackPrice != null) {
-      return item.quantity * item.sackPrice!.price;
+      return item.quantity * Decimal.parse(item.sackPrice!.price.toString());
     }
     if (item.perKiloPrice != null) {
-      return item.quantity * item.perKiloPrice!.price;
+      return item.quantity * Decimal.parse(item.perKiloPrice!.price.toString());
     }
-    return 0.0;
+    return Decimal.zero;
   }
 
   Future<void> _selectDate(BuildContext context, WidgetRef ref) async {

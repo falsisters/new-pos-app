@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,7 @@ class ProductTile extends StatefulWidget {
   final String title;
   final String imageUrl;
   final VoidCallback onTap;
-  final double? price;
+  final Decimal? price;
   final Product? product; // Add product parameter for stock checking
 
   const ProductTile({

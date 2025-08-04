@@ -1,5 +1,6 @@
 // ignore_for_file: unused_local_variable, unused_field
 
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/per_kilo_price_dto.dart';
@@ -14,70 +15,6 @@ import 'package:falsisters_pos_android/features/sales/presentation/widgets/add_t
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:falsisters_pos_android/core/utils/extensions.dart';
-
-class CurrencyInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.isEmpty) {
-      return newValue;
-    }
-
-    // Remove all non-digit characters except decimal point
-    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d.]'), '');
-
-    // Handle multiple decimal points
-    List<String> parts = digitsOnly.split('.');
-    if (parts.length > 2) {
-      digitsOnly = '${parts[0]}.${parts.sublist(1).join('')}';
-    }
-
-    // Limit to 2 decimal places
-    if (parts.length == 2 && parts[1].length > 2) {
-      digitsOnly = '${parts[0]}.${parts[1].substring(0, 2)}';
-    }
-
-    if (digitsOnly.isEmpty) {
-      return const TextEditingValue();
-    }
-
-    // Parse the number
-    double? value = double.tryParse(digitsOnly);
-    if (value == null) {
-      return oldValue;
-    }
-
-    // Format with commas
-    String formatted;
-    if (digitsOnly.contains('.')) {
-      List<String> splitValue = digitsOnly.split('.');
-      String integerPart = splitValue[0];
-      String decimalPart = splitValue.length > 1 ? splitValue[1] : '';
-
-      // Add commas to integer part
-      if (integerPart.isNotEmpty) {
-        int intValue = int.tryParse(integerPart) ?? 0;
-        String formattedInteger = intValue.toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-        formatted = decimalPart.isNotEmpty
-            ? '$formattedInteger.$decimalPart'
-            : formattedInteger;
-      } else {
-        formatted = '.$decimalPart';
-      }
-    } else {
-      int intValue = int.tryParse(digitsOnly) ?? 0;
-      formatted = intValue.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-    }
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
 
 class AddToCartScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -117,7 +54,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   late TextEditingController _decimalQuantityController;
 
   // Gantang conversion constant
-  static const double gantangToKgRatio = 2.25;
+  static final Decimal gantangToKgRatio = Decimal.parse('2.25');
 
   @override
   void initState() {
@@ -140,10 +77,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   void _initializeControllers() {
     _discountedPriceController = TextEditingController();
     _sackQuantityController = TextEditingController(text: '1');
-    _perKiloQuantityController = TextEditingController(text: '1.0');
+    _perKiloQuantityController = TextEditingController(text: '1.00');
     _perKiloTotalPriceController = TextEditingController();
     _wholeQuantityController = TextEditingController(text: '1');
-    _decimalQuantityController = TextEditingController(text: '0');
+    _decimalQuantityController = TextEditingController(text: '00');
   }
 
   void _setupInitialState() {
@@ -261,7 +198,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     // Handle A and D keys for quantity adjustments
     if (event.logicalKey == LogicalKeyboardKey.keyA ||
         event.logicalKey == LogicalKeyboardKey.keyD) {
-      final isIncrease = event.logicalKey == LogicalKeyboardKey.keyA;
+      final isIncrease = event.logicalKey == LogicalKeyboardKey.keyD;
 
       if (_quantitySectionFocusNode.hasFocus) {
         _handleQuantitySectionKeyboard(isIncrease);
@@ -279,73 +216,40 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     return false;
   }
 
-  // Add centralized ceiling rounding method for all monetary values
-  double _ceilRoundPrice(double value) {
-    if (value.isNaN || value.isInfinite) return 0.0;
-    if (value < 0) return 0.0;
-
-    // Fix precision loss by converting to string first, then parsing back
-    final valueStr = value.toStringAsFixed(10);
-    final preciseValue = double.parse(valueStr);
-
-    // Use proper rounding to avoid floating point precision issues
-    final centsValue = (preciseValue * 100.0).round();
-    final ceiledCents =
-        ((centsValue + 99) ~/ 100) * 100; // Ceiling to next cent
-
-    return ceiledCents / 100.0;
-  }
-
-  double _ceilRoundQuantity(double value) {
-    if (value.isNaN || value.isInfinite) return 0.0;
-    if (value < 0) return 0.0;
-
-    // For quantities, use similar precision-safe approach
-    final valueStr = value.toStringAsFixed(10);
-    final preciseValue = double.parse(valueStr);
-    final centiUnits = (preciseValue * 100.0).round();
-    final ceiledCentiUnits = ((centiUnits + 99) ~/ 100) * 100;
-
-    return ceiledCentiUnits / 100.0;
-  }
-
-  double _customRoundValue(double value) {
-    // Use ceiling rounding for consistency
-    return _ceilRoundPrice(value);
-  }
-
   // Gantang conversion helpers
-  double _convertGantangToKg(double gantangValue) {
+  Decimal _convertGantangToKg(Decimal gantangValue) {
     return gantangValue * gantangToKgRatio;
   }
 
-  double _convertKgToGantang(double kgValue) {
-    return kgValue / gantangToKgRatio;
+  Decimal _convertKgToGantang(Decimal kgValue) {
+    return (kgValue / gantangToKgRatio).toDecimal();
   }
 
-  double _getCurrentQuantityInKg() {
+  Decimal _getCurrentQuantityInKg() {
     final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
     final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
 
     // Always treat decimal as hundredths (0-99 -> 0.00-0.99)
-    final decimalPart = decimalValue / 100.0;
-    final displayQuantity = wholeValue + decimalPart;
+    final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
+    final displayQuantity =
+        Decimal.fromInt(wholeValue) + decimalPart.toDecimal();
 
     return _isGantangMode
         ? _convertGantangToKg(displayQuantity)
         : displayQuantity;
   }
 
-  void _setQuantityFromKg(double kgQuantity) {
+  void _setQuantityFromKg(Decimal kgQuantity) {
     final displayQuantity =
         _isGantangMode ? _convertKgToGantang(kgQuantity) : kgQuantity;
     final wholePart = displayQuantity.floor();
     final fractionalPart = displayQuantity - wholePart;
 
     // Convert fractional part to hundredths (0.0-0.99 -> 0-99)
-    final decimalPart = (fractionalPart * 100).round();
+    final decimalPart =
+        (fractionalPart * Decimal.fromInt(100)).round().toBigInt().toInt();
 
-    _wholeQuantityController.text = wholePart.toString();
+    _wholeQuantityController.text = wholePart.toBigInt().toString();
     _decimalQuantityController.text = decimalPart.toString().padLeft(2, '0');
     _perKiloQuantityController.text = kgQuantity.toStringAsFixed(2);
   }
@@ -358,21 +262,22 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             !_perKiloTotalPriceFocusNode.hasFocus)) {
       _isUpdatingPriceAndQuantityInternally = true;
       final String currentQuantityText = _perKiloQuantityController.text;
-      final double? quantity = double.tryParse(currentQuantityText);
+      final quantity = Decimal.tryParse(currentQuantityText) ?? Decimal.zero;
 
       if (widget.product.perKiloPrice != null) {
-        final double unitPrice = widget.product.perKiloPrice!.price;
+        final unitPrice =
+            Decimal.parse(widget.product.perKiloPrice!.price.toString());
 
-        if (unitPrice <= 0) {
+        if (unitPrice <= Decimal.zero) {
           _perKiloTotalPriceController.clear();
-        } else if (quantity != null && quantity > 0) {
-          // Calculate total with proper precision handling
-          final totalPriceStr = (quantity * unitPrice).toStringAsFixed(10);
-          final preciseTotalPrice = double.parse(totalPriceStr);
-          final ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
+        } else if (quantity > Decimal.zero) {
+          // Calculate total with Decimal precision
+          final totalPrice = quantity * unitPrice;
+          final ceiledTotalPrice =
+              (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
 
           _perKiloTotalPriceController.text =
-              ceiledTotalPrice.toStringAsFixed(2);
+              ceiledTotalPrice.toDouble().toStringAsFixed(2);
         } else {
           if (currentQuantityText.isEmpty &&
               (_perKiloQuantityFocusNode.hasFocus ||
@@ -394,31 +299,27 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             !_perKiloTotalPriceFocusNode.hasFocus)) {
       _isUpdatingPriceAndQuantityInternally = true;
       final String currentTotalPriceText = _perKiloTotalPriceController.text;
-      final double? totalPrice = double.tryParse(currentTotalPriceText);
+      final totalPrice =
+          Decimal.tryParse(currentTotalPriceText) ?? Decimal.zero;
 
       if (widget.product.perKiloPrice != null) {
-        final double unitPrice = widget.product.perKiloPrice!.price;
+        final unitPrice =
+            Decimal.parse(widget.product.perKiloPrice!.price.toString());
 
-        if (unitPrice <= 0) {
+        if (unitPrice <= Decimal.zero) {
           _perKiloQuantityController.clear();
           _wholeQuantityController.clear();
-          _decimalQuantityController.text = '0';
-        } else if (totalPrice != null && totalPrice >= 0) {
-          // Calculate quantity with proper precision handling - NO CEILING on quantity when dividing
-          // The user entered a specific total price, so we calculate the exact quantity needed
-          final calculatedQuantityStr =
-              (totalPrice / unitPrice).toStringAsFixed(10);
-          final preciseCalculatedQuantity = double.parse(calculatedQuantityStr);
-
-          // For quantity calculation from total price, use the exact calculated quantity
-          // Don't apply ceiling rounding here as we want the exact quantity that matches the price
-          final exactQuantity = preciseCalculatedQuantity;
+          _decimalQuantityController.text = '00';
+        } else if (totalPrice >= Decimal.zero) {
+          // Calculate quantity with Decimal precision
+          final calculatedQuantity = totalPrice / unitPrice;
 
           // Update the per kilo quantity controller
-          _perKiloQuantityController.text = exactQuantity.toStringAsFixed(2);
+          _perKiloQuantityController.text =
+              calculatedQuantity.toDecimal().toStringAsFixed(2);
 
           // Most importantly: Update the whole and decimal quantity displays
-          _setQuantityFromKg(exactQuantity);
+          _setQuantityFromKg(calculatedQuantity.toDecimal());
         } else {
           if (currentTotalPriceText.isEmpty &&
               (_perKiloTotalPriceFocusNode.hasFocus ||
@@ -426,7 +327,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                       !_perKiloTotalPriceFocusNode.hasFocus))) {
             _perKiloQuantityController.clear();
             _wholeQuantityController.clear();
-            _decimalQuantityController.text = '0';
+            _decimalQuantityController.text = '00';
           }
         }
       }
@@ -456,13 +357,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _selectedSpecialPriceId = null;
       _isSpecialPrice = false;
       _isPerKiloSelected = true;
-      _setQuantityFromKg(1.0);
+      _setQuantityFromKg(Decimal.one);
       if (widget.product.perKiloPrice != null) {
-        final double unitPrice = widget.product.perKiloPrice!.price;
-        final double quantity = 1.0;
-        final double totalPrice = quantity * unitPrice;
-        final double ceiledTotalPrice = _ceilRoundPrice(totalPrice);
-        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
+        final unitPrice =
+            Decimal.parse(widget.product.perKiloPrice!.price.toString());
+        final quantity = Decimal.one;
+        final totalPrice = quantity * unitPrice;
+        final ceiledTotalPrice =
+            (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+        _perKiloTotalPriceController.text =
+            ceiledTotalPrice.toDouble().toStringAsFixed(2);
       }
     });
   }
@@ -491,15 +395,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   void _calculateInitialPerKiloTotalPrice() {
     if (widget.product.perKiloPrice != null) {
-      final double unitPrice = widget.product.perKiloPrice!.price;
-      final double quantity = 1.0;
-      double totalPrice = quantity * unitPrice;
+      final unitPrice =
+          Decimal.parse(widget.product.perKiloPrice!.price.toString());
+      final quantity = Decimal.one;
+      final totalPrice = quantity * unitPrice;
 
-      // Fix precision in initial calculation
-      final preciseTotalPrice = double.parse(totalPrice.toStringAsFixed(6));
-      final double ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
+      final ceiledTotalPrice =
+          (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
 
-      _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
+      _perKiloTotalPriceController.text =
+          ceiledTotalPrice.toDecimal().toStringAsFixed(2);
     }
   }
 
@@ -509,8 +414,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
 
       // Always treat decimal as hundredths (0-99 -> 0.00-0.99)
-      final decimalPart = decimalValue / 100.0;
-      final displayQuantity = wholeValue + decimalPart;
+      final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
+      final displayQuantity =
+          Decimal.fromInt(wholeValue) + decimalPart.toDecimal();
 
       // Convert to kg if in gantang mode
       final kgQuantity = _isGantangMode
@@ -521,14 +427,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _perKiloQuantityController.text = kgQuantity.toStringAsFixed(2);
 
       // Update total price based on kg quantity with ceiling rounding
-      if (widget.product.perKiloPrice != null && kgQuantity > 0) {
-        final double unitPrice = widget.product.perKiloPrice!.price;
-        final totalPriceStr = (kgQuantity * unitPrice).toStringAsFixed(10);
-        final preciseTotalPrice = double.parse(totalPriceStr);
-        final ceiledTotalPrice = _ceilRoundPrice(preciseTotalPrice);
+      if (widget.product.perKiloPrice != null && kgQuantity > Decimal.zero) {
+        final unitPrice =
+            Decimal.parse(widget.product.perKiloPrice!.price.toString());
+        final totalPrice = kgQuantity * unitPrice;
+        final ceiledTotalPrice =
+            (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
 
-        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
-      } else if (kgQuantity == 0) {
+        _perKiloTotalPriceController.text =
+            ceiledTotalPrice.toDecimal().toStringAsFixed(2);
+      } else if (kgQuantity == Decimal.zero) {
         _perKiloTotalPriceController.clear();
       }
 
@@ -543,13 +451,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     // Check stock limit in kg
     if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
-      final decimalPart = decimalValue / 100.0;
-      final displayQuantity = newValue + decimalPart;
+      final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
+      final displayQuantity =
+          Decimal.fromInt(newValue) + decimalPart.toDecimal();
       final kgQuantity = _isGantangMode
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
 
-      if (kgQuantity <= widget.product.perKiloPrice!.stock) {
+      if (kgQuantity <=
+          Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
         setState(() {
           _wholeQuantityController.text = newValue.toString();
         });
@@ -570,9 +480,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       } else if (_isPerKiloSelected) {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
-        double newQuantity = currentQuantity + 0.1;
+        double newQuantity = currentQuantity + 1.0; // Increment by 1kg
         if (newQuantity <= widget.product.perKiloPrice!.stock) {
-          _perKiloQuantityController.text = newQuantity.toStringAsFixed(1);
+          _setQuantityFromKg(Decimal.parse(newQuantity.toString()));
         }
       }
     });
@@ -595,10 +505,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       } else if (_isPerKiloSelected) {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
-        if (currentQuantity > 0.1) {
-          double newQuantity = currentQuantity - 0.1;
-          if (newQuantity < 0.1) newQuantity = 0.1;
-          _perKiloQuantityController.text = newQuantity.toStringAsFixed(1);
+        if (currentQuantity > 1.0) {
+          double newQuantity = currentQuantity - 1.0; // Decrement by 1kg
+          _setQuantityFromKg(Decimal.parse(newQuantity.toString()));
         }
       }
     });
@@ -620,13 +529,15 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     // Check stock limit in kg
     if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
-      final decimalPart = newValue / 100.0;
-      final displayQuantity = wholeValue + decimalPart;
+      final decimalPart = Decimal.fromInt(newValue) / Decimal.fromInt(100);
+      final displayQuantity =
+          Decimal.fromInt(wholeValue) + decimalPart.toDecimal();
       final kgQuantity = _isGantangMode
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
 
-      if (kgQuantity <= widget.product.perKiloPrice!.stock) {
+      if (kgQuantity <=
+          Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
         setState(() {
           _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
         });
@@ -663,10 +574,13 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           }
         }
       } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-        final kgQuantity =
-            _isGantangMode ? _convertGantangToKg(quantity) : quantity;
+        final displayQuantity = Decimal.parse(quantity.toString());
+        final kgQuantity = _isGantangMode
+            ? _convertGantangToKg(displayQuantity)
+            : displayQuantity;
 
-        if (kgQuantity <= widget.product.perKiloPrice!.stock) {
+        if (kgQuantity <=
+            Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
           _setQuantityFromKg(kgQuantity);
         }
       }
@@ -822,20 +736,24 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     if (_selectedSackPriceId != null) {
       final sackPrice = widget.product.sackPrice
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
-      final quantity = double.tryParse(_sackQuantityController.text) ?? 1.0;
+      final quantity =
+          Decimal.tryParse(_sackQuantityController.text) ?? Decimal.one;
 
-      final unitPrice =
-          _isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price;
+      final unitPrice = Decimal.parse(
+          (_isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price)
+              .toString());
 
       // For discounted items, ceil the discount price first
       final finalDiscountedPrice = _isDiscounted
-          ? double.tryParse(_discountedPriceController.text.replaceAll(',', ''))
-              ?.let((val) => _ceilRoundPrice(val))
+          ? Decimal.tryParse(
+              _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
       // Use final discount price or original price
       final effectiveUnitPrice = finalDiscountedPrice ?? unitPrice;
-      final ceiledUnitPrice = _ceilRoundPrice(effectiveUnitPrice);
+      final ceiledUnitPrice =
+          (effectiveUnitPrice * Decimal.fromInt(100)).ceil() /
+              Decimal.fromInt(100);
 
       debugPrint('=== SACK PRICE CALCULATION ===');
       debugPrint('Original unit price: ${unitPrice.toStringAsFixed(4)}');
@@ -845,8 +763,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
       debugPrint(
           'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
-      debugPrint('Ceiling unit price: ${ceiledUnitPrice.toStringAsFixed(4)}');
-      debugPrint('Total: ${(ceiledUnitPrice * quantity).toStringAsFixed(4)}');
+      debugPrint(
+          'Ceiling unit price: ${ceiledUnitPrice.toDecimal().toStringAsFixed(4)}');
+      debugPrint(
+          'Total: ${(ceiledUnitPrice.toDecimal() * quantity).toStringAsFixed(4)}');
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -855,7 +775,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: _isSpecialPrice,
         sackPrice: SackPriceDto(
           id: sackPrice.id,
-          price: ceiledUnitPrice,
+          price: ceiledUnitPrice.toDecimal(),
           quantity: quantity,
           type: sackPrice.type,
         ),
@@ -868,13 +788,16 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
       // For discounted items, ceil the discount price first
       final finalDiscountedPrice = _isDiscounted
-          ? double.tryParse(_discountedPriceController.text.replaceAll(',', ''))
-              ?.let((val) => _ceilRoundPrice(val))
+          ? Decimal.tryParse(
+              _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
       // Use final discount price or original price
-      final effectiveUnitPrice = finalDiscountedPrice ?? perKiloPrice.price;
-      final ceiledUnitPrice = _ceilRoundPrice(effectiveUnitPrice);
+      final effectiveUnitPrice =
+          finalDiscountedPrice ?? Decimal.parse(perKiloPrice.price.toString());
+      final ceiledUnitPrice =
+          (effectiveUnitPrice * Decimal.fromInt(100)).ceil() /
+              Decimal.fromInt(100);
 
       debugPrint('=== PER KILO CALCULATION ===');
       debugPrint(
@@ -885,8 +808,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
       debugPrint(
           'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
-      debugPrint('Ceiling unit price: ${ceiledUnitPrice.toStringAsFixed(4)}');
-      debugPrint('Total: ${(ceiledUnitPrice * kgQuantity).toStringAsFixed(4)}');
+      debugPrint(
+          'Ceiling unit price: ${ceiledUnitPrice.toDecimal().toStringAsFixed(4)}');
+      debugPrint(
+          'Total: ${(ceiledUnitPrice.toDecimal() * kgQuantity).toStringAsFixed(4)}');
       debugPrint('Is Gantang: $_isGantangMode');
 
       productDto = ProductDto(
@@ -896,7 +821,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
-          price: ceiledUnitPrice,
+          price: ceiledUnitPrice.toDecimal(),
           quantity: kgQuantity,
         ),
         isDiscounted: _isDiscounted,
@@ -930,7 +855,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             icon: const Icon(Icons.close),
           ),
         ],
-        title: const Text('Add to Cart',
+        title: Text('Add to Cart',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: Focus(

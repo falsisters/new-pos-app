@@ -10,8 +10,9 @@ _SaleItem _$SaleItemFromJson(Map<String, dynamic> json) => _SaleItem(
       id: json['id'] as String,
       productId: json['productId'] as String,
       product: Product.fromJson(json['product'] as Map<String, dynamic>),
-      quantity: (json['quantity'] as num).toDouble(),
-      discountedPrice: (json['discountedPrice'] as num?)?.toDouble(),
+      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
+      discountedPrice: const NullableDecimalConverter()
+          .fromJson(json['discountedPrice'] as String?),
       sackPrice: json['SackPrice'] == null
           ? null
           : SackPrice.fromJson(json['SackPrice'] as Map<String, dynamic>),
@@ -33,8 +34,9 @@ Map<String, dynamic> _$SaleItemToJson(_SaleItem instance) => <String, dynamic>{
       'id': instance.id,
       'productId': instance.productId,
       'product': instance.product,
-      'quantity': instance.quantity,
-      'discountedPrice': instance.discountedPrice,
+      'quantity': const DecimalConverter().toJson(instance.quantity),
+      'discountedPrice':
+          const NullableDecimalConverter().toJson(instance.discountedPrice),
       'SackPrice': instance.sackPrice,
       'sackPriceId': instance.sackPriceId,
       'sackType': _$SackTypeEnumMap[instance.sackType],

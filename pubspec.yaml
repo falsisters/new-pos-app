@@ -54,6 +54,7 @@ dependencies:
   flutter_thermal_printer: ^1.2.1+1
   geolocator: ^13.0.1
   kiosk_mode: ^0.7.0
+  decimal: ^3.2.4
 
 dev_dependencies:
   flutter_test:
