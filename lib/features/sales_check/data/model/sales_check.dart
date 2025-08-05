@@ -1,5 +1,7 @@
 // ignore_for_file: invalid_annotation_target
 
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart'; // Reusing PaymentMethod enum
 import 'package:falsisters_pos_android/features/sales_check/data/model/sale_item_check.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -12,8 +14,7 @@ sealed class SalesCheck with _$SalesCheck {
   const factory SalesCheck({
     required String id,
     required String cashierId,
-    // Consider adding Cashier details if needed and provided by the backend
-    required double totalAmount,
+    @DecimalConverter() required Decimal totalAmount,
     required PaymentMethod paymentMethod,
     required DateTime createdAt,
     required DateTime updatedAt,

@@ -1,4 +1,6 @@
 // ignore_for_file: invalid_annotation_target
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'sale_item_check.freezed.dart';
@@ -8,7 +10,7 @@ part 'sale_item_check.g.dart';
 sealed class SaleItemCheck with _$SaleItemCheck {
   const factory SaleItemCheck({
     required String id,
-    required double quantity,
+    @DecimalConverter() required Decimal quantity,
     required String productId,
     // Consider adding ProductDto product if the backend endpoint includes it
     // required ProductDto product,

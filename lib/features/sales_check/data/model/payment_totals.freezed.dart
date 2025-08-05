@@ -15,9 +15,12 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$PaymentTotals {
-  double get cash;
-  double get check;
-  double get bankTransfer;
+  @DecimalConverter()
+  Decimal get cash;
+  @DecimalConverter()
+  Decimal get check;
+  @DecimalConverter()
+  Decimal get bankTransfer;
 
   /// Create a copy of PaymentTotals
   /// with the given fields replaced by the non-null parameter values.
@@ -57,7 +60,10 @@ abstract mixin class $PaymentTotalsCopyWith<$Res> {
           PaymentTotals value, $Res Function(PaymentTotals) _then) =
       _$PaymentTotalsCopyWithImpl;
   @useResult
-  $Res call({double cash, double check, double bankTransfer});
+  $Res call(
+      {@DecimalConverter() Decimal cash,
+      @DecimalConverter() Decimal check,
+      @DecimalConverter() Decimal bankTransfer});
 }
 
 /// @nodoc
@@ -81,15 +87,15 @@ class _$PaymentTotalsCopyWithImpl<$Res>
       cash: null == cash
           ? _self.cash
           : cash // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       check: null == check
           ? _self.check
           : check // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       bankTransfer: null == bankTransfer
           ? _self.bankTransfer
           : bankTransfer // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }
@@ -98,16 +104,21 @@ class _$PaymentTotalsCopyWithImpl<$Res>
 @JsonSerializable()
 class _PaymentTotals implements PaymentTotals {
   const _PaymentTotals(
-      {required this.cash, required this.check, required this.bankTransfer});
+      {@DecimalConverter() required this.cash,
+      @DecimalConverter() required this.check,
+      @DecimalConverter() required this.bankTransfer});
   factory _PaymentTotals.fromJson(Map<String, dynamic> json) =>
       _$PaymentTotalsFromJson(json);
 
   @override
-  final double cash;
+  @DecimalConverter()
+  final Decimal cash;
   @override
-  final double check;
+  @DecimalConverter()
+  final Decimal check;
   @override
-  final double bankTransfer;
+  @DecimalConverter()
+  final Decimal bankTransfer;
 
   /// Create a copy of PaymentTotals
   /// with the given fields replaced by the non-null parameter values.
@@ -153,7 +164,10 @@ abstract mixin class _$PaymentTotalsCopyWith<$Res>
       __$PaymentTotalsCopyWithImpl;
   @override
   @useResult
-  $Res call({double cash, double check, double bankTransfer});
+  $Res call(
+      {@DecimalConverter() Decimal cash,
+      @DecimalConverter() Decimal check,
+      @DecimalConverter() Decimal bankTransfer});
 }
 
 /// @nodoc
@@ -177,15 +191,15 @@ class __$PaymentTotalsCopyWithImpl<$Res>
       cash: null == cash
           ? _self.cash
           : cash // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       check: null == check
           ? _self.check
           : check // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       bankTransfer: null == bankTransfer
           ? _self.bankTransfer
           : bankTransfer // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }

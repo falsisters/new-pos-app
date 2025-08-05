@@ -4,6 +4,7 @@ import 'package:falsisters_pos_android/features/sales_check/presentation/widgets
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:decimal/decimal.dart';
 
 class SalesCheckScreen extends ConsumerStatefulWidget {
   const SalesCheckScreen({super.key});
@@ -190,7 +191,7 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                       ),
                                       if (totalData.summary.summaryPaymentTotals
                                               .check >
-                                          0)
+                                          Decimal.zero)
                                         _TotalsRow(
                                           label: 'CHECK',
                                           amount: totalData.summary
@@ -199,7 +200,7 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                         ),
                                       if (totalData.summary.summaryPaymentTotals
                                               .bankTransfer >
-                                          0)
+                                          Decimal.zero)
                                         _TotalsRow(
                                           label: 'TRANSFER',
                                           amount: totalData
@@ -212,15 +213,15 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                                       .summary
                                                       .summaryPaymentTotals
                                                       .check >
-                                                  0 ||
+                                                  Decimal.zero ||
                                               totalData
                                                       .summary
                                                       .summaryPaymentTotals
                                                       .bankTransfer >
-                                                  0) &&
+                                                  Decimal.zero) &&
                                           totalData.summary.summaryPaymentTotals
                                                   .cash >
-                                              0) ...[
+                                              Decimal.zero) ...[
                                         const SizedBox(height: 4),
                                         _StyledDivider(isSubdivider: true),
                                         const SizedBox(height: 4),
@@ -431,25 +432,28 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                           isBold: true,
                                           isGrandTotal: true,
                                         ),
-                                        if (group.paymentTotals.check > 0)
+                                        if (group.paymentTotals.check >
+                                            Decimal.zero)
                                           _TotalsRow(
                                             label: 'CHECK',
                                             amount: group.paymentTotals.check,
                                             numberFormat: numberFormat,
                                           ),
                                         if (group.paymentTotals.bankTransfer >
-                                            0)
+                                            Decimal.zero)
                                           _TotalsRow(
                                             label: 'TRANSFER',
                                             amount: group
                                                 .paymentTotals.bankTransfer,
                                             numberFormat: numberFormat,
                                           ),
-                                        if ((group.paymentTotals.check > 0 ||
+                                        if ((group.paymentTotals.check >
+                                                    Decimal.zero ||
                                                 group.paymentTotals
                                                         .bankTransfer >
-                                                    0) &&
-                                            group.paymentTotals.cash > 0) ...[
+                                                    Decimal.zero) &&
+                                            group.paymentTotals.cash >
+                                                Decimal.zero) ...[
                                           const SizedBox(height: 4),
                                           _StyledDivider(isSubdivider: true),
                                           const SizedBox(height: 4),
@@ -516,7 +520,7 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  '₱${numberFormat.format(totalData.summary.totalAmount)}',
+                                  '₱${numberFormat.format(totalData.summary.totalAmount.toDouble())}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineMedium
@@ -904,7 +908,7 @@ class _FormattedSaleRow extends StatelessWidget {
 
 class _TotalsRow extends StatelessWidget {
   final String label;
-  final double amount;
+  final Decimal amount;
   final NumberFormat numberFormat;
   final bool isBold;
   final bool isGrandTotal;
@@ -916,6 +920,7 @@ class _TotalsRow extends StatelessWidget {
     this.isBold = false,
     this.isGrandTotal = false,
   });
+
   @override
   Widget build(BuildContext context) {
     final numberFormat = NumberFormat("#,##0.00", "en_US");
@@ -945,7 +950,7 @@ class _TotalsRow extends StatelessWidget {
         SizedBox(
           width: 100,
           child: Text(
-            '₱${numberFormat.format(amount)}',
+            '₱${numberFormat.format(amount.toDouble())}',
             textAlign: TextAlign.right,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,

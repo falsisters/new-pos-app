@@ -16,9 +16,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SalesCheck {
   String get id;
-  String
-      get cashierId; // Consider adding Cashier details if needed and provided by the backend
-  double get totalAmount;
+  String get cashierId;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentMethod get paymentMethod;
   DateTime get createdAt;
   DateTime get updatedAt;
@@ -85,7 +85,7 @@ abstract mixin class $SalesCheckCopyWith<$Res> {
   $Res call(
       {String id,
       String cashierId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       DateTime createdAt,
       DateTime updatedAt,
@@ -126,7 +126,7 @@ class _$SalesCheckCopyWithImpl<$Res> implements $SalesCheckCopyWith<$Res> {
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -157,7 +157,7 @@ class _SalesCheck implements SalesCheck {
   const _SalesCheck(
       {required this.id,
       required this.cashierId,
-      required this.totalAmount,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentMethod,
       required this.createdAt,
       required this.updatedAt,
@@ -171,9 +171,9 @@ class _SalesCheck implements SalesCheck {
   final String id;
   @override
   final String cashierId;
-// Consider adding Cashier details if needed and provided by the backend
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentMethod paymentMethod;
   @override
@@ -259,7 +259,7 @@ abstract mixin class _$SalesCheckCopyWith<$Res>
   $Res call(
       {String id,
       String cashierId,
-      double totalAmount,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       DateTime createdAt,
       DateTime updatedAt,
@@ -300,7 +300,7 @@ class __$SalesCheckCopyWithImpl<$Res> implements _$SalesCheckCopyWith<$Res> {
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable

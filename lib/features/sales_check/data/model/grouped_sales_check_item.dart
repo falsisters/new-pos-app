@@ -1,3 +1,5 @@
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/model/grouped_sale_detail.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/model/payment_totals.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -10,8 +12,8 @@ sealed class GroupedSalesCheckItem with _$GroupedSalesCheckItem {
   const factory GroupedSalesCheckItem({
     required String productName, // e.g., "Rice 50KG"
     required List<GroupedSaleDetail> items,
-    required double totalQuantity,
-    required double totalAmount,
+    @DecimalConverter() required Decimal totalQuantity,
+    @DecimalConverter() required Decimal totalAmount,
     required PaymentTotals paymentTotals,
   }) = _GroupedSalesCheckItem;
 

@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 class DecimalConverter implements JsonConverter<Decimal, String> {
   const DecimalConverter();
@@ -20,7 +20,7 @@ class NullableDecimalConverter implements JsonConverter<Decimal?, String?> {
 
   @override
   Decimal? fromJson(String? json) {
-    return json == null ? null : Decimal.parse(json);
+    return json != null ? Decimal.parse(json) : null;
   }
 
   @override

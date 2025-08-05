@@ -15,13 +15,17 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$GroupedSaleDetail {
-  double get quantity;
-  double get unitPrice;
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get quantity;
+  @DecimalConverter()
+  Decimal get unitPrice;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentMethod get paymentMethod;
   bool get isSpecialPrice;
   bool get isDiscounted; // Add this field
-  double? get discountedPrice; // Add this field for discounted unit price
+  @NullableDecimalConverter()
+  Decimal? get discountedPrice; // Add this field for discounted unit price
   String get formattedSale;
 
   /// Create a copy of GroupedSaleDetail
@@ -84,13 +88,13 @@ abstract mixin class $GroupedSaleDetailCopyWith<$Res> {
       _$GroupedSaleDetailCopyWithImpl;
   @useResult
   $Res call(
-      {double quantity,
-      double unitPrice,
-      double totalAmount,
+      {@DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal unitPrice,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
       bool isDiscounted,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       String formattedSale});
 }
 
@@ -120,15 +124,15 @@ class _$GroupedSaleDetailCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       unitPrice: null == unitPrice
           ? _self.unitPrice
           : unitPrice // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -144,7 +148,7 @@ class _$GroupedSaleDetailCopyWithImpl<$Res>
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       formattedSale: null == formattedSale
           ? _self.formattedSale
           : formattedSale // ignore: cast_nullable_to_non_nullable
@@ -157,23 +161,26 @@ class _$GroupedSaleDetailCopyWithImpl<$Res>
 @JsonSerializable()
 class _GroupedSaleDetail implements GroupedSaleDetail {
   const _GroupedSaleDetail(
-      {required this.quantity,
-      required this.unitPrice,
-      required this.totalAmount,
+      {@DecimalConverter() required this.quantity,
+      @DecimalConverter() required this.unitPrice,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentMethod,
       required this.isSpecialPrice,
       required this.isDiscounted,
-      this.discountedPrice,
+      @NullableDecimalConverter() this.discountedPrice,
       required this.formattedSale});
   factory _GroupedSaleDetail.fromJson(Map<String, dynamic> json) =>
       _$GroupedSaleDetailFromJson(json);
 
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
-  final double unitPrice;
+  @DecimalConverter()
+  final Decimal unitPrice;
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentMethod paymentMethod;
   @override
@@ -182,7 +189,8 @@ class _GroupedSaleDetail implements GroupedSaleDetail {
   final bool isDiscounted;
 // Add this field
   @override
-  final double? discountedPrice;
+  @NullableDecimalConverter()
+  final Decimal? discountedPrice;
 // Add this field for discounted unit price
   @override
   final String formattedSale;
@@ -253,13 +261,13 @@ abstract mixin class _$GroupedSaleDetailCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {double quantity,
-      double unitPrice,
-      double totalAmount,
+      {@DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal unitPrice,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
       bool isDiscounted,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       String formattedSale});
 }
 
@@ -289,15 +297,15 @@ class __$GroupedSaleDetailCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       unitPrice: null == unitPrice
           ? _self.unitPrice
           : unitPrice // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -313,7 +321,7 @@ class __$GroupedSaleDetailCopyWithImpl<$Res>
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       formattedSale: null == formattedSale
           ? _self.formattedSale
           : formattedSale // ignore: cast_nullable_to_non_nullable

@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SaleItemCheck {
   String get id;
-  double get quantity;
+  @DecimalConverter()
+  Decimal get quantity;
   String
       get productId; // Consider adding ProductDto product if the backend endpoint includes it
 // required ProductDto product,
@@ -98,7 +99,7 @@ abstract mixin class $SaleItemCheckCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       String productId,
       String? sackPriceId,
       String? perKiloPriceId,
@@ -143,7 +144,7 @@ class _$SaleItemCheckCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
@@ -189,7 +190,7 @@ class _$SaleItemCheckCopyWithImpl<$Res>
 class _SaleItemCheck implements SaleItemCheck {
   const _SaleItemCheck(
       {required this.id,
-      required this.quantity,
+      @DecimalConverter() required this.quantity,
       required this.productId,
       this.sackPriceId,
       this.perKiloPriceId,
@@ -205,7 +206,8 @@ class _SaleItemCheck implements SaleItemCheck {
   @override
   final String id;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
   final String productId;
 // Consider adding ProductDto product if the backend endpoint includes it
@@ -306,7 +308,7 @@ abstract mixin class _$SaleItemCheckCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       String productId,
       String? sackPriceId,
       String? perKiloPriceId,
@@ -351,7 +353,7 @@ class __$SaleItemCheckCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable

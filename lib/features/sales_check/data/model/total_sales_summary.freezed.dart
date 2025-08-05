@@ -15,11 +15,15 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$TotalSalesSummary {
-  double get totalQuantity;
-  set totalQuantity(double value);
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get totalQuantity;
+  @DecimalConverter()
+  set totalQuantity(Decimal value);
+  @DecimalConverter()
+  Decimal get totalAmount;
+  @DecimalConverter()
   set totalAmount(
-      double
+      Decimal
           value); // Use JsonKey to handle the nested structure during serialization/deserialization
   @JsonKey(name: 'paymentTotals')
   PaymentTotals
@@ -51,8 +55,8 @@ abstract mixin class $TotalSalesSummaryCopyWith<$Res> {
       _$TotalSalesSummaryCopyWithImpl;
   @useResult
   $Res call(
-      {double totalQuantity,
-      double totalAmount,
+      {@DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalAmount,
       @JsonKey(name: 'paymentTotals') PaymentTotals summaryPaymentTotals});
 
   $PaymentTotalsCopyWith<$Res> get summaryPaymentTotals;
@@ -79,11 +83,11 @@ class _$TotalSalesSummaryCopyWithImpl<$Res>
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       summaryPaymentTotals: null == summaryPaymentTotals
           ? _self.summaryPaymentTotals
           : summaryPaymentTotals // ignore: cast_nullable_to_non_nullable
@@ -106,16 +110,18 @@ class _$TotalSalesSummaryCopyWithImpl<$Res>
 @JsonSerializable()
 class _TotalSalesSummary implements TotalSalesSummary {
   _TotalSalesSummary(
-      {required this.totalQuantity,
-      required this.totalAmount,
+      {@DecimalConverter() required this.totalQuantity,
+      @DecimalConverter() required this.totalAmount,
       @JsonKey(name: 'paymentTotals') required this.summaryPaymentTotals});
   factory _TotalSalesSummary.fromJson(Map<String, dynamic> json) =>
       _$TotalSalesSummaryFromJson(json);
 
   @override
-  double totalQuantity;
+  @DecimalConverter()
+  Decimal totalQuantity;
   @override
-  double totalAmount;
+  @DecimalConverter()
+  Decimal totalAmount;
 // Use JsonKey to handle the nested structure during serialization/deserialization
   @override
   @JsonKey(name: 'paymentTotals')
@@ -151,8 +157,8 @@ abstract mixin class _$TotalSalesSummaryCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {double totalQuantity,
-      double totalAmount,
+      {@DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalAmount,
       @JsonKey(name: 'paymentTotals') PaymentTotals summaryPaymentTotals});
 
   @override
@@ -180,11 +186,11 @@ class __$TotalSalesSummaryCopyWithImpl<$Res>
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       summaryPaymentTotals: null == summaryPaymentTotals
           ? _self.summaryPaymentTotals
           : summaryPaymentTotals // ignore: cast_nullable_to_non_nullable

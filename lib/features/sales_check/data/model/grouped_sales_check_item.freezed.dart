@@ -17,8 +17,10 @@ T _$identity<T>(T value) => value;
 mixin _$GroupedSalesCheckItem {
   String get productName; // e.g., "Rice 50KG"
   List<GroupedSaleDetail> get items;
-  double get totalQuantity;
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get totalQuantity;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentTotals get paymentTotals;
 
   /// Create a copy of GroupedSalesCheckItem
@@ -73,8 +75,8 @@ abstract mixin class $GroupedSalesCheckItemCopyWith<$Res> {
   $Res call(
       {String productName,
       List<GroupedSaleDetail> items,
-      double totalQuantity,
-      double totalAmount,
+      @DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalAmount,
       PaymentTotals paymentTotals});
 
   $PaymentTotalsCopyWith<$Res> get paymentTotals;
@@ -111,11 +113,11 @@ class _$GroupedSalesCheckItemCopyWithImpl<$Res>
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentTotals: null == paymentTotals
           ? _self.paymentTotals
           : paymentTotals // ignore: cast_nullable_to_non_nullable
@@ -140,8 +142,8 @@ class _GroupedSalesCheckItem implements GroupedSalesCheckItem {
   const _GroupedSalesCheckItem(
       {required this.productName,
       required final List<GroupedSaleDetail> items,
-      required this.totalQuantity,
-      required this.totalAmount,
+      @DecimalConverter() required this.totalQuantity,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentTotals})
       : _items = items;
   factory _GroupedSalesCheckItem.fromJson(Map<String, dynamic> json) =>
@@ -160,9 +162,11 @@ class _GroupedSalesCheckItem implements GroupedSalesCheckItem {
   }
 
   @override
-  final double totalQuantity;
+  @DecimalConverter()
+  final Decimal totalQuantity;
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentTotals paymentTotals;
 
@@ -225,8 +229,8 @@ abstract mixin class _$GroupedSalesCheckItemCopyWith<$Res>
   $Res call(
       {String productName,
       List<GroupedSaleDetail> items,
-      double totalQuantity,
-      double totalAmount,
+      @DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalAmount,
       PaymentTotals paymentTotals});
 
   @override
@@ -264,11 +268,11 @@ class __$GroupedSalesCheckItemCopyWithImpl<$Res>
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentTotals: null == paymentTotals
           ? _self.paymentTotals
           : paymentTotals // ignore: cast_nullable_to_non_nullable

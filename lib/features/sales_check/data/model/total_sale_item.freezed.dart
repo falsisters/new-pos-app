@@ -17,15 +17,19 @@ T _$identity<T>(T value) => value;
 mixin _$TotalSaleItem {
   String get id;
   String get saleId;
-  double get quantity;
+  @DecimalConverter()
+  Decimal get quantity;
   ProductInfo get product;
   String get priceType; // e.g., "KG", "50KG"
-  double get unitPrice;
-  double get totalAmount;
+  @DecimalConverter()
+  Decimal get unitPrice;
+  @DecimalConverter()
+  Decimal get totalAmount;
   PaymentMethod get paymentMethod;
   bool get isSpecialPrice;
   bool get isDiscounted; // Add this field
-  double? get discountedPrice; // Add this field for discounted unit price
+  @NullableDecimalConverter()
+  Decimal? get discountedPrice; // Add this field for discounted unit price
   DateTime get saleDate;
   String get formattedTime; // e.g., "14:30"
   String get formattedSale;
@@ -107,15 +111,15 @@ abstract mixin class $TotalSaleItemCopyWith<$Res> {
   $Res call(
       {String id,
       String saleId,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       ProductInfo product,
       String priceType,
-      double unitPrice,
-      double totalAmount,
+      @DecimalConverter() Decimal unitPrice,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
       bool isDiscounted,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       DateTime saleDate,
       String formattedTime,
       String formattedSale});
@@ -163,7 +167,7 @@ class _$TotalSaleItemCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       product: null == product
           ? _self.product
           : product // ignore: cast_nullable_to_non_nullable
@@ -175,11 +179,11 @@ class _$TotalSaleItemCopyWithImpl<$Res>
       unitPrice: null == unitPrice
           ? _self.unitPrice
           : unitPrice // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -195,7 +199,7 @@ class _$TotalSaleItemCopyWithImpl<$Res>
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       saleDate: null == saleDate
           ? _self.saleDate
           : saleDate // ignore: cast_nullable_to_non_nullable
@@ -228,15 +232,15 @@ class _TotalSaleItem implements TotalSaleItem {
   const _TotalSaleItem(
       {required this.id,
       required this.saleId,
-      required this.quantity,
+      @DecimalConverter() required this.quantity,
       required this.product,
       required this.priceType,
-      required this.unitPrice,
-      required this.totalAmount,
+      @DecimalConverter() required this.unitPrice,
+      @DecimalConverter() required this.totalAmount,
       required this.paymentMethod,
       required this.isSpecialPrice,
       required this.isDiscounted,
-      this.discountedPrice,
+      @NullableDecimalConverter() this.discountedPrice,
       required this.saleDate,
       required this.formattedTime,
       required this.formattedSale});
@@ -248,16 +252,19 @@ class _TotalSaleItem implements TotalSaleItem {
   @override
   final String saleId;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
   final ProductInfo product;
   @override
   final String priceType;
 // e.g., "KG", "50KG"
   @override
-  final double unitPrice;
+  @DecimalConverter()
+  final Decimal unitPrice;
   @override
-  final double totalAmount;
+  @DecimalConverter()
+  final Decimal totalAmount;
   @override
   final PaymentMethod paymentMethod;
   @override
@@ -266,7 +273,8 @@ class _TotalSaleItem implements TotalSaleItem {
   final bool isDiscounted;
 // Add this field
   @override
-  final double? discountedPrice;
+  @NullableDecimalConverter()
+  final Decimal? discountedPrice;
 // Add this field for discounted unit price
   @override
   final DateTime saleDate;
@@ -359,15 +367,15 @@ abstract mixin class _$TotalSaleItemCopyWith<$Res>
   $Res call(
       {String id,
       String saleId,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       ProductInfo product,
       String priceType,
-      double unitPrice,
-      double totalAmount,
+      @DecimalConverter() Decimal unitPrice,
+      @DecimalConverter() Decimal totalAmount,
       PaymentMethod paymentMethod,
       bool isSpecialPrice,
       bool isDiscounted,
-      double? discountedPrice,
+      @NullableDecimalConverter() Decimal? discountedPrice,
       DateTime saleDate,
       String formattedTime,
       String formattedSale});
@@ -416,7 +424,7 @@ class __$TotalSaleItemCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       product: null == product
           ? _self.product
           : product // ignore: cast_nullable_to_non_nullable
@@ -428,11 +436,11 @@ class __$TotalSaleItemCopyWithImpl<$Res>
       unitPrice: null == unitPrice
           ? _self.unitPrice
           : unitPrice // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalAmount: null == totalAmount
           ? _self.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       paymentMethod: null == paymentMethod
           ? _self.paymentMethod
           : paymentMethod // ignore: cast_nullable_to_non_nullable
@@ -448,7 +456,7 @@ class __$TotalSaleItemCopyWithImpl<$Res>
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as Decimal?,
       saleDate: null == saleDate
           ? _self.saleDate
           : saleDate // ignore: cast_nullable_to_non_nullable

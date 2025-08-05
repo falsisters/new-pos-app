@@ -8,15 +8,17 @@ part of 'total_sales_summary.dart';
 
 _TotalSalesSummary _$TotalSalesSummaryFromJson(Map<String, dynamic> json) =>
     _TotalSalesSummary(
-      totalQuantity: (json['totalQuantity'] as num).toDouble(),
-      totalAmount: (json['totalAmount'] as num).toDouble(),
+      totalQuantity:
+          const DecimalConverter().fromJson(json['totalQuantity'] as String),
+      totalAmount:
+          const DecimalConverter().fromJson(json['totalAmount'] as String),
       summaryPaymentTotals:
           PaymentTotals.fromJson(json['paymentTotals'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$TotalSalesSummaryToJson(_TotalSalesSummary instance) =>
     <String, dynamic>{
-      'totalQuantity': instance.totalQuantity,
-      'totalAmount': instance.totalAmount,
+      'totalQuantity': const DecimalConverter().toJson(instance.totalQuantity),
+      'totalAmount': const DecimalConverter().toJson(instance.totalAmount),
       'paymentTotals': instance.summaryPaymentTotals,
     };
