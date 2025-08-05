@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$ProfitResponse {
   ProfitCategory get sacks;
   ProfitCategory get asin;
-  double get overallTotal;
+  @DecimalConverter()
+  Decimal get overallTotal;
   @JsonKey(name: 'rawItems')
   List<ProfitItem> get items;
 
@@ -64,7 +65,7 @@ abstract mixin class $ProfitResponseCopyWith<$Res> {
   $Res call(
       {ProfitCategory sacks,
       ProfitCategory asin,
-      double overallTotal,
+      @DecimalConverter() Decimal overallTotal,
       @JsonKey(name: 'rawItems') List<ProfitItem> items});
 
   $ProfitCategoryCopyWith<$Res> get sacks;
@@ -101,7 +102,7 @@ class _$ProfitResponseCopyWithImpl<$Res>
       overallTotal: null == overallTotal
           ? _self.overallTotal
           : overallTotal // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       items: null == items
           ? _self.items
           : items // ignore: cast_nullable_to_non_nullable
@@ -136,7 +137,7 @@ class _ProfitResponse implements ProfitResponse {
   const _ProfitResponse(
       {required this.sacks,
       required this.asin,
-      required this.overallTotal,
+      @DecimalConverter() required this.overallTotal,
       @JsonKey(name: 'rawItems') required final List<ProfitItem> items})
       : _items = items;
   factory _ProfitResponse.fromJson(Map<String, dynamic> json) =>
@@ -147,7 +148,8 @@ class _ProfitResponse implements ProfitResponse {
   @override
   final ProfitCategory asin;
   @override
-  final double overallTotal;
+  @DecimalConverter()
+  final Decimal overallTotal;
   final List<ProfitItem> _items;
   @override
   @JsonKey(name: 'rawItems')
@@ -206,7 +208,7 @@ abstract mixin class _$ProfitResponseCopyWith<$Res>
   $Res call(
       {ProfitCategory sacks,
       ProfitCategory asin,
-      double overallTotal,
+      @DecimalConverter() Decimal overallTotal,
       @JsonKey(name: 'rawItems') List<ProfitItem> items});
 
   @override
@@ -245,7 +247,7 @@ class __$ProfitResponseCopyWithImpl<$Res>
       overallTotal: null == overallTotal
           ? _self.overallTotal
           : overallTotal // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       items: null == items
           ? _self._items
           : items // ignore: cast_nullable_to_non_nullable

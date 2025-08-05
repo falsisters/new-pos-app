@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProfitCategory {
   List<GroupedProfitItem> get items;
-  double get totalProfit;
+  @DecimalConverter()
+  Decimal get totalProfit;
 
   /// Create a copy of ProfitCategory
   /// with the given fields replaced by the non-null parameter values.
@@ -56,7 +57,8 @@ abstract mixin class $ProfitCategoryCopyWith<$Res> {
           ProfitCategory value, $Res Function(ProfitCategory) _then) =
       _$ProfitCategoryCopyWithImpl;
   @useResult
-  $Res call({List<GroupedProfitItem> items, double totalProfit});
+  $Res call(
+      {List<GroupedProfitItem> items, @DecimalConverter() Decimal totalProfit});
 }
 
 /// @nodoc
@@ -83,7 +85,7 @@ class _$ProfitCategoryCopyWithImpl<$Res>
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }
@@ -92,7 +94,8 @@ class _$ProfitCategoryCopyWithImpl<$Res>
 @JsonSerializable()
 class _ProfitCategory implements ProfitCategory {
   const _ProfitCategory(
-      {required final List<GroupedProfitItem> items, required this.totalProfit})
+      {required final List<GroupedProfitItem> items,
+      @DecimalConverter() required this.totalProfit})
       : _items = items;
   factory _ProfitCategory.fromJson(Map<String, dynamic> json) =>
       _$ProfitCategoryFromJson(json);
@@ -106,7 +109,8 @@ class _ProfitCategory implements ProfitCategory {
   }
 
   @override
-  final double totalProfit;
+  @DecimalConverter()
+  final Decimal totalProfit;
 
   /// Create a copy of ProfitCategory
   /// with the given fields replaced by the non-null parameter values.
@@ -152,7 +156,8 @@ abstract mixin class _$ProfitCategoryCopyWith<$Res>
       __$ProfitCategoryCopyWithImpl;
   @override
   @useResult
-  $Res call({List<GroupedProfitItem> items, double totalProfit});
+  $Res call(
+      {List<GroupedProfitItem> items, @DecimalConverter() Decimal totalProfit});
 }
 
 /// @nodoc
@@ -179,7 +184,7 @@ class __$ProfitCategoryCopyWithImpl<$Res>
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }

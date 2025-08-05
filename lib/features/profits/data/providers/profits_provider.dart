@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/features/profits/data/model/profits_state.dart';
 import 'package:falsisters_pos_android/features/profits/data/providers/profits_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,7 @@ final profitsAsinProvider = Provider<dynamic>((ref) {
   return profitsState.value?.profitResponse?.asin;
 });
 
-final profitsOverallTotalProvider = Provider<double?>((ref) {
+final profitsOverallTotalProvider = Provider<Decimal?>((ref) {
   final profitsState = ref.watch(profitsStateNotifierProvider);
   return profitsState.value?.profitResponse?.overallTotal;
 });

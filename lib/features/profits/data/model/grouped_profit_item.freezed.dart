@@ -16,9 +16,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GroupedProfitItem {
   String get productName;
-  double get profitPerUnit;
-  double get totalQuantity;
-  double get totalProfit;
+  @DecimalConverter()
+  Decimal get profitPerUnit;
+  @DecimalConverter()
+  Decimal get totalQuantity;
+  @DecimalConverter()
+  Decimal get totalProfit;
   int get orders;
   String get formattedSummary;
 
@@ -70,9 +73,9 @@ abstract mixin class $GroupedProfitItemCopyWith<$Res> {
   @useResult
   $Res call(
       {String productName,
-      double profitPerUnit,
-      double totalQuantity,
-      double totalProfit,
+      @DecimalConverter() Decimal profitPerUnit,
+      @DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalProfit,
       int orders,
       String formattedSummary});
 }
@@ -105,15 +108,15 @@ class _$GroupedProfitItemCopyWithImpl<$Res>
       profitPerUnit: null == profitPerUnit
           ? _self.profitPerUnit
           : profitPerUnit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       orders: null == orders
           ? _self.orders
           : orders // ignore: cast_nullable_to_non_nullable
@@ -131,9 +134,9 @@ class _$GroupedProfitItemCopyWithImpl<$Res>
 class _GroupedProfitItem implements GroupedProfitItem {
   const _GroupedProfitItem(
       {required this.productName,
-      required this.profitPerUnit,
-      required this.totalQuantity,
-      required this.totalProfit,
+      @DecimalConverter() required this.profitPerUnit,
+      @DecimalConverter() required this.totalQuantity,
+      @DecimalConverter() required this.totalProfit,
       required this.orders,
       required this.formattedSummary});
   factory _GroupedProfitItem.fromJson(Map<String, dynamic> json) =>
@@ -142,11 +145,14 @@ class _GroupedProfitItem implements GroupedProfitItem {
   @override
   final String productName;
   @override
-  final double profitPerUnit;
+  @DecimalConverter()
+  final Decimal profitPerUnit;
   @override
-  final double totalQuantity;
+  @DecimalConverter()
+  final Decimal totalQuantity;
   @override
-  final double totalProfit;
+  @DecimalConverter()
+  final Decimal totalProfit;
   @override
   final int orders;
   @override
@@ -206,9 +212,9 @@ abstract mixin class _$GroupedProfitItemCopyWith<$Res>
   @useResult
   $Res call(
       {String productName,
-      double profitPerUnit,
-      double totalQuantity,
-      double totalProfit,
+      @DecimalConverter() Decimal profitPerUnit,
+      @DecimalConverter() Decimal totalQuantity,
+      @DecimalConverter() Decimal totalProfit,
       int orders,
       String formattedSummary});
 }
@@ -241,15 +247,15 @@ class __$GroupedProfitItemCopyWithImpl<$Res>
       profitPerUnit: null == profitPerUnit
           ? _self.profitPerUnit
           : profitPerUnit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalQuantity: null == totalQuantity
           ? _self.totalQuantity
           : totalQuantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       orders: null == orders
           ? _self.orders
           : orders // ignore: cast_nullable_to_non_nullable

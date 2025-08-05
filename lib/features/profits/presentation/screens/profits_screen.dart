@@ -1,17 +1,24 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/profits/data/providers/profits_provider.dart';
 import 'package:falsisters_pos_android/features/profits/presentation/widgets/profit_filter_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 class ProfitsScreen extends ConsumerWidget {
   const ProfitsScreen({super.key});
 
+  // Utility method to format Decimal values consistently
+  String _formatDecimal(Decimal value) {
+    return value.toStringAsFixed(2).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profitsState = ref.watch(profitsStateNotifierProvider);
-    final numberFormat = NumberFormat("#,##0.00", "en_US");
 
     return Scaffold(
       appBar: AppBar(
@@ -99,7 +106,7 @@ class ProfitsScreen extends ConsumerWidget {
                                   _TotalsRow(
                                     label: 'TOTAL:',
                                     amount: sacks.totalProfit,
-                                    numberFormat: numberFormat,
+                                    formatDecimal: _formatDecimal,
                                     isBold: true,
                                   ),
                                 ],
@@ -133,7 +140,7 @@ class ProfitsScreen extends ConsumerWidget {
                                   _TotalsRow(
                                     label: 'TOTAL:',
                                     amount: asin.totalProfit,
-                                    numberFormat: numberFormat,
+                                    formatDecimal: _formatDecimal,
                                     isBold: true,
                                   ),
                                 ],
@@ -167,7 +174,7 @@ class ProfitsScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  numberFormat.format(overallTotal),
+                                  _formatDecimal(overallTotal),
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineMedium
@@ -255,14 +262,14 @@ class _ProfitItemRow extends StatelessWidget {
 
 class _TotalsRow extends StatelessWidget {
   final String label;
-  final double amount;
-  final NumberFormat numberFormat;
+  final Decimal amount;
+  final String Function(Decimal) formatDecimal;
   final bool isBold;
 
   const _TotalsRow({
     required this.label,
     required this.amount,
-    required this.numberFormat,
+    required this.formatDecimal,
     this.isBold = false,
   });
 
@@ -280,7 +287,7 @@ class _TotalsRow extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            numberFormat.format(amount),
+            formatDecimal(amount),
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : null,
             ),

@@ -18,9 +18,12 @@ mixin _$ProfitItem {
   String get id;
   String get productId;
   String get productName;
-  double get quantity;
-  double get profitPerUnit;
-  double get totalProfit;
+  @DecimalConverter()
+  Decimal get quantity;
+  @DecimalConverter()
+  Decimal get profitPerUnit;
+  @DecimalConverter()
+  Decimal get totalProfit;
   String get priceType;
   String get formattedPriceType;
   PaymentMethod get paymentMethod;
@@ -100,9 +103,9 @@ abstract mixin class $ProfitItemCopyWith<$Res> {
       {String id,
       String productId,
       String productName,
-      double quantity,
-      double profitPerUnit,
-      double totalProfit,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal profitPerUnit,
+      @DecimalConverter() Decimal totalProfit,
       String priceType,
       String formattedPriceType,
       PaymentMethod paymentMethod,
@@ -152,15 +155,15 @@ class _$ProfitItemCopyWithImpl<$Res> implements $ProfitItemCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       profitPerUnit: null == profitPerUnit
           ? _self.profitPerUnit
           : profitPerUnit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       priceType: null == priceType
           ? _self.priceType
           : priceType // ignore: cast_nullable_to_non_nullable
@@ -196,9 +199,9 @@ class _ProfitItem implements ProfitItem {
       {required this.id,
       required this.productId,
       required this.productName,
-      required this.quantity,
-      required this.profitPerUnit,
-      required this.totalProfit,
+      @DecimalConverter() required this.quantity,
+      @DecimalConverter() required this.profitPerUnit,
+      @DecimalConverter() required this.totalProfit,
       required this.priceType,
       required this.formattedPriceType,
       required this.paymentMethod,
@@ -215,11 +218,14 @@ class _ProfitItem implements ProfitItem {
   @override
   final String productName;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
-  final double profitPerUnit;
+  @DecimalConverter()
+  final Decimal profitPerUnit;
   @override
-  final double totalProfit;
+  @DecimalConverter()
+  final Decimal totalProfit;
   @override
   final String priceType;
   @override
@@ -312,9 +318,9 @@ abstract mixin class _$ProfitItemCopyWith<$Res>
       {String id,
       String productId,
       String productName,
-      double quantity,
-      double profitPerUnit,
-      double totalProfit,
+      @DecimalConverter() Decimal quantity,
+      @DecimalConverter() Decimal profitPerUnit,
+      @DecimalConverter() Decimal totalProfit,
       String priceType,
       String formattedPriceType,
       PaymentMethod paymentMethod,
@@ -364,15 +370,15 @@ class __$ProfitItemCopyWithImpl<$Res> implements _$ProfitItemCopyWith<$Res> {
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       profitPerUnit: null == profitPerUnit
           ? _self.profitPerUnit
           : profitPerUnit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       totalProfit: null == totalProfit
           ? _self.totalProfit
           : totalProfit // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       priceType: null == priceType
           ? _self.priceType
           : priceType // ignore: cast_nullable_to_non_nullable
