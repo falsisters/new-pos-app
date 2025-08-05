@@ -20,6 +20,10 @@ void main() async {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+
+  // Ensure keyboard service is properly initialized
+  ServicesBinding.instance.keyboard;
+
   runApp(
     ProviderScope(
       child: MyApp(navigatorKey: navigatorKey),
@@ -42,6 +46,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        // Ensure keyboard service is always available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ServicesBinding.instance.keyboard;
+        });
+        return child!;
+      },
       home: Consumer(
         builder: (context, ref, _) {
           // Use .notifier.stream to ensure we're always listening to changes
