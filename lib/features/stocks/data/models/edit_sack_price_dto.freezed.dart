@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EditSackPriceDto {
   String get id;
-  double get price;
+  @DecimalConverter()
+  Decimal get price;
   EditSpecialPriceDto? get specialPrice;
 
   /// Create a copy of EditSackPriceDto
@@ -57,7 +58,10 @@ abstract mixin class $EditSackPriceDtoCopyWith<$Res> {
           EditSackPriceDto value, $Res Function(EditSackPriceDto) _then) =
       _$EditSackPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double price, EditSpecialPriceDto? specialPrice});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal price,
+      EditSpecialPriceDto? specialPrice});
 
   $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice;
 }
@@ -87,7 +91,7 @@ class _$EditSackPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       specialPrice: freezed == specialPrice
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable
@@ -114,14 +118,17 @@ class _$EditSackPriceDtoCopyWithImpl<$Res>
 @JsonSerializable()
 class _EditSackPriceDto implements EditSackPriceDto {
   const _EditSackPriceDto(
-      {required this.id, required this.price, required this.specialPrice});
+      {required this.id,
+      @DecimalConverter() required this.price,
+      required this.specialPrice});
   factory _EditSackPriceDto.fromJson(Map<String, dynamic> json) =>
       _$EditSackPriceDtoFromJson(json);
 
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
   final EditSpecialPriceDto? specialPrice;
 
@@ -169,7 +176,10 @@ abstract mixin class _$EditSackPriceDtoCopyWith<$Res>
       __$EditSackPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double price, EditSpecialPriceDto? specialPrice});
+  $Res call(
+      {String id,
+      @DecimalConverter() Decimal price,
+      EditSpecialPriceDto? specialPrice});
 
   @override
   $EditSpecialPriceDtoCopyWith<$Res>? get specialPrice;
@@ -200,7 +210,7 @@ class __$EditSackPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       specialPrice: freezed == specialPrice
           ? _self.specialPrice
           : specialPrice // ignore: cast_nullable_to_non_nullable

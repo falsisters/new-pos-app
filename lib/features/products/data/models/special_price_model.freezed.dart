@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SpecialPrice {
   String get id;
-  double get price;
+  @DecimalConverter()
+  Decimal get price;
   int get minimumQty;
   String get sackPriceId;
   DateTime get createdAt;
@@ -69,7 +70,7 @@ abstract mixin class $SpecialPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
+      @DecimalConverter() Decimal price,
       int minimumQty,
       String sackPriceId,
       DateTime createdAt,
@@ -103,7 +104,7 @@ class _$SpecialPriceCopyWithImpl<$Res> implements $SpecialPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable
@@ -129,7 +130,7 @@ class _$SpecialPriceCopyWithImpl<$Res> implements $SpecialPriceCopyWith<$Res> {
 class _SpecialPrice implements SpecialPrice {
   const _SpecialPrice(
       {required this.id,
-      required this.price,
+      @DecimalConverter() required this.price,
       required this.minimumQty,
       required this.sackPriceId,
       required this.createdAt,
@@ -140,7 +141,8 @@ class _SpecialPrice implements SpecialPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
   final int minimumQty;
   @override
@@ -203,7 +205,7 @@ abstract mixin class _$SpecialPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
+      @DecimalConverter() Decimal price,
       int minimumQty,
       String sackPriceId,
       DateTime createdAt,
@@ -238,7 +240,7 @@ class __$SpecialPriceCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable

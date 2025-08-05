@@ -7,15 +7,13 @@ class ProductTile extends StatefulWidget {
   final String title;
   final String imageUrl;
   final VoidCallback onTap;
-  final Decimal? price;
-  final Product? product; // Add product parameter for stock checking
+  final Product? product;
 
   const ProductTile({
     super.key,
     required this.title,
     required this.imageUrl,
     required this.onTap,
-    this.price,
     this.product,
   });
 
@@ -52,11 +50,11 @@ class _ProductTileState extends State<ProductTile>
 
     // Check per kilo stock
     bool perKiloOutOfStock = widget.product!.perKiloPrice != null &&
-        widget.product!.perKiloPrice!.stock <= 0;
+        widget.product!.perKiloPrice!.stock <= Decimal.zero;
 
     // Check sack stock
     bool allSacksOutOfStock = widget.product!.sackPrice.isNotEmpty &&
-        widget.product!.sackPrice.every((sack) => sack.stock <= 0);
+        widget.product!.sackPrice.every((sack) => sack.stock <= Decimal.zero);
 
     // If has per kilo and sacks, both must be out of stock
     if (widget.product!.perKiloPrice != null &&
@@ -79,9 +77,44 @@ class _ProductTileState extends State<ProductTile>
     return false;
   }
 
+  Decimal? _getDisplayPrice() {
+    if (widget.product == null) return null;
+
+    // Get the first available price for display
+    if (widget.product!.perKiloPrice != null) {
+      return widget.product!.perKiloPrice!.price;
+    } else if (widget.product!.sackPrice.isNotEmpty) {
+      return widget.product!.sackPrice.first.price;
+    }
+    return null;
+  }
+
+  String _getPriceUnit() {
+    if (widget.product == null) return '';
+
+    if (widget.product!.perKiloPrice != null) {
+      return '/kg';
+    } else if (widget.product!.sackPrice.isNotEmpty) {
+      final sackType = widget.product!.sackPrice.first.type;
+      switch (sackType.toString().split('.').last) {
+        case 'FIFTY_KG':
+          return '/50kg sack';
+        case 'TWENTY_FIVE_KG':
+          return '/25kg sack';
+        case 'FIVE_KG':
+          return '/5kg sack';
+        default:
+          return '/sack';
+      }
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isOutOfStock = _isOutOfStock();
+    final Decimal? displayPrice = _getDisplayPrice();
+    final String priceUnit = _getPriceUnit();
 
     return GestureDetector(
       onTap: isOutOfStock ? null : widget.onTap,
@@ -375,8 +408,8 @@ class _ProductTileState extends State<ProductTile>
                                 ),
                               ),
 
-                              // Enhanced Price (if available)
-                              if (widget.price != null) ...[
+                              // Enhanced Price using Decimal
+                              if (displayPrice != null) ...[
                                 const SizedBox(
                                     height: 4), // Reduced from 6 to 4
                                 Container(
@@ -391,10 +424,10 @@ class _ProductTileState extends State<ProductTile>
                                         6), // Reduced from 8 to 6
                                   ),
                                   child: Text(
-                                    '₱${widget.price!.toStringAsFixed(2)}',
+                                    '₱${displayPrice.toStringAsFixed(2)}$priceUnit',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 11, // Reduced from 12 to 11
+                                      fontSize: 10, // Reduced from 12 to 11
                                       fontWeight: FontWeight.bold,
                                       color: isOutOfStock
                                           ? Colors.grey[500]

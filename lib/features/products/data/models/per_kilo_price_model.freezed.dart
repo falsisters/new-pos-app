@@ -16,8 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PerKiloPrice {
   String get id;
-  double get price;
-  double get stock;
+  @DecimalConverter()
+  Decimal get price;
+  @DecimalConverter()
+  Decimal get stock;
   String get productId;
   DateTime get createdAt;
   DateTime get updatedAt;
@@ -68,8 +70,8 @@ abstract mixin class $PerKiloPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
-      double stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
       String productId,
       DateTime createdAt,
       DateTime updatedAt});
@@ -102,11 +104,11 @@ class _$PerKiloPriceCopyWithImpl<$Res> implements $PerKiloPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
@@ -128,8 +130,8 @@ class _$PerKiloPriceCopyWithImpl<$Res> implements $PerKiloPriceCopyWith<$Res> {
 class _PerKiloPrice implements PerKiloPrice {
   const _PerKiloPrice(
       {required this.id,
-      required this.price,
-      required this.stock,
+      @DecimalConverter() required this.price,
+      @DecimalConverter() required this.stock,
       required this.productId,
       required this.createdAt,
       required this.updatedAt});
@@ -139,9 +141,11 @@ class _PerKiloPrice implements PerKiloPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
-  final double stock;
+  @DecimalConverter()
+  final Decimal stock;
   @override
   final String productId;
   @override
@@ -201,8 +205,8 @@ abstract mixin class _$PerKiloPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
-      double stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
       String productId,
       DateTime createdAt,
       DateTime updatedAt});
@@ -236,11 +240,11 @@ class __$PerKiloPriceCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable

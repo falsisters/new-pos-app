@@ -506,12 +506,11 @@ class ThermalPrintingService {
                 (sp) => sp.id == item.sackPriceId,
                 orElse: () => item.product.sackPrice.first,
               );
-              unitPrice = Decimal.parse(sackPrice.price.toString());
+              unitPrice = sackPrice.price;
               itemPrice = unitPrice * item.quantity;
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
-              unitPrice =
-                  Decimal.parse(item.product.perKiloPrice!.price.toString());
+              unitPrice = item.product.perKiloPrice!.price;
               itemPrice = unitPrice * item.quantity;
             }
 

@@ -20,7 +20,7 @@ mixin _$Product {
   String get picture;
   DateTime get createdAt;
   DateTime get updatedAt;
-  String get userId;
+  String? get userId;
   @JsonKey(name: "SackPrice")
   List<SackPrice> get sackPrice;
   PerKiloPrice? get perKiloPrice;
@@ -83,7 +83,7 @@ abstract mixin class $ProductCopyWith<$Res> {
       String picture,
       DateTime createdAt,
       DateTime updatedAt,
-      String userId,
+      String? userId,
       @JsonKey(name: "SackPrice") List<SackPrice> sackPrice,
       PerKiloPrice? perKiloPrice});
 
@@ -107,7 +107,7 @@ class _$ProductCopyWithImpl<$Res> implements $ProductCopyWith<$Res> {
     Object? picture = null,
     Object? createdAt = null,
     Object? updatedAt = null,
-    Object? userId = null,
+    Object? userId = freezed,
     Object? sackPrice = null,
     Object? perKiloPrice = freezed,
   }) {
@@ -132,10 +132,10 @@ class _$ProductCopyWithImpl<$Res> implements $ProductCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      userId: null == userId
+      userId: freezed == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       sackPrice: null == sackPrice
           ? _self.sackPrice
           : sackPrice // ignore: cast_nullable_to_non_nullable
@@ -171,7 +171,7 @@ class _Product implements Product {
       required this.picture,
       required this.createdAt,
       required this.updatedAt,
-      required this.userId,
+      this.userId,
       @JsonKey(name: "SackPrice") required final List<SackPrice> sackPrice,
       this.perKiloPrice})
       : _sackPrice = sackPrice;
@@ -189,7 +189,7 @@ class _Product implements Product {
   @override
   final DateTime updatedAt;
   @override
-  final String userId;
+  final String? userId;
   final List<SackPrice> _sackPrice;
   @override
   @JsonKey(name: "SackPrice")
@@ -267,7 +267,7 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
       String picture,
       DateTime createdAt,
       DateTime updatedAt,
-      String userId,
+      String? userId,
       @JsonKey(name: "SackPrice") List<SackPrice> sackPrice,
       PerKiloPrice? perKiloPrice});
 
@@ -292,7 +292,7 @@ class __$ProductCopyWithImpl<$Res> implements _$ProductCopyWith<$Res> {
     Object? picture = null,
     Object? createdAt = null,
     Object? updatedAt = null,
-    Object? userId = null,
+    Object? userId = freezed,
     Object? sackPrice = null,
     Object? perKiloPrice = freezed,
   }) {
@@ -317,10 +317,10 @@ class __$ProductCopyWithImpl<$Res> implements _$ProductCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      userId: null == userId
+      userId: freezed == userId
           ? _self.userId
           : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       sackPrice: null == sackPrice
           ? _self._sackPrice
           : sackPrice // ignore: cast_nullable_to_non_nullable

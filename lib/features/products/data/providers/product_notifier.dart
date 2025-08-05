@@ -1,3 +1,4 @@
+import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_state.dart';
 import 'package:falsisters_pos_android/features/products/data/repository/product_repository.dart';
 import 'package:flutter/material.dart';
@@ -74,9 +75,9 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
     });
   }
 
-  void _preloadProductImages(List<dynamic> products) {
+  void _preloadProductImages(List<Product> products) {
     for (final product in products) {
-      if (product.picture != null && product.picture.isNotEmpty) {
+      if (product.picture.isNotEmpty) {
         try {
           // Preload image into Flutter's image cache
           final imageProvider = NetworkImage(product.picture);

@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
@@ -31,7 +32,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
   TransferType _selectedTransferType = TransferType.KAHON;
   bool _isPerKilo = false;
   int _selectedSackIndex = -1;
-  double _quantity = 0;
+  Decimal _quantity = Decimal.zero;
   bool _isLoading = false;
 
   @override
@@ -40,14 +41,14 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
     if (widget.product.sackPrice.isNotEmpty) {
       _selectedSackIndex = 0;
       // Set default quantity to 1 if there's stock available
-      if (widget.product.sackPrice[0].stock > 0) {
-        _quantity = 1;
+      if (widget.product.sackPrice[0].stock > Decimal.zero) {
+        _quantity = Decimal.one;
       }
     } else if (widget.product.perKiloPrice != null) {
       _isPerKilo = true;
       // Set default quantity to 1 if there's stock available
-      if (widget.product.perKiloPrice!.stock > 0) {
-        _quantity = 1.0;
+      if (widget.product.perKiloPrice!.stock > Decimal.zero) {
+        _quantity = Decimal.one;
       }
     }
     _quantityController.text = _quantity.toStringAsFixed(_isPerKilo ? 1 : 0);
@@ -86,7 +87,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
           id: widget.product.id,
           sackPrice: TransferSackPriceDto(
             id: selectedSack.id,
-            quantity: _quantity.toInt(),
+            quantity: _quantity.toBigInt().toInt(),
             type: selectedSack.type,
           ),
         );
@@ -463,9 +464,11 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
   Widget _buildTransferOptionSelector() {
     final hasPerKilo = widget.product.perKiloPrice != null;
     final hasSackPrices = widget.product.sackPrice.isNotEmpty;
-    final perKiloInStock = hasPerKilo && widget.product.perKiloPrice!.stock > 0;
-    final sackPricesInStock =
-        widget.product.sackPrice.where((sack) => sack.stock > 0).toList();
+    final perKiloInStock =
+        hasPerKilo && widget.product.perKiloPrice!.stock > Decimal.zero;
+    final sackPricesInStock = widget.product.sackPrice
+        .where((sack) => sack.stock > Decimal.zero)
+        .toList();
 
     if (!hasPerKilo && !hasSackPrices) {
       return Container(
@@ -533,7 +536,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
                       _isPerKilo = true;
                       _selectedSackIndex = -1;
                       // Set default quantity to 1 if there's stock
-                      _quantity = perKiloInStock ? 1.0 : 0;
+                      _quantity = perKiloInStock ? Decimal.one : Decimal.zero;
                       _quantityController.text = _quantity.toStringAsFixed(1);
                     });
                   }
@@ -654,7 +657,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
             final index = entry.key;
             final sack = entry.value;
             final isSelected = !_isPerKilo && _selectedSackIndex == index;
-            final sackInStock = sack.stock > 0;
+            final sackInStock = sack.stock > Decimal.zero;
 
             return Padding(
               padding: EdgeInsets.only(
@@ -666,7 +669,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
                           _isPerKilo = false;
                           _selectedSackIndex = index;
                           // Set default quantity to 1 if there's stock
-                          _quantity = sackInStock ? 1 : 0;
+                          _quantity = sackInStock ? Decimal.one : Decimal.zero;
                           _quantityController.text =
                               _quantity.toStringAsFixed(0);
                         });
@@ -780,18 +783,19 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
 
   Widget _buildQuantityField() {
     final maxQuantity = _isPerKilo
-        ? widget.product.perKiloPrice?.stock ?? 0
+        ? widget.product.perKiloPrice?.stock ?? Decimal.zero
         : (_selectedSackIndex >= 0
-            ? widget.product.sackPrice[_selectedSackIndex].stock.toDouble()
-            : 0);
+            ? widget.product.sackPrice[_selectedSackIndex].stock
+            : Decimal.zero);
 
     final hasValidSelection = (_isPerKilo &&
             widget.product.perKiloPrice != null &&
-            widget.product.perKiloPrice!.stock > 0) ||
+            widget.product.perKiloPrice!.stock > Decimal.zero) ||
         (_selectedSackIndex >= 0 &&
-            widget.product.sackPrice[_selectedSackIndex].stock > 0);
+            widget.product.sackPrice[_selectedSackIndex].stock > Decimal.zero);
 
-    bool _isLowStock() => maxQuantity > 0 && maxQuantity <= 10;
+    bool _isLowStock() =>
+        maxQuantity > Decimal.zero && maxQuantity <= Decimal.fromInt(10);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,8 +941,8 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
                 return 'Enter quantity';
               }
 
-              final qty = double.tryParse(value);
-              if (qty == null || qty <= 0) {
+              final qty = Decimal.tryParse(value);
+              if (qty == null || qty <= Decimal.zero) {
                 return 'Valid quantity > 0';
               }
 
@@ -946,7 +950,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
                 return 'Only ${maxQuantity.toStringAsFixed(_isPerKilo ? 1 : 0)} available';
               }
 
-              if (!_isPerKilo && qty % 1 != 0) {
+              if (!_isPerKilo && !qty.isInteger) {
                 return 'Sack quantity must be a whole number';
               }
 
@@ -954,7 +958,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
             },
             onChanged: (value) {
               setState(() {
-                _quantity = double.tryParse(value) ?? 0;
+                _quantity = Decimal.tryParse(value) ?? Decimal.zero;
               });
             },
           ),
@@ -965,10 +969,10 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
 
   Widget _buildQuantityControls() {
     final maxQuantity = _isPerKilo
-        ? widget.product.perKiloPrice?.stock ?? 0
+        ? widget.product.perKiloPrice?.stock ?? Decimal.zero
         : (_selectedSackIndex >= 0
-            ? widget.product.sackPrice[_selectedSackIndex].stock.toDouble()
-            : 0);
+            ? widget.product.sackPrice[_selectedSackIndex].stock
+            : Decimal.zero);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -979,12 +983,12 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
           width: 32,
           margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
-            color: _quantity > 0
+            color: _quantity > Decimal.zero
                 ? AppColors.primary.withOpacity(0.1)
                 : Colors.grey[100],
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: _quantity > 0
+              color: _quantity > Decimal.zero
                   ? AppColors.primary.withOpacity(0.3)
                   : Colors.grey[300]!,
             ),
@@ -992,11 +996,13 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _quantity > 0 ? _decrementQuantity : null,
+              onTap: _quantity > Decimal.zero ? _decrementQuantity : null,
               borderRadius: BorderRadius.circular(8),
               child: Icon(
                 Icons.remove_rounded,
-                color: _quantity > 0 ? AppColors.primary : Colors.grey[500],
+                color: _quantity > Decimal.zero
+                    ? AppColors.primary
+                    : Colors.grey[500],
                 size: 16,
               ),
             ),
@@ -1038,17 +1044,19 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
 
   Widget _buildQuickActionButton(String label, double quantity) {
     final maxQuantity = _selectedSackIndex >= 0
-        ? widget.product.sackPrice[_selectedSackIndex].stock.toDouble()
-        : 0;
+        ? widget.product.sackPrice[_selectedSackIndex].stock
+        : Decimal.zero;
 
-    bool isEnabled = quantity <= maxQuantity && maxQuantity > 0;
+    final decimalQuantity = Decimal.parse(quantity.toString());
+    bool isEnabled =
+        decimalQuantity <= maxQuantity && maxQuantity > Decimal.zero;
     String displayLabel =
-        label == 'Max' ? maxQuantity.toInt().toString() : label;
+        label == 'Max' ? maxQuantity.toBigInt().toString() : label;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: isEnabled ? () => _setQuickQuantity(quantity) : null,
+        onTap: isEnabled ? () => _setQuickQuantity(decimalQuantity) : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           height: 56,
@@ -1103,7 +1111,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
     );
   }
 
-  void _setQuickQuantity(double quantity) {
+  void _setQuickQuantity(Decimal quantity) {
     setState(() {
       _quantity = quantity;
       _quantityController.text = _quantity.toStringAsFixed(_isPerKilo ? 1 : 0);
@@ -1114,18 +1122,17 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
 
   void _incrementQuantity() {
     final maxQuantity = _isPerKilo
-        ? widget.product.perKiloPrice?.stock ?? 0
+        ? widget.product.perKiloPrice?.stock ?? Decimal.zero
         : (_selectedSackIndex >= 0
-            ? widget.product.sackPrice[_selectedSackIndex].stock.toDouble()
-            : 0);
+            ? widget.product.sackPrice[_selectedSackIndex].stock
+            : Decimal.zero);
 
     if (_quantity < maxQuantity) {
       setState(() {
         if (_isPerKilo) {
-          _quantity += 0.1;
-          _quantity = double.parse(_quantity.toStringAsFixed(1));
+          _quantity += Decimal.parse('0.1');
         } else {
-          _quantity += 1;
+          _quantity += Decimal.one;
         }
         _quantityController.text =
             _quantity.toStringAsFixed(_isPerKilo ? 1 : 0);
@@ -1134,15 +1141,14 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
   }
 
   void _decrementQuantity() {
-    if (_quantity > 0) {
+    if (_quantity > Decimal.zero) {
       setState(() {
         if (_isPerKilo) {
-          _quantity -= 0.1;
-          _quantity = double.parse(_quantity.toStringAsFixed(1));
-          if (_quantity < 0) _quantity = 0;
+          _quantity -= Decimal.parse('0.1');
+          if (_quantity < Decimal.zero) _quantity = Decimal.zero;
         } else {
-          _quantity -= 1;
-          if (_quantity < 0) _quantity = 0;
+          _quantity -= Decimal.one;
+          if (_quantity < Decimal.zero) _quantity = Decimal.zero;
         }
         _quantityController.text =
             _quantity.toStringAsFixed(_isPerKilo ? 1 : 0);
@@ -1152,8 +1158,9 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
 
   bool _hasValidStock() {
     final perKiloInStock = widget.product.perKiloPrice != null &&
-        widget.product.perKiloPrice!.stock > 0;
-    final sackInStock = widget.product.sackPrice.any((sack) => sack.stock > 0);
+        widget.product.perKiloPrice!.stock > Decimal.zero;
+    final sackInStock =
+        widget.product.sackPrice.any((sack) => sack.stock > Decimal.zero);
     return perKiloInStock || sackInStock;
   }
 }

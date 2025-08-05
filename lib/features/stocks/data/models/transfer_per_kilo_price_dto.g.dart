@@ -10,12 +10,12 @@ _TransferPerKiloPriceDto _$TransferPerKiloPriceDtoFromJson(
         Map<String, dynamic> json) =>
     _TransferPerKiloPriceDto(
       id: json['id'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
+      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
     );
 
 Map<String, dynamic> _$TransferPerKiloPriceDtoToJson(
         _TransferPerKiloPriceDto instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'quantity': instance.quantity,
+      'quantity': const DecimalConverter().toJson(instance.quantity),
     };

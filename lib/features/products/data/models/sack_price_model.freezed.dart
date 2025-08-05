@@ -16,8 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SackPrice {
   String get id;
-  double get price;
-  int get stock;
+  @DecimalConverter()
+  Decimal get price;
+  @DecimalConverter()
+  Decimal get stock;
   SackType get type;
   String get productId;
   DateTime get createdAt;
@@ -74,8 +76,8 @@ abstract mixin class $SackPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
-      int stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
       SackType type,
       String productId,
       DateTime createdAt,
@@ -116,11 +118,11 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -168,8 +170,8 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
 class _SackPrice implements SackPrice {
   const _SackPrice(
       {required this.id,
-      required this.price,
-      required this.stock,
+      @DecimalConverter() required this.price,
+      @DecimalConverter() required this.stock,
       required this.type,
       required this.productId,
       required this.createdAt,
@@ -182,9 +184,11 @@ class _SackPrice implements SackPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
-  final int stock;
+  @DecimalConverter()
+  final Decimal stock;
   @override
   final SackType type;
   @override
@@ -255,8 +259,8 @@ abstract mixin class _$SackPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
-      int stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
       SackType type,
       String productId,
       DateTime createdAt,
@@ -298,11 +302,11 @@ class __$SackPriceCopyWithImpl<$Res> implements _$SackPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable

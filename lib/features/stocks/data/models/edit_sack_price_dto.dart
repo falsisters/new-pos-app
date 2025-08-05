@@ -1,3 +1,5 @@
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:falsisters_pos_android/features/stocks/data/models/edit_special_price_dto.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -8,7 +10,7 @@ part 'edit_sack_price_dto.g.dart';
 sealed class EditSackPriceDto with _$EditSackPriceDto {
   const factory EditSackPriceDto({
     required String id,
-    required double price,
+    @DecimalConverter() required Decimal price,
     required EditSpecialPriceDto? specialPrice,
   }) = _EditSackPriceDto;
 

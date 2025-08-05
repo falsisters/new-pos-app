@@ -9,7 +9,7 @@ part of 'edit_sack_price_dto.dart';
 _EditSackPriceDto _$EditSackPriceDtoFromJson(Map<String, dynamic> json) =>
     _EditSackPriceDto(
       id: json['id'] as String,
-      price: (json['price'] as num).toDouble(),
+      price: const DecimalConverter().fromJson(json['price'] as String),
       specialPrice: json['specialPrice'] == null
           ? null
           : EditSpecialPriceDto.fromJson(
@@ -19,6 +19,6 @@ _EditSackPriceDto _$EditSackPriceDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$EditSackPriceDtoToJson(_EditSackPriceDto instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'price': instance.price,
+      'price': const DecimalConverter().toJson(instance.price),
       'specialPrice': instance.specialPrice,
     };

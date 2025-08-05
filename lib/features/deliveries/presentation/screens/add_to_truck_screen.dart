@@ -10,6 +10,7 @@ import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:decimal/decimal.dart';
 
 class AddToTruckScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -1094,7 +1095,11 @@ class _AddToTruckScreenState extends ConsumerState<AddToTruckScreen> {
 
   void _setQuickQuantity(double quantity) {
     setState(() {
-      _quantity = quantity;
+      if (_isPerKiloSelected) {
+        _quantity = Decimal.parse(quantity.toString());
+      } else {
+        _quantity = quantity.toInt();
+      }
       _quantityController.text = _quantity.toString();
     });
   }

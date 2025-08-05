@@ -457,7 +457,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   Widget _buildOrderItemCard(OrderItemModel item, int index) {
     final unitPrice = _calculateItemPrice(item);
-    final subtotal = unitPrice * item.quantity;
+    final subtotal = unitPrice * Decimal.parse(item.quantity.toString());
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -624,7 +624,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   perKiloPriceDto = PerKiloPriceDto(
                     id: item.perKiloPriceId!,
                     quantity: Decimal.parse(item.quantity.toString()),
-                    price: Decimal.parse(item.perKiloPrice!.price.toString()),
+                    price: item.perKiloPrice!.price,
                   );
                 }
 
@@ -632,7 +632,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   sackPriceDto = SackPriceDto(
                     id: item.sackPriceId!,
                     quantity: Decimal.parse(item.quantity.toString()),
-                    price: Decimal.parse(item.sackPrice!.price.toString()),
+                    price: item.sackPrice!.price,
                     type: item.sackPrice!.type,
                   );
                 }
@@ -696,9 +696,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  double _calculateItemPrice(OrderItemModel item) {
+  Decimal _calculateItemPrice(OrderItemModel item) {
     if (item.isSpecialPrice) {
-      return 0;
+      return Decimal.zero;
     }
     if (item.sackPrice != null) {
       return item.sackPrice!.price;
@@ -706,6 +706,6 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     if (item.perKiloPrice != null) {
       return item.perKiloPrice!.price;
     }
-    return 0;
+    return Decimal.zero;
   }
 }

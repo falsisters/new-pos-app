@@ -2,6 +2,7 @@ import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
 import 'package:flutter/material.dart';
+import 'package:decimal/decimal.dart';
 
 class DeliveryProductTile extends StatefulWidget {
   final Product product;
@@ -183,7 +184,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                             size: 12, color: Colors.blue[700]),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg',
+                                          '${widget.product.perKiloPrice!.stock.toString()} kg',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
@@ -215,7 +216,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                             size: 12, color: AppColors.accent),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${widget.product.sackPrice.fold<int>(0, (sum, sack) => sum + sack.stock)} sacks',
+                                          '${widget.product.sackPrice.fold<Decimal>(Decimal.zero, (sum, sack) => sum + sack.stock).toBigInt()} sacks',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
@@ -339,7 +340,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                   const SizedBox(height: 2),
                                   if (widget.product.perKiloPrice != null)
                                     Text(
-                                      'Per kg: ${widget.product.perKiloPrice!.stock.toStringAsFixed(1)} kg',
+                                      'Per kg: ${widget.product.perKiloPrice!.stock.toString()} kg',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: Colors.grey[700],
@@ -350,7 +351,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                       .take(2)
                                       .map((sackPrice) {
                                     return Text(
-                                      '${parseSackType(sackPrice.type)}: ${sackPrice.stock} sacks',
+                                      '${parseSackType(sackPrice.type)}: ${sackPrice.stock.toBigInt()} sacks',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: Colors.grey[700],

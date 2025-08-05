@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EditSpecialPriceDto {
   String get id;
-  double get price;
+  @DecimalConverter()
+  Decimal get price;
   int get minimumQty;
 
   /// Create a copy of EditSpecialPriceDto
@@ -57,7 +58,7 @@ abstract mixin class $EditSpecialPriceDtoCopyWith<$Res> {
           EditSpecialPriceDto value, $Res Function(EditSpecialPriceDto) _then) =
       _$EditSpecialPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double price, int minimumQty});
+  $Res call({String id, @DecimalConverter() Decimal price, int minimumQty});
 }
 
 /// @nodoc
@@ -85,7 +86,7 @@ class _$EditSpecialPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable
@@ -98,14 +99,17 @@ class _$EditSpecialPriceDtoCopyWithImpl<$Res>
 @JsonSerializable()
 class _EditSpecialPriceDto implements EditSpecialPriceDto {
   const _EditSpecialPriceDto(
-      {required this.id, required this.price, required this.minimumQty});
+      {required this.id,
+      @DecimalConverter() required this.price,
+      required this.minimumQty});
   factory _EditSpecialPriceDto.fromJson(Map<String, dynamic> json) =>
       _$EditSpecialPriceDtoFromJson(json);
 
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
   final int minimumQty;
 
@@ -154,7 +158,7 @@ abstract mixin class _$EditSpecialPriceDtoCopyWith<$Res>
       __$EditSpecialPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double price, int minimumQty});
+  $Res call({String id, @DecimalConverter() Decimal price, int minimumQty});
 }
 
 /// @nodoc
@@ -182,7 +186,7 @@ class __$EditSpecialPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable

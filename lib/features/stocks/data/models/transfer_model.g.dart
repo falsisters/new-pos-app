@@ -9,7 +9,7 @@ part of 'transfer_model.dart';
 _TransferModel _$TransferModelFromJson(Map<String, dynamic> json) =>
     _TransferModel(
       id: json['id'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
+      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
       name: json['name'] as String,
       type: $enumDecode(_$TransferTypeEnumMap, json['type']),
       cashierId: json['cashierId'] as String,
@@ -20,7 +20,7 @@ _TransferModel _$TransferModelFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TransferModelToJson(_TransferModel instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'quantity': instance.quantity,
+      'quantity': const DecimalConverter().toJson(instance.quantity),
       'name': instance.name,
       'type': _$TransferTypeEnumMap[instance.type]!,
       'cashierId': instance.cashierId,

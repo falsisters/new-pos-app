@@ -18,8 +18,8 @@ mixin _$CartItemModel {
   ProductDto get product;
   bool? get isGantang;
   bool? get isSpecialPrice;
-  double get price;
-  int get quantity;
+  Decimal get price;
+  Decimal get quantity;
 
   /// Create a copy of CartItemModel
   /// with the given fields replaced by the non-null parameter values.
@@ -68,8 +68,8 @@ abstract mixin class $CartItemModelCopyWith<$Res> {
       {ProductDto product,
       bool? isGantang,
       bool? isSpecialPrice,
-      double price,
-      int quantity});
+      Decimal price,
+      Decimal quantity});
 
   $ProductDtoCopyWith<$Res> get product;
 }
@@ -109,11 +109,11 @@ class _$CartItemModelCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
     ));
   }
 
@@ -148,9 +148,9 @@ class _CartItemModel extends CartItemModel {
   @override
   final bool? isSpecialPrice;
   @override
-  final double price;
+  final Decimal price;
   @override
-  final int quantity;
+  final Decimal quantity;
 
   /// Create a copy of CartItemModel
   /// with the given fields replaced by the non-null parameter values.
@@ -205,8 +205,8 @@ abstract mixin class _$CartItemModelCopyWith<$Res>
       {ProductDto product,
       bool? isGantang,
       bool? isSpecialPrice,
-      double price,
-      int quantity});
+      Decimal price,
+      Decimal quantity});
 
   @override
   $ProductDtoCopyWith<$Res> get product;
@@ -247,11 +247,11 @@ class __$CartItemModelCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
     ));
   }
 

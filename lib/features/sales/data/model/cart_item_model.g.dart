@@ -11,8 +11,8 @@ _CartItemModel _$CartItemModelFromJson(Map<String, dynamic> json) =>
       product: ProductDto.fromJson(json['product'] as Map<String, dynamic>),
       isGantang: json['isGantang'] as bool?,
       isSpecialPrice: json['isSpecialPrice'] as bool?,
-      price: (json['price'] as num).toDouble(),
-      quantity: (json['quantity'] as num).toInt(),
+      price: Decimal.fromJson(json['price'] as String),
+      quantity: Decimal.fromJson(json['quantity'] as String),
     );
 
 Map<String, dynamic> _$CartItemModelToJson(_CartItemModel instance) =>

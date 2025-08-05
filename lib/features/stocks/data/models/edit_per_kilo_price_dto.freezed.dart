@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$EditPerKiloPriceDto {
-  double get price;
+  @DecimalConverter()
+  Decimal get price;
 
   /// Create a copy of EditPerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -52,7 +53,7 @@ abstract mixin class $EditPerKiloPriceDtoCopyWith<$Res> {
           EditPerKiloPriceDto value, $Res Function(EditPerKiloPriceDto) _then) =
       _$EditPerKiloPriceDtoCopyWithImpl;
   @useResult
-  $Res call({double price});
+  $Res call({@DecimalConverter() Decimal price});
 }
 
 /// @nodoc
@@ -74,7 +75,7 @@ class _$EditPerKiloPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }
@@ -82,12 +83,13 @@ class _$EditPerKiloPriceDtoCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _EditPerKiloPriceDto implements EditPerKiloPriceDto {
-  const _EditPerKiloPriceDto({required this.price});
+  const _EditPerKiloPriceDto({@DecimalConverter() required this.price});
   factory _EditPerKiloPriceDto.fromJson(Map<String, dynamic> json) =>
       _$EditPerKiloPriceDtoFromJson(json);
 
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
 
   /// Create a copy of EditPerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -131,7 +133,7 @@ abstract mixin class _$EditPerKiloPriceDtoCopyWith<$Res>
       __$EditPerKiloPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({double price});
+  $Res call({@DecimalConverter() Decimal price});
 }
 
 /// @nodoc
@@ -153,7 +155,7 @@ class __$EditPerKiloPriceDtoCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }

@@ -12,7 +12,7 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
       picture: json['picture'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      userId: json['userId'] as String,
+      userId: json['userId'] as String?,
       sackPrice: (json['SackPrice'] as List<dynamic>)
           .map((e) => SackPrice.fromJson(e as Map<String, dynamic>))
           .toList(),

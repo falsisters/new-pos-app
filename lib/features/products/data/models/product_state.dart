@@ -7,8 +7,7 @@ part 'product_state.g.dart';
 @freezed
 sealed class ProductState with _$ProductState {
   const factory ProductState({
-    required List<Product> products,
-    @Default(false) bool isLoading,
+    @Default([]) List<Product> products,
     String? error,
   }) = _ProductState;
 

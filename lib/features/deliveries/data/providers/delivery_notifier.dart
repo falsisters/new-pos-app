@@ -62,7 +62,7 @@ class DeliveryNotifier extends AsyncNotifier<DeliveryStateModel> {
       await _deliveryRepository.createDelivery(createDeliveryRequest);
 
       // Refresh products after successful delivery
-      await ref.read(productProvider.notifier).getProducts();
+      await ref.refresh(productProvider.notifier).getProducts();
 
       // Return clean state with empty truck
       return DeliveryStateModel(truck: TruckModel());

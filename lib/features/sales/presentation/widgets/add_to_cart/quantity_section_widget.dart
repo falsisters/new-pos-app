@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ class QuantitySectionWidget extends StatelessWidget {
   final bool isPerKiloSelected;
   final bool isGantangMode;
   final bool hasStock;
-  final double availableStock;
+  final Decimal availableStock;
   final TextEditingController sackQuantityController;
   final TextEditingController wholeQuantityController;
   final TextEditingController perKiloTotalPriceController;
@@ -18,7 +19,7 @@ class QuantitySectionWidget extends StatelessWidget {
   final VoidCallback onDecreaseQuantity;
   final VoidCallback onIncreaseWholeQuantity;
   final VoidCallback onDecreaseWholeQuantity;
-  final Function(double) onSetQuickQuantity;
+  final Function(Decimal) onSetQuickQuantity;
   final Function(bool) onToggleGantangMode;
   final FocusNode focusNode;
 
@@ -210,15 +211,15 @@ class QuantitySectionWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildQuickActionButton('1', 1.0)),
+              Expanded(child: _buildQuickActionButton('1', Decimal.one)),
               const SizedBox(width: 2),
-              Expanded(child: _buildQuickActionButton('2', 2.0)),
+              Expanded(child: _buildQuickActionButton('2', Decimal.fromInt(2))),
               const SizedBox(width: 2),
-              Expanded(child: _buildQuickActionButton('3', 3.0)),
+              Expanded(child: _buildQuickActionButton('3', Decimal.fromInt(3))),
               const SizedBox(width: 2),
-              Expanded(child: _buildQuickActionButton('4', 4.0)),
+              Expanded(child: _buildQuickActionButton('4', Decimal.fromInt(4))),
               const SizedBox(width: 2),
-              Expanded(child: _buildQuickActionButton('5', 5.0)),
+              Expanded(child: _buildQuickActionButton('5', Decimal.fromInt(5))),
             ],
           ),
           const SizedBox(height: 8),
@@ -289,8 +290,8 @@ class QuantitySectionWidget extends StatelessWidget {
         ),
         validator: (value) {
           if (value == null || value.isEmpty) return 'Enter quantity';
-          final qty = int.tryParse(value);
-          if (qty == null || qty <= 0) return 'Valid quantity > 0';
+          final qty = Decimal.tryParse(value);
+          if (qty == null || qty <= Decimal.zero) return 'Valid quantity > 0';
           if (qty > availableStock) {
             return 'Only ${availableStock.toStringAsFixed(0)} available';
           }
@@ -434,7 +435,7 @@ class QuantitySectionWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActionButton(String label, double quantity) {
+  Widget _buildQuickActionButton(String label, Decimal quantity) {
     String unit = selectedSackPriceId != null
         ? 'sack'
         : isGantangMode

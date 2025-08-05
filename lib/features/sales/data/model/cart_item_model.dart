@@ -13,37 +13,37 @@ sealed class CartItemModel with _$CartItemModel {
     required ProductDto product,
     bool? isGantang,
     bool? isSpecialPrice,
-    required double price,
-    required int quantity,
+    required Decimal price,
+    required Decimal quantity,
   }) = _CartItemModel;
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) =>
       _$CartItemModelFromJson(json);
 
   // Add utility methods for printing calculations
-  double get totalPrice {
+  Decimal get totalPrice {
     final total = price * quantity;
     // Apply ceiling rounding with improved precision handling
-    final totalStr = total.toStringAsFixed(10); // Extra precision
-    final preciseTotal = double.parse(totalStr);
-    return (preciseTotal * 100).ceil() / 100.0;
+    return (Decimal.fromInt(
+                (total * Decimal.fromInt(100)).ceil().toBigInt().toInt()) /
+            Decimal.fromInt(100))
+        .toDecimal();
   }
 
   String get displayQuantity {
     if (product.perKiloPrice != null) {
       return '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg';
     } else if (product.sackPrice != null) {
-      return '${product.sackPrice!.quantity.toBigInt().toInt()} sack${product.sackPrice!.quantity > Decimal.fromInt(1) ? "s" : ""}';
+      return '${product.sackPrice!.quantity.toBigInt().toInt()} sack${product.sackPrice!.quantity > Decimal.one ? "s" : ""}';
     }
-    return '$quantity pcs';
+    return '${quantity.toBigInt()} pcs';
   }
 
   String get unitPriceDisplay {
     // Apply ceiling rounding to unit price display with improved precision
-    final priceStr = price.toStringAsFixed(10); // Extra precision
-    final precisePrice = double.parse(priceStr);
-    final ceiledPrice = (precisePrice * 100).ceil() / 100.0;
-    return '₱${ceiledPrice.toStringAsFixed(2)}';
+    final ceiledPrice =
+        (price * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+    return '₱${ceiledPrice.toDouble().toStringAsFixed(2)}';
   }
 
   String get totalPriceDisplay {
