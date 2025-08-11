@@ -10,11 +10,9 @@ _ProfitItem _$ProfitItemFromJson(Map<String, dynamic> json) => _ProfitItem(
       id: json['id'] as String,
       productId: json['productId'] as String,
       productName: json['productName'] as String,
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
-      profitPerUnit:
-          const DecimalConverter().fromJson(json['profitPerUnit'] as String),
-      totalProfit:
-          const DecimalConverter().fromJson(json['totalProfit'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
+      profitPerUnit: const DecimalConverter().fromJson(json['profitPerUnit']),
+      totalProfit: const DecimalConverter().fromJson(json['totalProfit']),
       priceType: json['priceType'] as String,
       formattedPriceType: json['formattedPriceType'] as String,
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),

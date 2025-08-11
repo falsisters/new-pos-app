@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/per_kilo_price_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/sack_price_model.dart';
@@ -55,11 +56,11 @@ class _StockProductTileState extends State<StockProductTile>
   bool _isOutOfStock() {
     // Check if all sack prices have zero stock
     final sackOutOfStock = widget.sackPrices.isEmpty ||
-        widget.sackPrices.every((sack) => sack.stock <= 0);
+        widget.sackPrices.every((sack) => sack.stock <= Decimal.zero);
 
     // Check if per kilo price has zero stock
-    final perKiloOutOfStock =
-        widget.perKiloPrice == null || widget.perKiloPrice!.stock <= 0;
+    final perKiloOutOfStock = widget.perKiloPrice == null ||
+        widget.perKiloPrice!.stock <= Decimal.zero;
 
     // Product is out of stock if both per kilo and sack options are out of stock
     return sackOutOfStock && perKiloOutOfStock;

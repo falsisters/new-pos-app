@@ -9,8 +9,8 @@ part of 'sack_price_dto.dart';
 _SackPriceDto _$SackPriceDtoFromJson(Map<String, dynamic> json) =>
     _SackPriceDto(
       id: json['id'] as String,
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
-      price: const DecimalConverter().fromJson(json['price'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
+      price: const DecimalConverter().fromJson(json['price']),
       type: $enumDecode(_$SackTypeEnumMap, json['type']),
     );
 

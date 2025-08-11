@@ -11,8 +11,7 @@ _ProfitCategory _$ProfitCategoryFromJson(Map<String, dynamic> json) =>
       items: (json['items'] as List<dynamic>)
           .map((e) => GroupedProfitItem.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalProfit:
-          const DecimalConverter().fromJson(json['totalProfit'] as String),
+      totalProfit: const DecimalConverter().fromJson(json['totalProfit']),
     );
 
 Map<String, dynamic> _$ProfitCategoryToJson(_ProfitCategory instance) =>

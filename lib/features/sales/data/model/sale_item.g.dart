@@ -10,9 +10,9 @@ _SaleItem _$SaleItemFromJson(Map<String, dynamic> json) => _SaleItem(
       id: json['id'] as String,
       productId: json['productId'] as String,
       product: Product.fromJson(json['product'] as Map<String, dynamic>),
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
-      discountedPrice: const NullableDecimalConverter()
-          .fromJson(json['discountedPrice'] as String?),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
+      discountedPrice:
+          const NullableDecimalConverter().fromJson(json['discountedPrice']),
       sackPrice: json['SackPrice'] == null
           ? null
           : SackPrice.fromJson(json['SackPrice'] as Map<String, dynamic>),

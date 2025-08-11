@@ -8,10 +8,9 @@ part of 'payment_totals.dart';
 
 _PaymentTotals _$PaymentTotalsFromJson(Map<String, dynamic> json) =>
     _PaymentTotals(
-      cash: const DecimalConverter().fromJson(json['cash'] as String),
-      check: const DecimalConverter().fromJson(json['check'] as String),
-      bankTransfer:
-          const DecimalConverter().fromJson(json['bankTransfer'] as String),
+      cash: const DecimalConverter().fromJson(json['cash']),
+      check: const DecimalConverter().fromJson(json['check']),
+      bankTransfer: const DecimalConverter().fromJson(json['bankTransfer']),
     );
 
 Map<String, dynamic> _$PaymentTotalsToJson(_PaymentTotals instance) =>

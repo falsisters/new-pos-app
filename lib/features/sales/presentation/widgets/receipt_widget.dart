@@ -127,7 +127,7 @@ class ReceiptWidget extends StatelessWidget {
                         Expanded(
                           flex: 2,
                           child: Text(
-                            '₱${NumberFormat('#,##0.00').format(itemTotal)}',
+                            '₱${NumberFormat('#,##0.00').format(itemTotal.toDouble())}',
                             style: TextStyle(fontSize: 14),
                             textAlign: TextAlign.right,
                           ),
@@ -171,16 +171,16 @@ class ReceiptWidget extends StatelessWidget {
               if (hasChange &&
                   sale.paymentMethod.toString().contains('CASH')) ...[
                 _buildReceiptRow('Cash Tendered:',
-                    '₱${NumberFormat('#,##0.00').format(Decimal.tryParse(tenderedAmount) ?? Decimal.zero)}'),
+                    '₱${NumberFormat('#,##0.00').format((Decimal.tryParse(tenderedAmount) ?? Decimal.zero).toDouble())}'),
                 _buildReceiptRow('Change:',
-                    '₱${NumberFormat('#,##0.00').format(Decimal.tryParse(changeAmount) ?? Decimal.zero)}'),
+                    '₱${NumberFormat('#,##0.00').format((Decimal.tryParse(changeAmount) ?? Decimal.zero).toDouble())}'),
                 SizedBox(height: 8),
               ],
 
               // Total
               _buildReceiptRow(
                 'TOTAL:',
-                '₱${NumberFormat('#,##0.00').format(sale.totalAmount)}',
+                '₱${NumberFormat('#,##0.00').format(sale.totalAmount.toDouble())}',
                 isBold: true,
                 fontSize: 18,
               ),

@@ -13,10 +13,8 @@ _GroupedSalesCheckItem _$GroupedSalesCheckItemFromJson(
       items: (json['items'] as List<dynamic>)
           .map((e) => GroupedSaleDetail.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalQuantity:
-          const DecimalConverter().fromJson(json['totalQuantity'] as String),
-      totalAmount:
-          const DecimalConverter().fromJson(json['totalAmount'] as String),
+      totalQuantity: const DecimalConverter().fromJson(json['totalQuantity']),
+      totalAmount: const DecimalConverter().fromJson(json['totalAmount']),
       paymentTotals:
           PaymentTotals.fromJson(json['paymentTotals'] as Map<String, dynamic>),
     );

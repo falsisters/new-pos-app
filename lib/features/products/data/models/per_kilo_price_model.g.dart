@@ -9,10 +9,9 @@ part of 'per_kilo_price_model.dart';
 _PerKiloPrice _$PerKiloPriceFromJson(Map<String, dynamic> json) =>
     _PerKiloPrice(
       id: json['id'] as String,
-      price: const DecimalConverter().fromJson(json['price'] as String),
-      stock: const DecimalConverter().fromJson(json['stock'] as String),
-      profit:
-          const NullableDecimalConverter().fromJson(json['profit'] as String?),
+      price: const DecimalConverter().fromJson(json['price']),
+      stock: const DecimalConverter().fromJson(json['stock']),
+      profit: const NullableDecimalConverter().fromJson(json['profit']),
       productId: json['productId'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),

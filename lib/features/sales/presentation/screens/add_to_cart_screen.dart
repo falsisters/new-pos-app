@@ -273,8 +273,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         } else if (quantity > Decimal.zero) {
           // Calculate total with Decimal precision
           final totalPrice = quantity * unitPrice;
-          final ceiledTotalPrice =
-              (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+          final ceiledTotalPrice = ((totalPrice * Decimal.fromInt(100)).ceil() /
+                  Decimal.fromInt(100))
+              .toDecimal();
 
           _perKiloTotalPriceController.text =
               ceiledTotalPrice.toDouble().toStringAsFixed(2);
@@ -364,7 +365,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         final quantity = Decimal.one;
         final totalPrice = quantity * unitPrice;
         final ceiledTotalPrice =
-            (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+            ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
+                .toDecimal();
         _perKiloTotalPriceController.text =
             ceiledTotalPrice.toDouble().toStringAsFixed(2);
       }
@@ -401,10 +403,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       final totalPrice = quantity * unitPrice;
 
       final ceiledTotalPrice =
-          (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+          ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
+              .toDecimal();
 
-      _perKiloTotalPriceController.text =
-          ceiledTotalPrice.toDecimal().toStringAsFixed(2);
+      _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
     }
   }
 
@@ -432,10 +434,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             Decimal.parse(widget.product.perKiloPrice!.price.toString());
         final totalPrice = kgQuantity * unitPrice;
         final ceiledTotalPrice =
-            (totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100);
+            ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
+                .toDecimal();
 
-        _perKiloTotalPriceController.text =
-            ceiledTotalPrice.toDecimal().toStringAsFixed(2);
+        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
       } else if (kgQuantity == Decimal.zero) {
         _perKiloTotalPriceController.clear();
       }

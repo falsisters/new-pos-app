@@ -41,7 +41,7 @@ Future<void> showCreateShiftDialog(BuildContext context, WidgetRef ref) async {
 
   final employeeController = TextEditingController();
 
-  final result = await showDialog<bool>(
+  await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
@@ -53,7 +53,7 @@ Future<void> showCreateShiftDialog(BuildContext context, WidgetRef ref) async {
           // Auto-close dialog if bypass is set
           if (!dialogState.isVisible || dialogState.isBypassed) {
             // Use a more robust way to close the dialog
-            Future.microtask(() {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted && Navigator.of(context).canPop()) {
                 Navigator.of(context).pop(true);
               }

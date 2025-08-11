@@ -10,8 +10,7 @@ _ProfitResponse _$ProfitResponseFromJson(Map<String, dynamic> json) =>
     _ProfitResponse(
       sacks: ProfitCategory.fromJson(json['sacks'] as Map<String, dynamic>),
       asin: ProfitCategory.fromJson(json['asin'] as Map<String, dynamic>),
-      overallTotal:
-          const DecimalConverter().fromJson(json['overallTotal'] as String),
+      overallTotal: const DecimalConverter().fromJson(json['overallTotal']),
       items: (json['rawItems'] as List<dynamic>)
           .map((e) => ProfitItem.fromJson(e as Map<String, dynamic>))
           .toList(),

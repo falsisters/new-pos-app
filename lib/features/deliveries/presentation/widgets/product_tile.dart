@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
@@ -59,13 +60,6 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
       return 'Just now';
     }
   }
-
-  // bool _hasAvailableStock() {
-  //   final hasPerKiloStock = widget.product.perKiloPrice != null &&
-  //       widget.product.perKiloPrice!.stock > 0;
-  //   final hasSackStock = widget.product.sackPrice.any((sack) => sack.stock > 0);
-  //   return hasPerKiloStock || hasSackStock;
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +209,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                             size: 12, color: AppColors.accent),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${widget.product.sackPrice.fold<int>(0, (sum, sack) => sum + sack.stock)} sacks',
+                                          '${widget.product.sackPrice.fold<Decimal>(Decimal.zero, (sum, sack) => sum + sack.stock).toBigInt().toInt()} sacks',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
@@ -350,7 +344,7 @@ class _DeliveryProductTileState extends State<DeliveryProductTile>
                                       .take(2)
                                       .map((sackPrice) {
                                     return Text(
-                                      '${parseSackType(sackPrice.type)}: ${sackPrice.stock} sacks',
+                                      '${parseSackType(sackPrice.type)}: ${sackPrice.stock.toBigInt().toInt()} sacks',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: Colors.grey[700],

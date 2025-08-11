@@ -335,7 +335,8 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                         ),
                         child: TableCalendar(
                           firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.now(),
+                          lastDay:
+                              DateTime.utc(2030, 12, 31), // Allow future dates
                           focusedDay: _selectedDate,
                           selectedDayPredicate: (day) {
                             return isSameDay(_selectedDate, day);

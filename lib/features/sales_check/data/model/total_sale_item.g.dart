@@ -10,17 +10,16 @@ _TotalSaleItem _$TotalSaleItemFromJson(Map<String, dynamic> json) =>
     _TotalSaleItem(
       id: json['id'] as String,
       saleId: json['saleId'] as String,
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
       product: ProductInfo.fromJson(json['product'] as Map<String, dynamic>),
       priceType: json['priceType'] as String,
-      unitPrice: const DecimalConverter().fromJson(json['unitPrice'] as String),
-      totalAmount:
-          const DecimalConverter().fromJson(json['totalAmount'] as String),
+      unitPrice: const DecimalConverter().fromJson(json['unitPrice']),
+      totalAmount: const DecimalConverter().fromJson(json['totalAmount']),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       isSpecialPrice: json['isSpecialPrice'] as bool,
       isDiscounted: json['isDiscounted'] as bool,
-      discountedPrice: const NullableDecimalConverter()
-          .fromJson(json['discountedPrice'] as String?),
+      discountedPrice:
+          const NullableDecimalConverter().fromJson(json['discountedPrice']),
       saleDate: DateTime.parse(json['saleDate'] as String),
       formattedTime: json['formattedTime'] as String,
       formattedSale: json['formattedSale'] as String,

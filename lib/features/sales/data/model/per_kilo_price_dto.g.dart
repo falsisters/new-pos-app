@@ -9,8 +9,8 @@ part of 'per_kilo_price_dto.dart';
 _PerKiloPriceDto _$PerKiloPriceDtoFromJson(Map<String, dynamic> json) =>
     _PerKiloPriceDto(
       id: json['id'] as String,
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
-      price: const DecimalConverter().fromJson(json['price'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
+      price: const DecimalConverter().fromJson(json['price']),
     );
 
 Map<String, dynamic> _$PerKiloPriceDtoToJson(_PerKiloPriceDto instance) =>

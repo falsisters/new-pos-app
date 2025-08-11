@@ -9,8 +9,7 @@ part of 'sales_check.dart';
 _SalesCheck _$SalesCheckFromJson(Map<String, dynamic> json) => _SalesCheck(
       id: json['id'] as String,
       cashierId: json['cashierId'] as String,
-      totalAmount:
-          const DecimalConverter().fromJson(json['totalAmount'] as String),
+      totalAmount: const DecimalConverter().fromJson(json['totalAmount']),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),

@@ -1,12 +1,18 @@
 import 'package:decimal/decimal.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-class DecimalConverter implements JsonConverter<Decimal, String> {
+class DecimalConverter implements JsonConverter<Decimal, dynamic> {
   const DecimalConverter();
 
   @override
-  Decimal fromJson(String json) {
-    return Decimal.parse(json);
+  Decimal fromJson(dynamic json) {
+    if (json is String) {
+      return Decimal.parse(json);
+    } else if (json is num) {
+      return Decimal.parse(json.toString());
+    } else {
+      throw FormatException('Cannot convert $json to Decimal');
+    }
   }
 
   @override
@@ -15,12 +21,19 @@ class DecimalConverter implements JsonConverter<Decimal, String> {
   }
 }
 
-class NullableDecimalConverter implements JsonConverter<Decimal?, String?> {
+class NullableDecimalConverter implements JsonConverter<Decimal?, dynamic> {
   const NullableDecimalConverter();
 
   @override
-  Decimal? fromJson(String? json) {
-    return json != null ? Decimal.parse(json) : null;
+  Decimal? fromJson(dynamic json) {
+    if (json == null) return null;
+    if (json is String) {
+      return Decimal.parse(json);
+    } else if (json is num) {
+      return Decimal.parse(json.toString());
+    } else {
+      throw FormatException('Cannot convert $json to Decimal');
+    }
   }
 
   @override

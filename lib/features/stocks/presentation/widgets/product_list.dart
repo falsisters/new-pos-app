@@ -1,5 +1,6 @@
 // ignore_for_file: unused_result
 
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
 import 'package:falsisters_pos_android/features/stocks/presentation/screens/product_editing_screen.dart';
@@ -331,10 +332,10 @@ class _StockProductListState extends ConsumerState<StockProductList> {
                         const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final product = products[index];
-                      final hasStock =
-                          (product.sackPrice.any((sack) => sack.stock > 0)) ||
-                              (product.perKiloPrice != null &&
-                                  product.perKiloPrice!.stock > 0);
+                      final hasStock = (product.sackPrice
+                              .any((sack) => sack.stock > Decimal.zero)) ||
+                          (product.perKiloPrice != null &&
+                              product.perKiloPrice!.stock > Decimal.zero);
 
                       return StockProductTile(
                         title: product.name,

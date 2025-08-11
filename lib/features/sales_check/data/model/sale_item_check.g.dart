@@ -9,7 +9,7 @@ part of 'sale_item_check.dart';
 _SaleItemCheck _$SaleItemCheckFromJson(Map<String, dynamic> json) =>
     _SaleItemCheck(
       id: json['id'] as String,
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
       productId: json['productId'] as String,
       sackPriceId: json['sackPriceId'] as String?,
       perKiloPriceId: json['perKiloPriceId'] as String?,

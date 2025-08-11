@@ -9,12 +9,9 @@ part of 'grouped_profit_item.dart';
 _GroupedProfitItem _$GroupedProfitItemFromJson(Map<String, dynamic> json) =>
     _GroupedProfitItem(
       productName: json['productName'] as String,
-      profitPerUnit:
-          const DecimalConverter().fromJson(json['profitPerUnit'] as String),
-      totalQuantity:
-          const DecimalConverter().fromJson(json['totalQuantity'] as String),
-      totalProfit:
-          const DecimalConverter().fromJson(json['totalProfit'] as String),
+      profitPerUnit: const DecimalConverter().fromJson(json['profitPerUnit']),
+      totalQuantity: const DecimalConverter().fromJson(json['totalQuantity']),
+      totalProfit: const DecimalConverter().fromJson(json['totalProfit']),
       orders: (json['orders'] as num).toInt(),
       formattedSummary: json['formattedSummary'] as String,
     );

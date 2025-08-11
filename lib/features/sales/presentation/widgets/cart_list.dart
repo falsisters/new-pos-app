@@ -56,10 +56,9 @@ class _CartListState extends ConsumerState<CartList> {
 
       // Apply final ceiling rounding to the grand total
       final preciseGrandTotal = Decimal.parse(ceilingTotal.toStringAsFixed(10));
-      final finalCeiledTotal =
-          ((preciseGrandTotal * Decimal.fromInt(100)).ceil() /
-                  Decimal.fromInt(100))
-              .toDecimal();
+      final ceiledResult = (preciseGrandTotal * Decimal.fromInt(100)).ceil() /
+          Decimal.fromInt(100);
+      final finalCeiledTotal = ceiledResult.toDecimal();
 
       // Use push instead of pushAndRemoveUntil to allow proper back navigation
       Navigator.of(context)
@@ -363,7 +362,7 @@ class _CartListState extends ConsumerState<CartList> {
                                                 color: AppColors.secondary),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'Discount: ₱${NumberFormat('#,##0.00').format(product.discountedPrice!)} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
+                                              'Discount: ₱${NumberFormat('#,##0.00').format(product.discountedPrice!.toDouble())} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
                                               style: TextStyle(
                                                 color: AppColors.secondary,
                                                 fontWeight: FontWeight.bold,
@@ -405,7 +404,7 @@ class _CartListState extends ConsumerState<CartList> {
                                       ),
                                     ),
                                     Text(
-                                      '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateItemTotal(product)))}',
+                                      '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateItemTotal(product)).toDouble())}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
@@ -506,7 +505,7 @@ class _CartListState extends ConsumerState<CartList> {
                           ],
                         ),
                         Text(
-                          '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateTotal(salesState)))}',
+                          '₱${NumberFormat('#,##0.00').format(Decimal.parse(_calculateTotal(salesState)).toDouble())}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
@@ -566,7 +565,7 @@ class _CartListState extends ConsumerState<CartList> {
   Widget _buildPriceInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
       String priceText =
-          '₱${NumberFormat('#,##0.00').format(product.perKiloPrice!.price)}/kg';
+          '₱${NumberFormat('#,##0.00').format(product.perKiloPrice!.price.toDouble())}/kg';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -583,7 +582,7 @@ class _CartListState extends ConsumerState<CartList> {
       );
     } else if (product.sackPrice != null) {
       String priceText =
-          '₱${NumberFormat('#,##0.00').format(product.sackPrice!.price)}/sack';
+          '₱${NumberFormat('#,##0.00').format(product.sackPrice!.price.toDouble())}/sack';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -635,16 +634,15 @@ class _CartListState extends ConsumerState<CartList> {
   }
 
   String _calculateItemTotal(ProductDto product) {
-    // Define ceiling rounding function with improved precision
+    // Use the same ceiling rounding function as checkout screen
     Decimal ceilRoundPrice(Decimal value) {
-      if (value <= Decimal.zero) return Decimal.zero;
+      if (value < Decimal.zero) return Decimal.zero;
 
-      // Convert to cents and ceiling round
-      final centsValue = value * Decimal.fromInt(100);
-      final ceiledCents = centsValue.ceil();
+      // Convert to cents, ceiling round, then back to decimal
+      final centsValue = (value * Decimal.fromInt(100)).ceil();
+      final ceiledCents = ((centsValue.toBigInt().toInt() + 99) ~/ 100) * 100;
 
-      // Convert back to decimal value
-      return Decimal.parse((ceiledCents / Decimal.fromInt(100)).toString());
+      return (Decimal.fromInt(ceiledCents) / Decimal.fromInt(100)).toDecimal();
     }
 
     if (product.isDiscounted == true && product.discountedPrice != null) {
@@ -682,16 +680,15 @@ class _CartListState extends ConsumerState<CartList> {
       return '0';
     }
 
-    // Define ceiling rounding function with improved precision
+    // Use the same ceiling rounding function as checkout screen
     Decimal ceilRoundPrice(Decimal value) {
-      if (value <= Decimal.zero) return Decimal.zero;
+      if (value < Decimal.zero) return Decimal.zero;
 
-      // Convert to cents and ceiling round
-      final centsValue = value * Decimal.fromInt(100);
-      final ceiledCents = centsValue.ceil();
+      // Convert to cents, ceiling round, then back to decimal
+      final centsValue = (value * Decimal.fromInt(100)).ceil();
+      final ceiledCents = ((centsValue.toBigInt().toInt() + 99) ~/ 100) * 100;
 
-      // Convert back to decimal value
-      return Decimal.parse((ceiledCents / Decimal.fromInt(100)).toString());
+      return (Decimal.fromInt(ceiledCents) / Decimal.fromInt(100)).toDecimal();
     }
 
     Decimal total = Decimal.zero;

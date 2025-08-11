@@ -10,14 +10,13 @@ _CreateSaleRequestModel _$CreateSaleRequestModelFromJson(
         Map<String, dynamic> json) =>
     _CreateSaleRequestModel(
       orderId: json['orderId'] as String?,
-      totalAmount:
-          const DecimalConverter().fromJson(json['totalAmount'] as String),
+      totalAmount: const DecimalConverter().fromJson(json['totalAmount']),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       saleItems: (json['saleItem'] as List<dynamic>)
           .map((e) => ProductDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      changeAmount: const NullableDecimalConverter()
-          .fromJson(json['changeAmount'] as String?),
+      changeAmount:
+          const NullableDecimalConverter().fromJson(json['changeAmount']),
       cashierId: json['cashierId'] as String?,
       cashierName: json['cashierName'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,

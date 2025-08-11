@@ -8,15 +8,14 @@ part of 'grouped_sale_detail.dart';
 
 _GroupedSaleDetail _$GroupedSaleDetailFromJson(Map<String, dynamic> json) =>
     _GroupedSaleDetail(
-      quantity: const DecimalConverter().fromJson(json['quantity'] as String),
-      unitPrice: const DecimalConverter().fromJson(json['unitPrice'] as String),
-      totalAmount:
-          const DecimalConverter().fromJson(json['totalAmount'] as String),
+      quantity: const DecimalConverter().fromJson(json['quantity']),
+      unitPrice: const DecimalConverter().fromJson(json['unitPrice']),
+      totalAmount: const DecimalConverter().fromJson(json['totalAmount']),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
       isSpecialPrice: json['isSpecialPrice'] as bool,
       isDiscounted: json['isDiscounted'] as bool,
-      discountedPrice: const NullableDecimalConverter()
-          .fromJson(json['discountedPrice'] as String?),
+      discountedPrice:
+          const NullableDecimalConverter().fromJson(json['discountedPrice']),
       formattedSale: json['formattedSale'] as String,
     );
 

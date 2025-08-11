@@ -9,8 +9,8 @@ part of 'product_dto.dart';
 _ProductDto _$ProductDtoFromJson(Map<String, dynamic> json) => _ProductDto(
       id: json['id'] as String,
       name: json['name'] as String,
-      discountedPrice: const NullableDecimalConverter()
-          .fromJson(json['discountedPrice'] as String?),
+      discountedPrice:
+          const NullableDecimalConverter().fromJson(json['discountedPrice']),
       isDiscounted: json['isDiscounted'] as bool?,
       isGantang: json['isGantang'] as bool?,
       isSpecialPrice: json['isSpecialPrice'] as bool?,

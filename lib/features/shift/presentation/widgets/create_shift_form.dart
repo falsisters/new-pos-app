@@ -219,14 +219,12 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                           // Set bypass first
                           await SecureCodeService.setBypass();
 
-                          // Update dialog state
+                          // Update dialog state - this will auto-close the dialog
                           widget.ref
                               .read(dialogStateProvider.notifier)
                               .setBypass();
 
                           if (context.mounted) {
-                            Navigator.pop(context);
-
                             // Show success message
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -626,14 +624,10 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                         widget.ref.read(dialogStateProvider.notifier);
                     final shiftNotifier =
                         widget.ref.read(shiftProvider.notifier);
-                    final navigator = Navigator.of(context);
                     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
                     try {
-                      // Hide dialog immediately
-                      dialogNotifier.hideDialog();
-
-                      // Start the shift
+                      // Start the shift first
                       await shiftNotifier.startShift(
                         CreateShiftRequestModel(
                           employees:
@@ -646,8 +640,8 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                         // Refresh the shift provider
                         widget.ref.invalidate(shiftProvider);
 
-                        // Close dialog
-                        navigator.pop();
+                        // Hide dialog state and close dialog - let the auto-close handle it
+                        dialogNotifier.hideDialog();
 
                         // Show success message
                         scaffoldMessenger.showSnackBar(
@@ -660,9 +654,6 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
                     } catch (e) {
                       // Only proceed if widget is still mounted
                       if (mounted) {
-                        // If there's an error, show dialog again
-                        dialogNotifier.showDialog();
-
                         // Show error message
                         scaffoldMessenger.showSnackBar(
                           SnackBar(
@@ -733,8 +724,8 @@ class _ShiftFormContentState extends State<_ShiftFormContent> {
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () async {
-                // Close dialog first
-                Navigator.of(context).pop();
+                // Hide dialog state first, let auto-close handle the actual closing
+                widget.ref.read(dialogStateProvider.notifier).hideDialog();
 
                 // Then logout
                 await widget.ref.read(authProvider.notifier).logout();
