@@ -52,11 +52,11 @@ class _ProductTileState extends State<ProductTile>
 
     // Check per kilo stock
     bool perKiloOutOfStock = widget.product!.perKiloPrice != null &&
-        widget.product!.perKiloPrice!.stock <= 0;
+        widget.product!.perKiloPrice!.stock <= Decimal.zero;
 
     // Check sack stock
     bool allSacksOutOfStock = widget.product!.sackPrice.isNotEmpty &&
-        widget.product!.sackPrice.every((sack) => sack.stock <= 0);
+        widget.product!.sackPrice.every((sack) => sack.stock <= Decimal.zero);
 
     // If has per kilo and sacks, both must be out of stock
     if (widget.product!.perKiloPrice != null &&

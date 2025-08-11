@@ -375,22 +375,22 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     if (_selectedSackPriceId != null) {
       final sackPrice = widget.product.sackPrice
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
-      return sackPrice.stock > 0;
+      return sackPrice.stock > Decimal.zero;
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-      return widget.product.perKiloPrice!.stock > 0;
+      return widget.product.perKiloPrice!.stock > Decimal.zero;
     }
     return false;
   }
 
-  double _getAvailableStock() {
+  Decimal _getAvailableStock() {
     if (_selectedSackPriceId != null) {
       final sackPrice = widget.product.sackPrice
           .firstWhere((sp) => sp.id == _selectedSackPriceId);
-      return sackPrice.stock.toDouble();
+      return sackPrice.stock;
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       return widget.product.perKiloPrice!.stock;
     }
-    return 0.0;
+    return Decimal.zero;
   }
 
   void _calculateInitialPerKiloTotalPrice() {
@@ -458,8 +458,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
 
-      if (kgQuantity <=
-          Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
+      if (kgQuantity <= widget.product.perKiloPrice!.stock) {
         setState(() {
           _wholeQuantityController.text = newValue.toString();
         });
@@ -473,7 +472,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         final sackPrice = widget.product.sackPrice
             .firstWhere((sp) => sp.id == _selectedSackPriceId);
         int currentQuantity = int.tryParse(_sackQuantityController.text) ?? 1;
-        if (currentQuantity < sackPrice.stock) {
+        if (Decimal.fromInt(currentQuantity) < sackPrice.stock) {
           currentQuantity++;
           _sackQuantityController.text = currentQuantity.toString();
         }
@@ -481,7 +480,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         double currentQuantity =
             double.tryParse(_perKiloQuantityController.text) ?? 1.0;
         double newQuantity = currentQuantity + 1.0; // Increment by 1kg
-        if (newQuantity <= widget.product.perKiloPrice!.stock) {
+        if (Decimal.parse(newQuantity.toString()) <=
+            widget.product.perKiloPrice!.stock) {
           _setQuantityFromKg(Decimal.parse(newQuantity.toString()));
         }
       }
@@ -536,8 +536,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
 
-      if (kgQuantity <=
-          Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
+      if (kgQuantity <= widget.product.perKiloPrice!.stock) {
         setState(() {
           _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
         });
@@ -563,7 +562,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         final sackPrice = widget.product.sackPrice
             .firstWhere((sp) => sp.id == _selectedSackPriceId);
         int intQuantity = quantity.toInt();
-        if (intQuantity <= sackPrice.stock) {
+        if (Decimal.fromInt(intQuantity) <= sackPrice.stock) {
           if (_isSpecialPrice) {
             final minQty = sackPrice.specialPrice?.minimumQty ?? 1;
             if (intQuantity >= minQty) {
@@ -579,8 +578,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
             ? _convertGantangToKg(displayQuantity)
             : displayQuantity;
 
-        if (kgQuantity <=
-            Decimal.parse(widget.product.perKiloPrice!.stock.toString())) {
+        if (kgQuantity <= widget.product.perKiloPrice!.stock) {
           _setQuantityFromKg(kgQuantity);
         }
       }
@@ -841,7 +839,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   @override
   Widget build(BuildContext context) {
     final bool hasStock = _hasStock();
-    final double availableStock = _getAvailableStock();
+    final Decimal availableStock = _getAvailableStock();
 
     return Scaffold(
       appBar: AppBar(

@@ -8,8 +8,10 @@ part of 'sack_price_model.dart';
 
 _SackPrice _$SackPriceFromJson(Map<String, dynamic> json) => _SackPrice(
       id: json['id'] as String,
-      price: (json['price'] as num).toDouble(),
-      stock: (json['stock'] as num).toInt(),
+      price: const DecimalConverter().fromJson(json['price'] as String),
+      stock: const DecimalConverter().fromJson(json['stock'] as String),
+      profit:
+          const NullableDecimalConverter().fromJson(json['profit'] as String?),
       type: $enumDecode(_$SackTypeEnumMap, json['type']),
       productId: json['productId'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -23,8 +25,9 @@ _SackPrice _$SackPriceFromJson(Map<String, dynamic> json) => _SackPrice(
 Map<String, dynamic> _$SackPriceToJson(_SackPrice instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'price': instance.price,
-      'stock': instance.stock,
+      'price': const DecimalConverter().toJson(instance.price),
+      'stock': const DecimalConverter().toJson(instance.stock),
+      'profit': const NullableDecimalConverter().toJson(instance.profit),
       'type': _$SackTypeEnumMap[instance.type]!,
       'productId': instance.productId,
       'createdAt': instance.createdAt.toIso8601String(),

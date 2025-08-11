@@ -16,8 +16,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SackPrice {
   String get id;
-  double get price;
-  int get stock;
+  @DecimalConverter()
+  Decimal get price;
+  @DecimalConverter()
+  Decimal get stock;
+  @NullableDecimalConverter()
+  Decimal? get profit;
   SackType get type;
   String get productId;
   DateTime get createdAt;
@@ -43,6 +47,7 @@ mixin _$SackPrice {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.stock, stock) || other.stock == stock) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
@@ -58,12 +63,12 @@ mixin _$SackPrice {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, price, stock, type,
+  int get hashCode => Object.hash(runtimeType, id, price, stock, profit, type,
       productId, createdAt, updatedAt, specialPrice, specialPriceId);
 
   @override
   String toString() {
-    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
+    return 'SackPrice(id: $id, price: $price, stock: $stock, profit: $profit, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
   }
 }
 
@@ -74,8 +79,9 @@ abstract mixin class $SackPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
-      int stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
+      @NullableDecimalConverter() Decimal? profit,
       SackType type,
       String productId,
       DateTime createdAt,
@@ -101,6 +107,7 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
     Object? id = null,
     Object? price = null,
     Object? stock = null,
+    Object? profit = freezed,
     Object? type = null,
     Object? productId = null,
     Object? createdAt = null,
@@ -116,11 +123,15 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
@@ -168,8 +179,9 @@ class _$SackPriceCopyWithImpl<$Res> implements $SackPriceCopyWith<$Res> {
 class _SackPrice implements SackPrice {
   const _SackPrice(
       {required this.id,
-      required this.price,
-      required this.stock,
+      @DecimalConverter() required this.price,
+      @DecimalConverter() required this.stock,
+      @NullableDecimalConverter() this.profit,
       required this.type,
       required this.productId,
       required this.createdAt,
@@ -182,9 +194,14 @@ class _SackPrice implements SackPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
-  final int stock;
+  @DecimalConverter()
+  final Decimal stock;
+  @override
+  @NullableDecimalConverter()
+  final Decimal? profit;
   @override
   final SackType type;
   @override
@@ -221,6 +238,7 @@ class _SackPrice implements SackPrice {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.stock, stock) || other.stock == stock) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
@@ -236,12 +254,12 @@ class _SackPrice implements SackPrice {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, price, stock, type,
+  int get hashCode => Object.hash(runtimeType, id, price, stock, profit, type,
       productId, createdAt, updatedAt, specialPrice, specialPriceId);
 
   @override
   String toString() {
-    return 'SackPrice(id: $id, price: $price, stock: $stock, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
+    return 'SackPrice(id: $id, price: $price, stock: $stock, profit: $profit, type: $type, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt, specialPrice: $specialPrice, specialPriceId: $specialPriceId)';
   }
 }
 
@@ -255,8 +273,9 @@ abstract mixin class _$SackPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
-      int stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
+      @NullableDecimalConverter() Decimal? profit,
       SackType type,
       String productId,
       DateTime createdAt,
@@ -283,6 +302,7 @@ class __$SackPriceCopyWithImpl<$Res> implements _$SackPriceCopyWith<$Res> {
     Object? id = null,
     Object? price = null,
     Object? stock = null,
+    Object? profit = freezed,
     Object? type = null,
     Object? productId = null,
     Object? createdAt = null,
@@ -298,11 +318,15 @@ class __$SackPriceCopyWithImpl<$Res> implements _$SackPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as int,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable

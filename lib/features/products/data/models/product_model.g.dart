@@ -6,6 +6,16 @@ part of 'product_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_Cashier _$CashierFromJson(Map<String, dynamic> json) => _Cashier(
+      name: json['name'] as String,
+      userId: json['userId'] as String,
+    );
+
+Map<String, dynamic> _$CashierToJson(_Cashier instance) => <String, dynamic>{
+      'name': instance.name,
+      'userId': instance.userId,
+    };
+
 _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -19,6 +29,10 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
       perKiloPrice: json['perKiloPrice'] == null
           ? null
           : PerKiloPrice.fromJson(json['perKiloPrice'] as Map<String, dynamic>),
+      cashier: json['cashier'] == null
+          ? null
+          : Cashier.fromJson(json['cashier'] as Map<String, dynamic>),
+      cashierId: json['cashierId'] as String?,
     );
 
 Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
@@ -30,4 +44,6 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
       'userId': instance.userId,
       'SackPrice': instance.sackPrice,
       'perKiloPrice': instance.perKiloPrice,
+      'cashier': instance.cashier,
+      'cashierId': instance.cashierId,
     };

@@ -8,6 +8,8 @@
 //   updatedAt   DateTime  @updatedAt
 // }
 
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'special_price_model.freezed.dart';
@@ -17,7 +19,8 @@ part 'special_price_model.g.dart';
 sealed class SpecialPrice with _$SpecialPrice {
   const factory SpecialPrice({
     required String id,
-    required double price,
+    @DecimalConverter() required Decimal price,
+    @NullableDecimalConverter() Decimal? profit,
     required int minimumQty,
     required String sackPriceId,
     required DateTime createdAt,

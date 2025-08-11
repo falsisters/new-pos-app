@@ -16,7 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SpecialPrice {
   String get id;
-  double get price;
+  @DecimalConverter()
+  Decimal get price;
+  @NullableDecimalConverter()
+  Decimal? get profit;
   int get minimumQty;
   String get sackPriceId;
   DateTime get createdAt;
@@ -40,6 +43,7 @@ mixin _$SpecialPrice {
             other is SpecialPrice &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.minimumQty, minimumQty) ||
                 other.minimumQty == minimumQty) &&
             (identical(other.sackPriceId, sackPriceId) ||
@@ -52,12 +56,12 @@ mixin _$SpecialPrice {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, price, minimumQty, sackPriceId, createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, price, profit, minimumQty,
+      sackPriceId, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'SpecialPrice(id: $id, price: $price, minimumQty: $minimumQty, sackPriceId: $sackPriceId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SpecialPrice(id: $id, price: $price, profit: $profit, minimumQty: $minimumQty, sackPriceId: $sackPriceId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -69,7 +73,8 @@ abstract mixin class $SpecialPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
+      @DecimalConverter() Decimal price,
+      @NullableDecimalConverter() Decimal? profit,
       int minimumQty,
       String sackPriceId,
       DateTime createdAt,
@@ -90,6 +95,7 @@ class _$SpecialPriceCopyWithImpl<$Res> implements $SpecialPriceCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? price = null,
+    Object? profit = freezed,
     Object? minimumQty = null,
     Object? sackPriceId = null,
     Object? createdAt = null,
@@ -103,7 +109,11 @@ class _$SpecialPriceCopyWithImpl<$Res> implements $SpecialPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable
@@ -129,7 +139,8 @@ class _$SpecialPriceCopyWithImpl<$Res> implements $SpecialPriceCopyWith<$Res> {
 class _SpecialPrice implements SpecialPrice {
   const _SpecialPrice(
       {required this.id,
-      required this.price,
+      @DecimalConverter() required this.price,
+      @NullableDecimalConverter() this.profit,
       required this.minimumQty,
       required this.sackPriceId,
       required this.createdAt,
@@ -140,7 +151,11 @@ class _SpecialPrice implements SpecialPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
+  @override
+  @NullableDecimalConverter()
+  final Decimal? profit;
   @override
   final int minimumQty;
   @override
@@ -172,6 +187,7 @@ class _SpecialPrice implements SpecialPrice {
             other is _SpecialPrice &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.minimumQty, minimumQty) ||
                 other.minimumQty == minimumQty) &&
             (identical(other.sackPriceId, sackPriceId) ||
@@ -184,12 +200,12 @@ class _SpecialPrice implements SpecialPrice {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, price, minimumQty, sackPriceId, createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, price, profit, minimumQty,
+      sackPriceId, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'SpecialPrice(id: $id, price: $price, minimumQty: $minimumQty, sackPriceId: $sackPriceId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SpecialPrice(id: $id, price: $price, profit: $profit, minimumQty: $minimumQty, sackPriceId: $sackPriceId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -203,7 +219,8 @@ abstract mixin class _$SpecialPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
+      @DecimalConverter() Decimal price,
+      @NullableDecimalConverter() Decimal? profit,
       int minimumQty,
       String sackPriceId,
       DateTime createdAt,
@@ -225,6 +242,7 @@ class __$SpecialPriceCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? price = null,
+    Object? profit = freezed,
     Object? minimumQty = null,
     Object? sackPriceId = null,
     Object? createdAt = null,
@@ -238,7 +256,11 @@ class __$SpecialPriceCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       minimumQty: null == minimumQty
           ? _self.minimumQty
           : minimumQty // ignore: cast_nullable_to_non_nullable

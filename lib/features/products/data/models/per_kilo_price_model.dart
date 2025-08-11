@@ -8,6 +8,8 @@
 //   updatedAt DateTime @updatedAt
 // }
 
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'per_kilo_price_model.freezed.dart';
@@ -17,8 +19,9 @@ part 'per_kilo_price_model.g.dart';
 sealed class PerKiloPrice with _$PerKiloPrice {
   const factory PerKiloPrice({
     required String id,
-    required double price,
-    required double stock,
+    @DecimalConverter() required Decimal price,
+    @DecimalConverter() required Decimal stock,
+    @NullableDecimalConverter() Decimal? profit,
     required String productId,
     required DateTime createdAt,
     required DateTime updatedAt,

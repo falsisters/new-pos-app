@@ -16,8 +16,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PerKiloPrice {
   String get id;
-  double get price;
-  double get stock;
+  @DecimalConverter()
+  Decimal get price;
+  @DecimalConverter()
+  Decimal get stock;
+  @NullableDecimalConverter()
+  Decimal? get profit;
   String get productId;
   DateTime get createdAt;
   DateTime get updatedAt;
@@ -41,6 +45,7 @@ mixin _$PerKiloPrice {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.stock, stock) || other.stock == stock) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
             (identical(other.createdAt, createdAt) ||
@@ -52,11 +57,11 @@ mixin _$PerKiloPrice {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, id, price, stock, productId, createdAt, updatedAt);
+      runtimeType, id, price, stock, profit, productId, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'PerKiloPrice(id: $id, price: $price, stock: $stock, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PerKiloPrice(id: $id, price: $price, stock: $stock, profit: $profit, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -68,8 +73,9 @@ abstract mixin class $PerKiloPriceCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double price,
-      double stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
+      @NullableDecimalConverter() Decimal? profit,
       String productId,
       DateTime createdAt,
       DateTime updatedAt});
@@ -90,6 +96,7 @@ class _$PerKiloPriceCopyWithImpl<$Res> implements $PerKiloPriceCopyWith<$Res> {
     Object? id = null,
     Object? price = null,
     Object? stock = null,
+    Object? profit = freezed,
     Object? productId = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -102,11 +109,15 @@ class _$PerKiloPriceCopyWithImpl<$Res> implements $PerKiloPriceCopyWith<$Res> {
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable
@@ -128,8 +139,9 @@ class _$PerKiloPriceCopyWithImpl<$Res> implements $PerKiloPriceCopyWith<$Res> {
 class _PerKiloPrice implements PerKiloPrice {
   const _PerKiloPrice(
       {required this.id,
-      required this.price,
-      required this.stock,
+      @DecimalConverter() required this.price,
+      @DecimalConverter() required this.stock,
+      @NullableDecimalConverter() this.profit,
       required this.productId,
       required this.createdAt,
       required this.updatedAt});
@@ -139,9 +151,14 @@ class _PerKiloPrice implements PerKiloPrice {
   @override
   final String id;
   @override
-  final double price;
+  @DecimalConverter()
+  final Decimal price;
   @override
-  final double stock;
+  @DecimalConverter()
+  final Decimal stock;
+  @override
+  @NullableDecimalConverter()
+  final Decimal? profit;
   @override
   final String productId;
   @override
@@ -172,6 +189,7 @@ class _PerKiloPrice implements PerKiloPrice {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.stock, stock) || other.stock == stock) &&
+            (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.productId, productId) ||
                 other.productId == productId) &&
             (identical(other.createdAt, createdAt) ||
@@ -183,11 +201,11 @@ class _PerKiloPrice implements PerKiloPrice {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, id, price, stock, productId, createdAt, updatedAt);
+      runtimeType, id, price, stock, profit, productId, createdAt, updatedAt);
 
   @override
   String toString() {
-    return 'PerKiloPrice(id: $id, price: $price, stock: $stock, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PerKiloPrice(id: $id, price: $price, stock: $stock, profit: $profit, productId: $productId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -201,8 +219,9 @@ abstract mixin class _$PerKiloPriceCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double price,
-      double stock,
+      @DecimalConverter() Decimal price,
+      @DecimalConverter() Decimal stock,
+      @NullableDecimalConverter() Decimal? profit,
       String productId,
       DateTime createdAt,
       DateTime updatedAt});
@@ -224,6 +243,7 @@ class __$PerKiloPriceCopyWithImpl<$Res>
     Object? id = null,
     Object? price = null,
     Object? stock = null,
+    Object? profit = freezed,
     Object? productId = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -236,11 +256,15 @@ class __$PerKiloPriceCopyWithImpl<$Res>
       price: null == price
           ? _self.price
           : price // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       stock: null == stock
           ? _self.stock
           : stock // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
+      profit: freezed == profit
+          ? _self.profit
+          : profit // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       productId: null == productId
           ? _self.productId
           : productId // ignore: cast_nullable_to_non_nullable

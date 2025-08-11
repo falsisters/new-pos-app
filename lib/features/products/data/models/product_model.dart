@@ -22,6 +22,17 @@ part 'product_model.freezed.dart';
 part 'product_model.g.dart';
 
 @freezed
+sealed class Cashier with _$Cashier {
+  const factory Cashier({
+    required String name,
+    required String userId,
+  }) = _Cashier;
+
+  factory Cashier.fromJson(Map<String, dynamic> json) =>
+      _$CashierFromJson(json);
+}
+
+@freezed
 sealed class Product with _$Product {
   const factory Product({
     required String id,
@@ -32,6 +43,8 @@ sealed class Product with _$Product {
     required String userId,
     @JsonKey(name: "SackPrice") required List<SackPrice> sackPrice,
     PerKiloPrice? perKiloPrice,
+    Cashier? cashier,
+    String? cashierId,
   }) = _Product;
 
   factory Product.fromJson(Map<String, dynamic> json) =>

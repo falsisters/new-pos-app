@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
@@ -178,7 +179,7 @@ class PricingOptionsWidget extends StatelessWidget {
             icon: Icons.inventory_rounded,
             title: parseSackType(sack.type),
             subtitle: '₱${sack.price.toStringAsFixed(2)} / sack',
-            stock: '${sack.stock.toInt()} sacks available',
+            stock: '${sack.stock.toBigInt().toInt()} sacks available',
             color: AppColors.accent,
           ),
         );
@@ -218,13 +219,13 @@ class PricingOptionsWidget extends StatelessWidget {
     // Determine if this option is out of stock
     bool isOutOfStock = false;
     if (title == 'Per Kilogram' && product.perKiloPrice != null) {
-      isOutOfStock = product.perKiloPrice!.stock <= 0;
+      isOutOfStock = product.perKiloPrice!.stock <= Decimal.zero;
     } else {
       final matchingSack = product.sackPrice.firstWhere(
         (sack) => parseSackType(sack.type) == title,
         orElse: () => product.sackPrice.first,
       );
-      isOutOfStock = matchingSack.stock <= 0;
+      isOutOfStock = matchingSack.stock <= Decimal.zero;
     }
 
     return GestureDetector(

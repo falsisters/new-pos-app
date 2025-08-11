@@ -1,3 +1,4 @@
+import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_state.dart';
 import 'package:falsisters_pos_android/features/products/data/repository/product_repository.dart';
 import 'package:flutter/material.dart';
@@ -8,16 +9,23 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
 
   @override
   Future<ProductState> build() async {
-    final products = await _productRepository.getProducts();
+    try {
+      final products = await _productRepository.getProducts();
 
-    // Preload images after getting products
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadProductImages(products);
-    });
+      // Preload images after getting products
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _preloadProductImages(products);
+      });
 
-    return ProductState(
-      products: products,
-    );
+      return ProductState(
+        products: products,
+      );
+    } catch (e) {
+      return ProductState(
+        products: [],
+        error: e.toString(),
+      );
+    }
   }
 
   Future<ProductState> getProducts() async {
@@ -74,9 +82,22 @@ class ProductNotifier extends AsyncNotifier<ProductState> {
     });
   }
 
-  void _preloadProductImages(List<dynamic> products) {
+  Future<Product?> getProductById(String id) async {
+    try {
+      return await _productRepository.getProductById(id);
+    } catch (e) {
+      // Update state with error while preserving products
+      final currentState = state.value ?? ProductState(products: []);
+      state = AsyncValue.data(
+        currentState.copyWith(error: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  void _preloadProductImages(List<Product> products) {
     for (final product in products) {
-      if (product.picture != null && product.picture.isNotEmpty) {
+      if (product.picture.isNotEmpty) {
         try {
           // Preload image into Flutter's image cache
           final imageProvider = NetworkImage(product.picture);

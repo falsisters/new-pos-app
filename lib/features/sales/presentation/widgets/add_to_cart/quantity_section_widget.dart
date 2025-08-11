@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ class QuantitySectionWidget extends StatelessWidget {
   final bool isPerKiloSelected;
   final bool isGantangMode;
   final bool hasStock;
-  final double availableStock;
+  final Decimal availableStock;
   final TextEditingController sackQuantityController;
   final TextEditingController wholeQuantityController;
   final TextEditingController perKiloTotalPriceController;
@@ -291,7 +292,7 @@ class QuantitySectionWidget extends StatelessWidget {
           if (value == null || value.isEmpty) return 'Enter quantity';
           final qty = int.tryParse(value);
           if (qty == null || qty <= 0) return 'Valid quantity > 0';
-          if (qty > availableStock) {
+          if (Decimal.fromInt(qty) > availableStock) {
             return 'Only ${availableStock.toStringAsFixed(0)} available';
           }
           return null;

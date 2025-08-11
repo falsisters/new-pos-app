@@ -9,7 +9,9 @@ part of 'special_price_model.dart';
 _SpecialPrice _$SpecialPriceFromJson(Map<String, dynamic> json) =>
     _SpecialPrice(
       id: json['id'] as String,
-      price: (json['price'] as num).toDouble(),
+      price: const DecimalConverter().fromJson(json['price'] as String),
+      profit:
+          const NullableDecimalConverter().fromJson(json['profit'] as String?),
       minimumQty: (json['minimumQty'] as num).toInt(),
       sackPriceId: json['sackPriceId'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -19,7 +21,8 @@ _SpecialPrice _$SpecialPriceFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SpecialPriceToJson(_SpecialPrice instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'price': instance.price,
+      'price': const DecimalConverter().toJson(instance.price),
+      'profit': const NullableDecimalConverter().toJson(instance.profit),
       'minimumQty': instance.minimumQty,
       'sackPriceId': instance.sackPriceId,
       'createdAt': instance.createdAt.toIso8601String(),
