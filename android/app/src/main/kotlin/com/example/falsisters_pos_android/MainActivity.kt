@@ -1,4 +1,4 @@
-package com.example.falsisters_pos_android
+package com.falsisters.app
 
 import io.flutter.embedding.android.FlutterActivity
 
