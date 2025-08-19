@@ -358,6 +358,11 @@ class QuantitySectionWidget extends StatelessWidget {
           if (priceVal == null || priceVal < 0) return 'Valid price >= 0';
           return null;
         },
+        // Add onChanged to ensure immediate updates
+        onChanged: (value) {
+          // This will trigger the listener in the parent screen
+          // which should update the quantity displays
+        },
       ),
     );
   }

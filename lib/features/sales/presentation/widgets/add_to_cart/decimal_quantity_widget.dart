@@ -153,7 +153,14 @@ class DecimalQuantityWidget extends StatelessWidget {
           if (value.isNotEmpty) {
             final intValue = int.tryParse(value);
             if (intValue != null && intValue >= 0 && intValue <= 99) {
-              // This logic is now handled in the screen's listener
+              // Pad with leading zero if needed
+              if (value.length == 1 && intValue < 10) {
+                decimalQuantityController.text = value.padLeft(2, '0');
+                decimalQuantityController.selection =
+                    TextSelection.fromPosition(
+                  TextPosition(offset: decimalQuantityController.text.length),
+                );
+              }
             }
           }
         },
