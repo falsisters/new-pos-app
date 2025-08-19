@@ -543,49 +543,71 @@ class ThermalPrintingService {
       }
 
       // Create receipt lines for printing
-      final List<String> receiptLines = [];
+      final List<Map<String, dynamic>> receiptLines = [];
 
       // Store header (no copy type indicator)
-      receiptLines.add('');
-      receiptLines.add(_centerText('FALSISTERS', 32));
-      receiptLines.add(_centerText('RICE TRADING', 32));
-      receiptLines.add(_padLine('-', 32));
+      receiptLines.add({'text': '', 'format': 'normal'});
+      receiptLines
+          .add({'text': _centerText('FALSISTERS', 32), 'format': 'header'});
+      receiptLines
+          .add({'text': _centerText('RICE TRADING', 32), 'format': 'header'});
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Receipt info
-      receiptLines.add('Receipt #: $receiptId');
-      receiptLines.add('Date: $date');
-      receiptLines.add('Cashier: $cashier');
-      receiptLines.add('Payment: $paymentMethod');
-      receiptLines.add(_padLine('-', 32));
+      // Receipt info with larger font
+      receiptLines.add({'text': 'Receipt #: $receiptId', 'format': 'info'});
+      receiptLines.add({'text': 'Date: $date', 'format': 'info'});
+      receiptLines.add({'text': 'Cashier: $cashier', 'format': 'info'});
+      receiptLines.add({'text': 'Payment: $paymentMethod', 'format': 'info'});
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Items
+      // Items with larger font
       double subtotal = 0.0;
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
 
         // Item number and name
-        receiptLines.add('${i + 1}. ${item['name']}');
-        receiptLines.add('Qty: ${item['quantity']}');
-        receiptLines.add('Unit: P${item['unitPrice'].toStringAsFixed(2)}');
-        receiptLines.add('Total: P${item['totalPrice'].toStringAsFixed(2)}');
+        receiptLines
+            .add({'text': '${i + 1}. ${item['name']}', 'format': 'item_name'});
+        receiptLines
+            .add({'text': 'Qty: ${item['quantity']}', 'format': 'body'});
+
+        // Unit price aligned right
+        final unitPriceText = 'P${item['unitPrice'].toStringAsFixed(2)}';
+        receiptLines.add({
+          'text': _rightAlignPrice('Unit:', unitPriceText, 32),
+          'format': 'body'
+        });
+
+        // Total price aligned right
+        final totalPriceText = 'P${item['totalPrice'].toStringAsFixed(2)}';
+        receiptLines.add({
+          'text': _rightAlignPrice('Total:', totalPriceText, 32),
+          'format': 'body'
+        });
 
         // Special indicators
         if (item['isDiscounted']) {
-          receiptLines.add('** DISCOUNTED **');
+          receiptLines.add({'text': '** DISCOUNTED **', 'format': 'special'});
         }
         if (item['isSpecial']) {
-          receiptLines.add('** SPECIAL PRICE **');
+          receiptLines
+              .add({'text': '** SPECIAL PRICE **', 'format': 'special'});
         }
 
-        receiptLines.add('');
+        receiptLines.add({'text': '', 'format': 'normal'});
         subtotal += item['totalPrice'];
       }
 
-      receiptLines.add(_padLine('-', 32));
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Summary
-      receiptLines.add('Items: ${items.length}');
-      receiptLines.add('Subtotal: P${subtotal.toStringAsFixed(2)}');
+      // Summary with larger font and right-aligned prices
+      receiptLines.add({'text': 'Items: ${items.length}', 'format': 'body'});
+
+      final subtotalText = 'P${subtotal.toStringAsFixed(2)}';
+      receiptLines.add({
+        'text': _rightAlignPrice('Subtotal:', subtotalText, 32),
+        'format': 'body'
+      });
 
       // Add cash tendered and change if it's a cash payment with change
       final hasChange = changeAmount != '0.00' &&
@@ -599,21 +621,33 @@ class ThermalPrintingService {
       debugPrint('Tendered amount: "$tenderedAmount"');
 
       if (paymentMethod == 'CASH' && hasChange) {
-        receiptLines.add('Cash Tendered: P$tenderedAmount');
-        receiptLines.add('Change: P$changeAmount');
+        receiptLines.add({
+          'text': _rightAlignPrice('Cash Tendered:', 'P$tenderedAmount', 32),
+          'format': 'body'
+        });
+        receiptLines.add({
+          'text': _rightAlignPrice('Change:', 'P$changeAmount', 32),
+          'format': 'body'
+        });
         debugPrint('Added change lines to receipt');
       } else {
         debugPrint(
             'Change lines NOT added - Payment: $paymentMethod, HasChange: $hasChange');
       }
 
-      receiptLines.add('TOTAL: P$total');
-      receiptLines.add(_padLine('-', 32));
+      receiptLines.add({
+        'text': _rightAlignPrice('TOTAL:', 'P$total', 32),
+        'format': 'total'
+      });
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
       // Footer
-      receiptLines.add(_centerText('Thank you and come again', 32));
-      receiptLines.add('');
-      receiptLines.add('');
+      receiptLines.add({
+        'text': _centerText('Thank you and come again', 32),
+        'format': 'footer'
+      });
+      receiptLines.add({'text': '', 'format': 'normal'});
+      receiptLines.add({'text': '', 'format': 'normal'});
 
       debugPrint('Generated ${receiptLines.length} lines for unified receipt');
 
@@ -631,8 +665,19 @@ class ThermalPrintingService {
     }
   }
 
+  // Helper method to right-align prices
+  String _rightAlignPrice(String label, String price, int lineWidth) {
+    final totalText = '$label $price';
+    if (totalText.length >= lineWidth) {
+      return totalText; // If too long, just return as is
+    }
+
+    final spaces = lineWidth - totalText.length;
+    return label + ' ' * spaces + price;
+  }
+
   Future<void> _sendBluetoothChunkedUnifiedReceipt(
-      Printer printer, List<String> lines) async {
+      Printer printer, List<Map<String, dynamic>> lines) async {
     try {
       debugPrint('Sending ${lines.length} lines via Bluetooth chunks...');
 
@@ -643,58 +688,79 @@ class ThermalPrintingService {
 
       // Send each line with proper formatting
       for (int i = 0; i < lines.length; i++) {
-        final line = lines[i];
+        final lineData = lines[i];
+        final line = lineData['text'] as String;
+        final format = lineData['format'] as String;
         List<int> lineBytes = [];
 
-        if (line.contains("COPY")) {
-          // Bold and center for copy type
-          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('FALSISTERS')) {
-          // Bold and center for header - REMOVED double size to prevent overflow
-          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('RICE TRADING')) {
-          // Bold and center for subtitle
-          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('TOTAL: P')) {
-          // Bold and double size for total
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else if (line.contains('Thank you')) {
-          // Center for thank you
-          lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.startsWith('Receipt #') ||
-            line.startsWith('Date:') ||
-            line.startsWith('Cashier:') ||
-            line.startsWith('Payment:')) {
-          // Bold for receipt info
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else if (RegExp(r'^\d+\.').hasMatch(line)) {
-          // Bold for item numbers
-          lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          lineBytes.addAll(line.codeUnits);
-          lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else {
-          // Regular line
-          lineBytes.addAll(line.codeUnits);
+        switch (format) {
+          case 'header':
+            // Bold and center for header (FALSISTERS, RICE TRADING)
+            lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          case 'info':
+            // Larger font for receipt info
+            lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'item_name':
+            // Larger bold font for item names
+            lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'body':
+            // Larger font for body content (quantities, prices)
+            lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'total':
+            // Extra large bold for total
+            lineBytes
+                .addAll([0x1D, 0x21, 0x22]); // Triple height & double width
+            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'special':
+            // Center and bold for special indicators
+            lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          case 'footer':
+            // Center for thank you
+            lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            lineBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            lineBytes.addAll(line.codeUnits);
+            lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          default:
+            // Regular line
+            lineBytes.addAll(line.codeUnits);
         }
 
         lineBytes.addAll([0x0A]); // Line feed
@@ -728,7 +794,7 @@ class ThermalPrintingService {
   }
 
   Future<void> _sendUSBUnifiedReceipt(
-      Printer printer, List<String> lines) async {
+      Printer printer, List<Map<String, dynamic>> lines) async {
     try {
       debugPrint('Sending unified receipt via USB...');
 
@@ -738,56 +804,78 @@ class ThermalPrintingService {
       receiptBytes.addAll([0x1B, 0x40]); // ESC @
 
       // Process each line with formatting
-      for (final line in lines) {
-        if (line.contains("COPY")) {
-          // Bold and center for copy type
-          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('FALSISTERS')) {
-          // Bold and center for header - REMOVED double size to prevent overflow
-          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('RICE TRADING')) {
-          // Bold and center for subtitle
-          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.contains('TOTAL: P')) {
-          // Bold and double size for total
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else if (line.contains('Thank you')) {
-          // Center for thank you
-          receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-        } else if (line.startsWith('Receipt #') ||
-            line.startsWith('Date:') ||
-            line.startsWith('Cashier:') ||
-            line.startsWith('Payment:')) {
-          // Bold for receipt info
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else if (RegExp(r'^\d+\.').hasMatch(line)) {
-          // Bold for item numbers
-          receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-          receiptBytes.addAll(line.codeUnits);
-          receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-        } else {
-          // Regular line
-          receiptBytes.addAll(line.codeUnits);
+      for (final lineData in lines) {
+        final line = lineData['text'] as String;
+        final format = lineData['format'] as String;
+
+        switch (format) {
+          case 'header':
+            // Bold and center for header (FALSISTERS, RICE TRADING)
+            receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          case 'info':
+            // Larger font for receipt info
+            receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'item_name':
+            // Larger bold font for item names
+            receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'body':
+            // Larger font for body content (quantities, prices)
+            receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'total':
+            // Extra large bold for total
+            receiptBytes
+                .addAll([0x1D, 0x21, 0x22]); // Triple height & double width
+            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            break;
+
+          case 'special':
+            // Center and bold for special indicators
+            receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          case 'footer':
+            // Center for thank you
+            receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+            receiptBytes.addAll([0x1D, 0x21, 0x11]); // Double height & width
+            receiptBytes.addAll(line.codeUnits);
+            receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+            receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+            break;
+
+          default:
+            // Regular line
+            receiptBytes.addAll(line.codeUnits);
         }
 
         receiptBytes.addAll([0x0A]); // Line feed
