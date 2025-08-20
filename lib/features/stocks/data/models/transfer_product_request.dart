@@ -14,7 +14,7 @@ enum TransferType {
 String parseTransferType(TransferType type) {
   switch (type) {
     case TransferType.OWN_CONSUMPTION:
-      return 'Own Consumption';
+      return 'Out';
     case TransferType.RETURN_TO_WAREHOUSE:
       return 'Return to Warehouse';
     case TransferType.KAHON:
