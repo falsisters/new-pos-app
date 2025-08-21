@@ -16,11 +16,16 @@ class ThermalPrintingService {
   final _flutterThermalPrinter = FlutterThermalPrinter.instance;
   StreamSubscription<List<Printer>>? _devicesStreamSubscription;
 
-  // Bluetooth printing constants
+  // Updated constants for 57mm paper
   static const int _bluetoothChunkSize = 20; // Bytes per chunk for Bluetooth
   static const int _bluetoothLineDelay = 100; // ms between lines
   static const int _bluetoothChunkDelay = 50; // ms between chunks
-  static const int _maxLineLength = 48; // Characters per line for 80mm paper
+  static const int _maxLineLength =
+      32; // Characters per line for 57mm paper (reduced from 48)
+
+  // Line spacing constants
+  static const String _lineSpacing = ''; // Remove extra spacing
+  static const String _sectionSpacing = ''; // Reduce to single line spacing
 
   Future<bool> _ensureLocationServices() async {
     try {
@@ -399,7 +404,7 @@ class ThermalPrintingService {
 
   Future<void> _printUnifiedReceipt(Printer printer, dynamic sale) async {
     try {
-      debugPrint('Generating unified receipt format for 80mm paper...');
+      debugPrint('Generating unified receipt format for 57mm paper...');
 
       // Extract sale data
       String total = '0.00';
@@ -412,14 +417,16 @@ class ThermalPrintingService {
       List<Map<String, dynamic>> items = [];
 
       if (sale is SaleModel) {
-        total = sale.totalAmount.toStringAsFixed(2);
-        receiptId = sale.id; // Use full sale ID as invoice number
-        date = _formatDate(sale.createdAt);
+        total = sale.totalAmount.toStringAsFixed(0); // Remove decimals for 57mm
+        // Use last 8 characters of sale ID as specified
+        receiptId = sale.id.length > 8
+            ? sale.id.substring(sale.id.length - 8)
+            : sale.id;
+        date = _formatDateFor57mm(sale.createdAt);
 
-        debugPrint('=== RECEIPT DATA EXTRACTION ===');
-        debugPrint('Sale ID: ${sale.id}');
+        debugPrint('=== 57MM RECEIPT DATA EXTRACTION ===');
+        debugPrint('Sale ID (last 8): $receiptId');
         debugPrint('Sale metadata: ${sale.metadata}');
-        debugPrint('Cashier ID from sale: ${sale.cashierId}');
 
         // Get cashier name from metadata first, then fallback to cashierId
         if (sale.metadata != null &&
@@ -439,7 +446,8 @@ class ThermalPrintingService {
 
         // Get change amount and tendered amount from sale metadata
         if (sale.metadata != null && sale.metadata!.containsKey('change')) {
-          changeAmount = sale.metadata!['change'].toString();
+          changeAmount = double.parse(sale.metadata!['change'].toString())
+              .toStringAsFixed(0);
           debugPrint('Found change amount in metadata: $changeAmount');
         } else {
           debugPrint('No change amount found in metadata');
@@ -447,16 +455,18 @@ class ThermalPrintingService {
 
         if (sale.metadata != null &&
             sale.metadata!.containsKey('tenderedAmount')) {
-          tenderedAmount = sale.metadata!['tenderedAmount'].toString();
+          tenderedAmount =
+              double.parse(sale.metadata!['tenderedAmount'].toString())
+                  .toStringAsFixed(0);
           debugPrint('Found tendered amount in metadata: $tenderedAmount');
         } else {
           debugPrint('No tendered amount found in metadata');
         }
 
         debugPrint(
-            'Processing ${sale.saleItems.length} items for unified receipt');
+            'Processing ${sale.saleItems.length} items for 57mm receipt');
 
-        // Process each item with new formatting requirements
+        // Process each item with new 57mm formatting requirements
         for (int i = 0; i < sale.saleItems.length; i++) {
           final item = sale.saleItems[i];
 
@@ -465,6 +475,7 @@ class ThermalPrintingService {
             Decimal itemPrice = Decimal.zero;
             Decimal unitPrice = Decimal.zero;
             String itemQty = '1';
+            String variant = '';
             bool isDiscounted = item.isDiscounted;
 
             // Format item name and quantity based on type
@@ -475,25 +486,26 @@ class ThermalPrintingService {
               );
               final qty = item.quantity.toBigInt().toInt();
 
-              // Add case type to item name
+              // Set variant for sack types
               switch (sackPrice.type.toString().split('.').last) {
                 case 'FIFTY_KG':
-                  itemName = '$itemName 50KG';
+                  variant = '50KG';
                   break;
                 case 'TWENTY_FIVE_KG':
-                  itemName = '$itemName 25KG';
+                  variant = '25KG';
                   break;
                 case 'FIVE_KG':
-                  itemName = '$itemName 5KG';
+                  variant = '5KG';
                   break;
                 default:
-                  itemName = '$itemName SACK';
+                  variant = 'SACK';
               }
               itemQty = qty.toString();
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
-              // For per kilo items, no additional labels
+              // For per kilo items, show as KG
               itemQty = item.quantity.toStringAsFixed(2);
+              variant = 'KG';
             }
 
             // Calculate prices
@@ -518,6 +530,7 @@ class ThermalPrintingService {
             items.add({
               'name': itemName,
               'quantity': itemQty,
+              'variant': variant,
               'unitPrice': unitPrice.toDouble(),
               'totalPrice': itemPrice.toDouble(),
               'isDiscounted': isDiscounted,
@@ -526,12 +539,13 @@ class ThermalPrintingService {
             });
 
             debugPrint(
-                'Added item: $itemName - Qty: $itemQty - Unit: PHP ${unitPrice.toStringAsFixed(2)} - Total: PHP ${itemPrice.toStringAsFixed(2)}');
+                'Added item: $itemName - Qty: $itemQty $variant - Total: PHP ${itemPrice.toStringAsFixed(0)}');
           } catch (e) {
             debugPrint('Error processing item ${i + 1}: $e');
             items.add({
               'name': item.product.name,
               'quantity': '1',
+              'variant': '',
               'unitPrice': 0.0,
               'totalPrice': 0.0,
               'isDiscounted': false,
@@ -542,117 +556,149 @@ class ThermalPrintingService {
         }
       }
 
-      // Create receipt lines for 80mm paper format
+      // Create receipt lines for 57mm paper format with reduced spacing
       final List<Map<String, dynamic>> receiptLines = [];
 
-      // Store header
+      // Store header - Falsisters (bigger font)
       receiptLines.add({'text': '', 'format': 'normal'});
-      receiptLines.add({
-        'text': _centerText('FALSISTERS RICE TRADING', 48),
-        'format': 'header'
-      });
-      receiptLines.add({'text': _padLine('-', 48), 'format': 'normal'});
+      receiptLines
+          .add({'text': _centerText('Falsisters', 32), 'format': 'big_header'});
+      receiptLines.add(
+          {'text': _centerText('Rice Trading', 32), 'format': 'small_header'});
+      receiptLines.add(
+          {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Receipt info
-      receiptLines.add({'text': 'Invoice No: $receiptId', 'format': 'info'});
+      // Receipt info with minimal spacing
+      receiptLines.add({'text': 'Invoice ID: $receiptId', 'format': 'info'});
       receiptLines.add({'text': 'Date: $date', 'format': 'info'});
-      receiptLines.add({'text': 'Time:', 'format': 'info'});
-      receiptLines.add({'text': _padLine('-', 48), 'format': 'normal'});
+      receiptLines.add({'text': 'Employee Name: $cashier', 'format': 'info'});
+      receiptLines.add(
+          {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Items header with proper spacing for 80mm
-      final itemHeader = _formatItemLine('Item', 'Qty', 'Price', 'Total', 48);
-      receiptLines.add({'text': itemHeader, 'format': 'item_header'});
-      receiptLines.add({'text': _padLine('-', 48), 'format': 'normal'});
-
-      // Items
+      // Items with minimal spacing
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
 
-        // Item name
-        receiptLines.add({'text': item['name'], 'format': 'item_name'});
+        // Item name and total price (right aligned)
+        String totalPriceStr = 'PHP ${item['totalPrice'].toStringAsFixed(0)}';
+        receiptLines.add({
+          'text': _format57mmItemLine(item['name'], totalPriceStr, 32),
+          'format': 'item_line'
+        });
 
-        // Quantity, unit price, and total in one line with PHP peso sign
-        String qtyStr = item['quantity'];
+        // Quantity x Variant (no times sign for KG)
+        String qtyVariantStr;
+        if (item['variant'] == 'KG') {
+          qtyVariantStr = '${item['quantity']} KG';
+        } else if (item['variant'].isNotEmpty) {
+          qtyVariantStr = '${item['quantity']} x ${item['variant']}';
+        } else {
+          qtyVariantStr = '${item['quantity']} pcs';
+        }
+        receiptLines.add({'text': qtyVariantStr, 'format': 'item_details'});
+
+        // Price
         String priceStr = item['isDiscounted']
             ? 'PHP ${item['unitPrice'].toStringAsFixed(0)} (DISC)'
             : 'PHP ${item['unitPrice'].toStringAsFixed(0)}';
-        String totalStr = 'PHP ${item['totalPrice'].toStringAsFixed(0)}';
+        receiptLines.add({'text': priceStr, 'format': 'item_details'});
 
-        final itemLine = _formatItemLine('', qtyStr, priceStr, totalStr, 48);
-        receiptLines.add({'text': itemLine, 'format': 'item_details'});
+        // Add minimal spacing between items
+        if (i < items.length - 1) {
+          receiptLines.add({'text': _sectionSpacing, 'format': 'spacing'});
+        }
       }
 
-      receiptLines.add({'text': _padLine('-', 48), 'format': 'normal'});
+      receiptLines.add(
+          {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Totals section with PHP peso sign
+      // Totals section with minimal spacing
       receiptLines.add({
-        'text': _rightAlignPrice('Total', 'PHP ${total.split('.')[0]}', 48),
+        'text': _rightAlign57mm('Total', 'PHP ${total.split('.')[0]}', 32),
         'format': 'total'
       });
 
       receiptLines.add({
-        'text': _rightAlignPrice(
-            'Cash paid', 'PHP ${tenderedAmount.split('.')[0]}', 48),
+        'text':
+            _rightAlign57mm('Cash', 'PHP ${tenderedAmount.split('.')[0]}', 32),
         'format': 'body'
       });
 
       receiptLines.add({
         'text':
-            _rightAlignPrice('Change', 'PHP ${changeAmount.split('.')[0]}', 48),
+            _rightAlign57mm('Change', 'PHP ${changeAmount.split('.')[0]}', 32),
         'format': 'body'
       });
+      receiptLines.add(
+          {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
 
-      receiptLines.add({'text': '', 'format': 'normal'});
-      receiptLines.add({'text': '', 'format': 'normal'});
-      receiptLines.add({'text': '', 'format': 'normal'});
+      receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Footer
+      // Footer with minimal spacing
       receiptLines
-          .add({'text': _centerText('Thankyou', 48), 'format': 'footer'});
+          .add({'text': _centerText('Thank you', 32), 'format': 'footer'});
+      receiptLines.add(
+          {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
 
-      debugPrint('Generated ${receiptLines.length} lines for 80mm receipt');
+      debugPrint(
+          'Generated ${receiptLines.length} lines for 57mm receipt with reduced spacing');
 
       // Send receipt using chunked approach for both USB and Bluetooth
       if (printer.connectionType == ConnectionType.BLE) {
-        await _sendBluetoothChunkedUnifiedReceipt(printer, receiptLines);
+        await _sendBluetoothChunked57mmReceipt(printer, receiptLines);
       } else {
-        await _sendUSBUnifiedReceipt(printer, receiptLines);
+        await _sendUSB57mmReceipt(printer, receiptLines);
       }
 
-      debugPrint('80mm receipt sent successfully');
+      debugPrint('57mm receipt sent successfully');
     } catch (e) {
-      debugPrint('80mm receipt generation failed: $e');
-      throw Exception('Failed to generate 80mm receipt: $e');
+      debugPrint('57mm receipt generation failed: $e');
+      throw Exception('Failed to generate 57mm receipt: $e');
     }
   }
 
-  // Helper method to format item lines for 80mm paper
-  String _formatItemLine(
-      String item, String qty, String price, String total, int lineWidth) {
-    const int qtyWidth = 8;
-    const int priceWidth = 12;
-    const int totalWidth = 12;
-    final int itemWidth = lineWidth - qtyWidth - priceWidth - totalWidth;
+  // Helper method to format item lines for 57mm paper
+  String _format57mmItemLine(
+      String itemName, String totalPrice, int lineWidth) {
+    final maxNameLength = lineWidth - totalPrice.length - 1; // -1 for space
+    String truncatedName = itemName.length > maxNameLength
+        ? itemName.substring(0, maxNameLength)
+        : itemName;
 
-    return '${item.padRight(itemWidth)}${qty.padLeft(qtyWidth)}${price.padLeft(priceWidth)}${total.padLeft(totalWidth)}';
+    final spaces = lineWidth - truncatedName.length - totalPrice.length;
+    return truncatedName + ' ' * spaces + totalPrice;
   }
 
-  // Helper method to right-align prices for 80mm
-  String _rightAlignPrice(String label, String price, int lineWidth) {
-    final totalText = '$label $price';
+  // Helper method to right-align for 57mm
+  String _rightAlign57mm(String label, String value, int lineWidth) {
+    final totalText = '$label $value';
     if (totalText.length >= lineWidth) {
       return totalText;
     }
 
     final spaces = lineWidth - totalText.length;
-    return label + ' ' * spaces + price;
+    return label + ' ' * spaces + value;
   }
 
-  Future<void> _sendBluetoothChunkedUnifiedReceipt(
+  // Helper method to format date for 57mm
+  String _formatDateFor57mm(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+    } catch (e) {
+      debugPrint('Date parsing error: $e');
+      return dateString.substring(0, 10);
+    }
+  }
+
+  Future<void> _sendBluetoothChunked57mmReceipt(
       Printer printer, List<Map<String, dynamic>> lines) async {
     try {
       debugPrint(
-          'Sending ${lines.length} lines via Bluetooth chunks for 80mm...');
+          'Sending ${lines.length} lines via Bluetooth chunks for 57mm...');
 
       // Initialize printer
       List<int> initBytes = [0x1B, 0x40]; // ESC @
@@ -666,54 +712,69 @@ class ThermalPrintingService {
         final format = lineData['format'] as String;
         List<int> lineBytes = [];
 
-        switch (format) {
-          case 'header':
-            // Bold and center for header
-            lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            lineBytes.addAll(line.codeUnits);
-            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-            break;
+        // Handle spacing format
+        if (format == 'spacing') {
+          lineBytes.addAll(line.codeUnits);
+        } else {
+          switch (format) {
+            case 'big_header':
+              // Bold and slightly larger for "Falsisters" (no double width to prevent overflow)
+              lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              lineBytes.addAll([0x1D, 0x21, 0x01]); // Double height only
+              lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              lineBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+              lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
 
-          case 'info':
-          case 'item_header':
-            // Bold for receipt info and item headers
-            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            lineBytes.addAll(line.codeUnits);
-            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'small_header':
+              // Bold and center for "Rice Trading"
+              lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
 
-          case 'item_name':
-            // Bold for item names
-            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            lineBytes.addAll(line.codeUnits);
-            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'info':
+              // Bold for receipt info
+              lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          case 'item_details':
-          case 'body':
-            // Regular font for details
-            lineBytes.addAll(line.codeUnits);
-            break;
+            case 'item_line':
+              // Bold for item name and total price line
+              lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          case 'total':
-            // Bold for total
-            lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            lineBytes.addAll(line.codeUnits);
-            lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'item_details':
+            case 'body':
+              // Regular font for details
+              lineBytes.addAll(line.codeUnits);
+              break;
 
-          case 'footer':
-            // Center for thank you
-            lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
-            lineBytes.addAll(line.codeUnits);
-            lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-            break;
+            case 'total':
+              // Bold for total
+              lineBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          default:
-            // Regular line
-            lineBytes.addAll(line.codeUnits);
+            case 'footer':
+              // Center for thank you
+              lineBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              lineBytes.addAll(line.codeUnits);
+              lineBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
+
+            default:
+              // Regular line
+              lineBytes.addAll(line.codeUnits);
+          }
         }
 
         lineBytes.addAll([0x0A]); // Line feed
@@ -734,10 +795,9 @@ class ThermalPrintingService {
         }
       }
 
-      // Send multiple cut command variants - one should work
+      // Send cut commands
       await Future.delayed(Duration(milliseconds: _bluetoothLineDelay * 2));
 
-      // Try different cut commands in sequence
       try {
         debugPrint('Attempting partial cut command: GS V 1');
         List<int> partialCutBytes = [0x1D, 0x56, 0x01]; // GS V 1 (partial cut)
@@ -747,43 +807,17 @@ class ThermalPrintingService {
         debugPrint('Partial cut failed: $e');
       }
 
-      try {
-        debugPrint('Attempting full cut command: GS V 0');
-        List<int> fullCutBytes = [0x1D, 0x56, 0x00]; // GS V 0 (full cut)
-        await _sendBluetoothChunk(printer, Uint8List.fromList(fullCutBytes));
-        await Future.delayed(Duration(milliseconds: 500));
-      } catch (e) {
-        debugPrint('Full cut failed: $e');
-      }
-
-      try {
-        debugPrint('Attempting alternative cut command: ESC i');
-        List<int> altCutBytes = [0x1B, 0x69]; // ESC i (cut paper)
-        await _sendBluetoothChunk(printer, Uint8List.fromList(altCutBytes));
-        await Future.delayed(Duration(milliseconds: 500));
-      } catch (e) {
-        debugPrint('Alternative cut failed: $e');
-      }
-
-      try {
-        debugPrint('Attempting legacy cut command: ESC m');
-        List<int> legacyCutBytes = [0x1B, 0x6D]; // ESC m (cut paper)
-        await _sendBluetoothChunk(printer, Uint8List.fromList(legacyCutBytes));
-      } catch (e) {
-        debugPrint('Legacy cut failed: $e');
-      }
-
-      debugPrint('All lines sent successfully via Bluetooth with cut attempts');
+      debugPrint('All lines sent successfully via Bluetooth for 57mm');
     } catch (e) {
-      debugPrint('Bluetooth 80mm receipt sending failed: $e');
+      debugPrint('Bluetooth 57mm receipt sending failed: $e');
       throw e;
     }
   }
 
-  Future<void> _sendUSBUnifiedReceipt(
+  Future<void> _sendUSB57mmReceipt(
       Printer printer, List<Map<String, dynamic>> lines) async {
     try {
-      debugPrint('Sending 80mm receipt via USB...');
+      debugPrint('Sending 57mm receipt via USB...');
 
       final List<int> receiptBytes = [];
 
@@ -795,76 +829,80 @@ class ThermalPrintingService {
         final line = lineData['text'] as String;
         final format = lineData['format'] as String;
 
-        switch (format) {
-          case 'header':
-            // Bold and center for header
-            receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            receiptBytes.addAll(line.codeUnits);
-            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-            break;
+        // Handle spacing format
+        if (format == 'spacing') {
+          receiptBytes.addAll(line.codeUnits);
+        } else {
+          switch (format) {
+            case 'big_header':
+              // Double height and bold for "Falsisters"
+              receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              receiptBytes
+                  .addAll([0x1D, 0x21, 0x11]); // Double height and width
+              receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              receiptBytes.addAll([0x1D, 0x21, 0x00]); // Normal size
+              receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
 
-          case 'info':
-          case 'item_header':
-            // Bold for receipt info and item headers
-            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            receiptBytes.addAll(line.codeUnits);
-            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'small_header':
+              // Bold and center for "Rice Trading"
+              receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
 
-          case 'item_name':
-            // Bold for item names
-            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            receiptBytes.addAll(line.codeUnits);
-            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'info':
+              // Bold for receipt info
+              receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          case 'item_details':
-          case 'body':
-            // Regular font for details
-            receiptBytes.addAll(line.codeUnits);
-            break;
+            case 'item_line':
+              // Bold for item name and total price line
+              receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          case 'total':
-            // Bold for total
-            receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-            receiptBytes.addAll(line.codeUnits);
-            receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
-            break;
+            case 'item_details':
+            case 'body':
+              // Regular font for details
+              receiptBytes.addAll(line.codeUnits);
+              break;
 
-          case 'footer':
-            // Center for thank you
-            receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-            receiptBytes.addAll(line.codeUnits);
-            receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
-            break;
+            case 'total':
+              // Bold for total
+              receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+              break;
 
-          default:
-            // Regular line
-            receiptBytes.addAll(line.codeUnits);
+            case 'footer':
+              // Center for thank you
+              receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
+              receiptBytes.addAll(line.codeUnits);
+              receiptBytes.addAll([0x1B, 0x61, 0x00]); // Left align
+              break;
+
+            default:
+              // Regular line
+              receiptBytes.addAll(line.codeUnits);
+          }
         }
 
         receiptBytes.addAll([0x0A]); // Line feed
       }
 
-      // Try multiple cut commands for USB as well
-      debugPrint('Adding cut commands to USB receipt...');
-
-      // Add some space before cutting
+      // Add cut commands
       receiptBytes.addAll([0x0A, 0x0A]); // Extra line feeds
-
-      // Try partial cut first
       receiptBytes.addAll([0x1D, 0x56, 0x01]); // GS V 1 (partial cut)
 
-      // If partial doesn't work, try full cut
-      receiptBytes.addAll([0x1D, 0x56, 0x00]); // GS V 0 (full cut)
-
-      // Alternative cut commands
-      receiptBytes.addAll([0x1B, 0x69]); // ESC i
-      receiptBytes.addAll([0x1B, 0x6D]); // ESC m
-
-      debugPrint('Generated ${receiptBytes.length} bytes for 80mm USB receipt');
+      debugPrint('Generated ${receiptBytes.length} bytes for 57mm USB receipt');
 
       // Print the unified receipt
       await _flutterThermalPrinter.printData(
@@ -872,22 +910,21 @@ class ThermalPrintingService {
         Uint8List.fromList(receiptBytes),
       );
 
-      debugPrint(
-          '80mm USB receipt sent successfully with multiple cut commands');
+      debugPrint('57mm USB receipt sent successfully');
     } catch (e) {
-      debugPrint('USB 80mm receipt generation failed: $e');
-      throw Exception('Failed to generate USB 80mm receipt: $e');
+      debugPrint('USB 57mm receipt generation failed: $e');
+      throw Exception('Failed to generate USB 57mm receipt: $e');
     }
   }
 
-  // Helper method to center text for 80mm
+  // Helper method to center text for 57mm
   String _centerText(String text, int lineWidth) {
     if (text.length >= lineWidth) return text;
     final padding = (lineWidth - text.length) ~/ 2;
     return ' ' * padding + text;
   }
 
-  // Helper method to create padded line for 80mm
+  // Helper method to create padded line for 57mm
   String _padLine(String char, int length) {
     return char * length;
   }

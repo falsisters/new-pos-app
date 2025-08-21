@@ -80,7 +80,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     _perKiloQuantityController = TextEditingController(text: '1.00');
     _perKiloTotalPriceController = TextEditingController();
     _wholeQuantityController = TextEditingController(text: '1');
-    _decimalQuantityController = TextEditingController(text: '00');
+    _decimalQuantityController = TextEditingController(text: '0.00');
   }
 
   void _setupInitialState() {
@@ -227,12 +227,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   Decimal _getCurrentQuantityInKg() {
     final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
-    final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+    final decimalValue =
+        double.tryParse(_decimalQuantityController.text) ?? 0.0;
 
-    // Always treat decimal as hundredths (0-99 -> 0.00-0.99)
-    final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
-    final displayQuantity = Decimal.fromInt(wholeValue) +
-        decimalPart.toDecimal(scaleOnInfinitePrecision: 4);
+    // Combine whole and decimal parts
+    final displayQuantity =
+        Decimal.fromInt(wholeValue) + Decimal.parse(decimalValue.toString());
 
     return _isGantangMode
         ? _convertGantangToKg(displayQuantity)
@@ -245,12 +245,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     final wholePart = displayQuantity.floor();
     final fractionalPart = displayQuantity - wholePart;
 
-    // Convert fractional part to hundredths (0.0-0.99 -> 0-99)
-    final decimalPart =
-        (fractionalPart * Decimal.fromInt(100)).round().toBigInt().toInt();
-
     _wholeQuantityController.text = wholePart.toBigInt().toString();
-    _decimalQuantityController.text = decimalPart.toString().padLeft(2, '0');
+    _decimalQuantityController.text = fractionalPart.toStringAsFixed(2);
     _perKiloQuantityController.text = kgQuantity.toStringAsFixed(2);
   }
 
@@ -416,12 +412,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   void _updateCombinedQuantityAndTotal() {
     if (!_isUpdatingPriceAndQuantityInternally) {
       final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
-      final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
+      final decimalValue =
+          double.tryParse(_decimalQuantityController.text) ?? 0.0;
 
-      // Always treat decimal as hundredths (0-99 -> 0.00-0.99)
-      final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
-      final displayQuantity = Decimal.fromInt(wholeValue) +
-          decimalPart.toDecimal(scaleOnInfinitePrecision: 4);
+      // Combine whole and decimal parts
+      final displayQuantity =
+          Decimal.fromInt(wholeValue) + Decimal.parse(decimalValue.toString());
 
       // Convert to kg if in gantang mode
       final kgQuantity = _isGantangMode
@@ -455,10 +451,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
     // Check stock limit in kg
     if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
-      final decimalValue = int.tryParse(_decimalQuantityController.text) ?? 0;
-      final decimalPart = Decimal.fromInt(decimalValue) / Decimal.fromInt(100);
-      final displayQuantity = Decimal.fromInt(newValue) +
-          decimalPart.toDecimal(scaleOnInfinitePrecision: 4);
+      final decimalValue =
+          double.tryParse(_decimalQuantityController.text) ?? 0.0;
+      final displayQuantity =
+          Decimal.fromInt(newValue) + Decimal.parse(decimalValue.toString());
       final kgQuantity = _isGantangMode
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
@@ -528,36 +524,37 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   void _increaseDecimalQuantity() {
-    final currentValue = int.tryParse(_decimalQuantityController.text) ?? 0;
-    final newValue = (currentValue + 5).clamp(0, 99);
+    final currentValue =
+        double.tryParse(_decimalQuantityController.text) ?? 0.0;
+    final newValue = (currentValue + 0.05).clamp(0.0, 0.99);
 
     // Check stock limit in kg
     if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final wholeValue = int.tryParse(_wholeQuantityController.text) ?? 0;
-      final decimalPart = Decimal.fromInt(newValue) / Decimal.fromInt(100);
-      final displayQuantity = Decimal.fromInt(wholeValue) +
-          decimalPart.toDecimal(scaleOnInfinitePrecision: 4);
+      final displayQuantity =
+          Decimal.fromInt(wholeValue) + Decimal.parse(newValue.toString());
       final kgQuantity = _isGantangMode
           ? _convertGantangToKg(displayQuantity)
           : displayQuantity;
 
       if (kgQuantity <= widget.product.perKiloPrice!.stock) {
         setState(() {
-          _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+          _decimalQuantityController.text = newValue.toStringAsFixed(2);
         });
       }
     } else {
       setState(() {
-        _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+        _decimalQuantityController.text = newValue.toStringAsFixed(2);
       });
     }
   }
 
   void _decreaseDecimalQuantity() {
-    final currentValue = int.tryParse(_decimalQuantityController.text) ?? 0;
-    final newValue = (currentValue - 5).clamp(0, 99);
+    final currentValue =
+        double.tryParse(_decimalQuantityController.text) ?? 0.0;
+    final newValue = (currentValue - 0.05).clamp(0.0, 0.99);
     setState(() {
-      _decimalQuantityController.text = newValue.toString().padLeft(2, '0');
+      _decimalQuantityController.text = newValue.toStringAsFixed(2);
     });
   }
 

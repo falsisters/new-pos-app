@@ -93,7 +93,7 @@ class DecimalQuantityWidget extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              ', . ±0.05',
+                              'A/D ±0.05',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -129,40 +129,34 @@ class DecimalQuantityWidget extends StatelessWidget {
       ),
       child: TextFormField(
         controller: decimalQuantityController,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(2),
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
         ],
         decoration: _inputDecoration(
-          labelText: 'Decimal',
-          prefixText: '0.',
+          labelText: 'Decimal Amount',
+          hintText: '0.50',
           suffixIcon: _buildDecimalControls(),
         ),
         validator: (value) {
-          if (value != null && value.isNotEmpty) {
-            final decimal = int.tryParse(value);
-            if (decimal == null || decimal < 0 || decimal > 99) {
-              return 'Range: 0-99';
-            }
+          if (value == null || value.isEmpty) {
+            return null; // Allow empty values
           }
+
+          final decimal = double.tryParse(value);
+          if (decimal == null) {
+            return 'Invalid number';
+          }
+
+          if (decimal < 0) {
+            return 'Must be positive';
+          }
+
+          if (decimal > 0.99) {
+            return 'Max: 0.99';
+          }
+
           return null;
-        },
-        onChanged: (value) {
-          // Ensure proper formatting when user types
-          if (value.isNotEmpty) {
-            final intValue = int.tryParse(value);
-            if (intValue != null && intValue >= 0 && intValue <= 99) {
-              // Pad with leading zero if needed
-              if (value.length == 1 && intValue < 10) {
-                decimalQuantityController.text = value.padLeft(2, '0');
-                decimalQuantityController.selection =
-                    TextSelection.fromPosition(
-                  TextPosition(offset: decimalQuantityController.text.length),
-                );
-              }
-            }
-          }
         },
       ),
     );
@@ -200,7 +194,7 @@ class DecimalQuantityWidget extends StatelessWidget {
 
   InputDecoration _inputDecoration({
     required String labelText,
-    String? prefixText,
+    String? hintText,
     Widget? suffixIcon,
   }) {
     return InputDecoration(
@@ -218,7 +212,8 @@ class DecimalQuantityWidget extends StatelessWidget {
       ),
       labelText: labelText,
       labelStyle: TextStyle(color: AppColors.primary, fontSize: 10),
-      prefixText: prefixText,
+      hintText: hintText,
+      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 12),
       suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       isDense: true,
