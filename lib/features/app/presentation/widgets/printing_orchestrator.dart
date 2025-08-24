@@ -4,8 +4,10 @@ import 'package:falsisters_pos_android/features/app/data/services/settings_servi
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:falsisters_pos_android/features/sales/data/services/receipt_storage_service.dart';
-import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart';
+import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart'
+    as thermal;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PrintingOrchestrator extends ConsumerStatefulWidget {
@@ -160,9 +162,8 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
           ),
         );
       }
-
       // 4. Print in background (non-blocking)
-      final printingService = ref.read(thermalPrintingServiceProvider);
+      final printingService = ref.read(thermal.thermalPrintingServiceProvider);
 
       debugPrint('Starting background print job with $copies copies');
       debugPrint('Sale data type: ${saleToPrint.runtimeType}');

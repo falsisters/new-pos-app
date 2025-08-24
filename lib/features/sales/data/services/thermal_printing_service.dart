@@ -409,7 +409,7 @@ class ThermalPrintingService {
       // Extract sale data
       String total = '0.00';
       String receiptId = 'RECEIPT';
-      String date = DateTime.now().toString().substring(0, 19);
+      String dateTime = DateTime.now().toString().substring(0, 19);
       String cashier = 'CASHIER';
       String paymentMethod = 'CASH';
       String changeAmount = '0.00';
@@ -422,10 +422,11 @@ class ThermalPrintingService {
         receiptId = sale.id.length > 8
             ? sale.id.substring(sale.id.length - 8)
             : sale.id;
-        date = _formatDateFor57mm(sale.createdAt);
+        dateTime = _formatDateTimeFor57mm(sale.createdAt);
 
         debugPrint('=== 57MM RECEIPT DATA EXTRACTION ===');
         debugPrint('Sale ID (last 8): $receiptId');
+        debugPrint('Sale date and time: $dateTime');
         debugPrint('Sale metadata: ${sale.metadata}');
 
         // Get cashier name from metadata first, then fallback to cashierId
@@ -569,9 +570,9 @@ class ThermalPrintingService {
           {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
       receiptLines.add({'text': _padLine('-', 32), 'format': 'normal'});
 
-      // Receipt info with minimal spacing
+      // Receipt info with minimal spacing - updated to show date and time
       receiptLines.add({'text': 'Invoice ID: $receiptId', 'format': 'info'});
-      receiptLines.add({'text': 'Date: $date', 'format': 'info'});
+      receiptLines.add({'text': 'Date & Time: $dateTime', 'format': 'info'});
       receiptLines.add({'text': 'Employee Name: $cashier', 'format': 'info'});
       receiptLines.add(
           {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
@@ -683,15 +684,24 @@ class ThermalPrintingService {
     return label + ' ' * spaces + value;
   }
 
-  // Helper method to format date for 57mm
-  String _formatDateFor57mm(String dateString) {
+  // Helper method to format date and time for 57mm
+  String _formatDateTimeFor57mm(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+      final dateStr =
+          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+      final timeStr =
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      return '$dateStr $timeStr';
     } catch (e) {
       debugPrint('Date parsing error: $e');
-      return dateString.substring(0, 10);
+      return dateString.substring(0, 19); // Return original if parsing fails
     }
+  }
+
+  // Helper method to format date for 57mm (keeping for backward compatibility)
+  String _formatDateFor57mm(String dateString) {
+    return _formatDateTimeFor57mm(dateString);
   }
 
   Future<void> _sendBluetoothChunked57mmReceipt(
@@ -752,8 +762,12 @@ class ThermalPrintingService {
               break;
 
             case 'item_details':
-            case 'body':
               // Regular font for details
+              lineBytes.addAll(line.codeUnits);
+              break;
+
+            case 'body':
+              // Regular font for body
               lineBytes.addAll(line.codeUnits);
               break;
 
@@ -835,10 +849,13 @@ class ThermalPrintingService {
         } else {
           switch (format) {
             case 'big_header':
-              // Double height and bold for "Falsisters"
+              // Center align and bold for "Falsisters" - Fixed for USB
               receiptBytes.addAll([0x1B, 0x61, 0x01]); // Center
-              receiptBytes
-                  .addAll([0x1D, 0x21, 0x11]); // Double height and width
+              receiptBytes.addAll([
+                0x1D,
+                0x21,
+                0x01
+              ]); // Double height only (not width to prevent overflow)
               receiptBytes.addAll([0x1B, 0x45, 0x01]); // Bold on
               receiptBytes.addAll(line.codeUnits);
               receiptBytes.addAll([0x1B, 0x45, 0x00]); // Bold off
@@ -917,7 +934,6 @@ class ThermalPrintingService {
     }
   }
 
-  // Helper method to center text for 57mm
   String _centerText(String text, int lineWidth) {
     if (text.length >= lineWidth) return text;
     final padding = (lineWidth - text.length) ~/ 2;
@@ -1007,8 +1023,11 @@ class ThermalPrintingService {
             .addAll('USB PID: ${printer.usbProductId ?? 'N/A'}\n'.codeUnits);
       }
 
-      testBytes.addAll(
-          'Time: ${DateTime.now().toString().substring(0, 19)}\n'.codeUnits);
+      // Updated to show both date and time
+      final now = DateTime.now();
+      final dateTimeStr =
+          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year.toString().substring(2)} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      testBytes.addAll('Date & Time: $dateTimeStr\n'.codeUnits);
       testBytes.addAll('\n'.codeUnits);
       testBytes.addAll('If you can see this,\n'.codeUnits);
       testBytes.addAll(
@@ -1040,19 +1059,11 @@ class ThermalPrintingService {
     }
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      debugPrint('Date parsing error: $e');
-      return dateString;
-    }
-  }
-
   void stopScan() {
     try {
+      _devicesStreamSubscription?.cancel();
       _flutterThermalPrinter.stopScan();
+      debugPrint('Stopped printer scanning');
     } catch (e) {
       debugPrint('Error stopping scan: $e');
     }
@@ -1062,6 +1073,7 @@ class ThermalPrintingService {
     try {
       _devicesStreamSubscription?.cancel();
       _flutterThermalPrinter.stopScan();
+      debugPrint('Thermal printer service disposed');
     } catch (e) {
       debugPrint('Error disposing thermal printer service: $e');
     }

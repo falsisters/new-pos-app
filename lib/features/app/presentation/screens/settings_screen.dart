@@ -634,17 +634,29 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             Text('Available Printers',
                 style: Theme.of(context).textTheme.titleLarge),
-            ElevatedButton.icon(
-              onPressed: state.isScanning
-                  ? null
-                  : () => ref.read(settingsProvider.notifier).scanForPrinters(),
-              icon: state.isScanning
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.refresh),
-              label: Text(state.isScanning ? 'Scanning...' : 'Scan All'),
+            Row(
+              children: [
+                // Add hard reset button
+                IconButton(
+                  onPressed: () => _showHardResetDialog(context, ref),
+                  icon: Icon(Icons.refresh_outlined, color: Colors.red),
+                  tooltip: 'Hard Reset Printer Settings',
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: state.isScanning
+                      ? null
+                      : () =>
+                          ref.read(settingsProvider.notifier).scanForPrinters(),
+                  icon: state.isScanning
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh),
+                  label: Text(state.isScanning ? 'Scanning...' : 'Scan All'),
+                ),
+              ],
             ),
           ],
         ),
@@ -745,6 +757,76 @@ class SettingsScreen extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  Future<void> _showHardResetDialog(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            const SizedBox(width: 8),
+            Text('Hard Reset Printer Settings'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will completely reset all printer and Bluetooth settings:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text('• Clear selected printer'),
+            Text('• Reset Bluetooth scanner'),
+            Text('• Clear printer cache'),
+            Text('• Force re-scan all devices'),
+            const SizedBox(height: 12),
+            Text(
+              'Use this if you\'re stuck in USB mode or having connection issues.',
+              style: TextStyle(
+                color: Colors.orange[700],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Hard Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(settingsProvider.notifier).hardResetPrinterSettings();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Printer settings reset successfully. Please scan again.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reset failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildErrorCard(BuildContext context, String errorMessage) {

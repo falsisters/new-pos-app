@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:falsisters_pos_android/features/app/data/model/settings_state.dart';
 import 'package:falsisters_pos_android/features/app/data/services/settings_service.dart';
-import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart';
+import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart'
+    as thermal;
 import 'package:falsisters_pos_android/features/app/data/model/printer_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:kiosk_mode/kiosk_mode.dart';
 
 final settingsProvider =
     StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
@@ -17,11 +17,11 @@ final settingsProvider =
 class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
   final Ref _ref;
   late final SettingsService _settingsService;
-  late final ThermalPrintingService _printingService;
+  late final thermal.ThermalPrintingService _printingService;
 
   SettingsNotifier(this._ref) : super(const AsyncValue.loading()) {
     _settingsService = _ref.read(settingsServiceProvider);
-    _printingService = _ref.read(thermalPrintingServiceProvider);
+    _printingService = _ref.read(thermal.thermalPrintingServiceProvider);
     _loadInitialState();
   }
 
@@ -79,6 +79,10 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     state = AsyncValue.data(currentState.copyWith(isScanning: true));
 
     try {
+      // Force stop any ongoing scans first
+      _printingService.stopScan();
+      await Future.delayed(Duration(milliseconds: 500));
+
       // Check Bluetooth first for Bluetooth printers
       final isBluetoothEnabled = await _printingService.isBluetoothEnabled();
 
@@ -161,6 +165,43 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
         errorMessage:
             'Scanner error: ${e.toString()}\n\nThis may be due to location services or Bluetooth interference. Try restarting the app.',
       ));
+    }
+  }
+
+  Future<void> hardResetPrinterSettings() async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    try {
+      debugPrint('=== HARD RESET PRINTER SETTINGS ===');
+
+      // Stop any ongoing scans
+      _printingService.stopScan();
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // Clear selected printer from storage
+      await _settingsService.removeSelectedPrinter();
+      debugPrint('Cleared selected printer from storage');
+
+      // Reset the printing service (this will clear any cached connections)
+      _printingService.dispose();
+      await Future.delayed(Duration(milliseconds: 1000));
+
+      // Reset state to clean slate
+      state = AsyncValue.data(SettingsState(
+        selectedPrinter: null,
+        availablePrinters: [],
+        isScanning: false,
+        isBluetoothEnabled: false,
+        printCopiesSetting: currentState.printCopiesSetting,
+        isKioskModeEnabled: currentState.isKioskModeEnabled,
+        errorMessage: 'Printer settings reset. Please scan for devices again.',
+      ));
+
+      debugPrint('Hard reset completed successfully');
+    } catch (e, st) {
+      debugPrint('Hard reset failed: $e');
+      state = AsyncValue.error(e, st);
     }
   }
 
