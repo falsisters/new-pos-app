@@ -93,7 +93,7 @@ class TransferItem extends StatelessWidget {
                                 color: Colors.blue, size: 12),
                             const SizedBox(width: 4),
                             Text(
-                              '${transfer.quantity.toStringAsFixed(2)}',
+                              '${transfer.quantity.toDouble().toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

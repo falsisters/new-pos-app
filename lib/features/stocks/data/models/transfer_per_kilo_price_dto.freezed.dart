@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransferPerKiloPriceDto {
   String get id;
-  double get quantity;
+  @DecimalConverter()
+  Decimal get quantity;
 
   /// Create a copy of TransferPerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -55,7 +56,7 @@ abstract mixin class $TransferPerKiloPriceDtoCopyWith<$Res> {
           $Res Function(TransferPerKiloPriceDto) _then) =
       _$TransferPerKiloPriceDtoCopyWithImpl;
   @useResult
-  $Res call({String id, double quantity});
+  $Res call({String id, @DecimalConverter() Decimal quantity});
 }
 
 /// @nodoc
@@ -82,7 +83,7 @@ class _$TransferPerKiloPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }
@@ -90,14 +91,16 @@ class _$TransferPerKiloPriceDtoCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _TransferPerKiloPriceDto implements TransferPerKiloPriceDto {
-  const _TransferPerKiloPriceDto({required this.id, required this.quantity});
+  const _TransferPerKiloPriceDto(
+      {required this.id, @DecimalConverter() required this.quantity});
   factory _TransferPerKiloPriceDto.fromJson(Map<String, dynamic> json) =>
       _$TransferPerKiloPriceDtoFromJson(json);
 
   @override
   final String id;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
 
   /// Create a copy of TransferPerKiloPriceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -143,7 +146,7 @@ abstract mixin class _$TransferPerKiloPriceDtoCopyWith<$Res>
       __$TransferPerKiloPriceDtoCopyWithImpl;
   @override
   @useResult
-  $Res call({String id, double quantity});
+  $Res call({String id, @DecimalConverter() Decimal quantity});
 }
 
 /// @nodoc
@@ -170,7 +173,7 @@ class __$TransferPerKiloPriceDtoCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
     ));
   }
 }

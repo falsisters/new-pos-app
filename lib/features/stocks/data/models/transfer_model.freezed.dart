@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransferModel {
   String get id;
-  double get quantity;
+  @DecimalConverter()
+  Decimal get quantity;
   String get name;
   TransferType get type;
   String get cashierId;
@@ -71,7 +72,7 @@ abstract mixin class $TransferModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       String name,
       TransferType type,
       String cashierId,
@@ -108,7 +109,7 @@ class _$TransferModelCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -138,7 +139,7 @@ class _$TransferModelCopyWithImpl<$Res>
 class _TransferModel implements TransferModel {
   const _TransferModel(
       {required this.id,
-      required this.quantity,
+      @DecimalConverter() required this.quantity,
       required this.name,
       required this.type,
       required this.cashierId,
@@ -150,7 +151,8 @@ class _TransferModel implements TransferModel {
   @override
   final String id;
   @override
-  final double quantity;
+  @DecimalConverter()
+  final Decimal quantity;
   @override
   final String name;
   @override
@@ -216,7 +218,7 @@ abstract mixin class _$TransferModelCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      double quantity,
+      @DecimalConverter() Decimal quantity,
       String name,
       TransferType type,
       String cashierId,
@@ -253,7 +255,7 @@ class __$TransferModelCopyWithImpl<$Res>
       quantity: null == quantity
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
