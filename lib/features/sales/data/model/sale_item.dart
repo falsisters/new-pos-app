@@ -18,6 +18,7 @@ sealed class SaleItem with _$SaleItem {
     required String productId,
     required Product product,
     @DecimalConverter() required Decimal quantity,
+    @NullableDecimalConverter() Decimal? price,
     @NullableDecimalConverter() Decimal? discountedPrice,
     @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
     String? sackPriceId,

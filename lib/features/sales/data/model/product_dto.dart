@@ -12,6 +12,7 @@ sealed class ProductDto with _$ProductDto {
   const factory ProductDto({
     required String id,
     required String name,
+    @NullableDecimalConverter() Decimal? price,
     @NullableDecimalConverter() Decimal? discountedPrice,
     bool? isDiscounted,
     bool? isGantang,

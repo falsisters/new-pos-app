@@ -222,7 +222,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   }
 
   Decimal _convertKgToGantang(Decimal kgValue) {
-    return (kgValue / gantangToKgRatio).toDecimal(scaleOnInfinitePrecision: 4);
+    return (kgValue / gantangToKgRatio).toDecimal(scaleOnInfinitePrecision: 3);
   }
 
   Decimal _getCurrentQuantityInKg() {
@@ -253,31 +253,25 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
   void _updatePerKiloTotalPriceFromQuantity() {
     if (_isUpdatingPriceAndQuantityInternally) return;
 
-    // Only update price when quantity is being modified
-    if (_perKiloQuantityFocusNode.hasFocus ||
-        _quantitySectionFocusNode.hasFocus ||
-        _decimalQuantityFocusNode.hasFocus ||
-        (!_perKiloQuantityFocusNode.hasFocus &&
-            !_perKiloTotalPriceFocusNode.hasFocus)) {
+    // Only update price when quantity is being modified, NOT when total price field has focus
+    if ((_perKiloQuantityFocusNode.hasFocus ||
+            _quantitySectionFocusNode.hasFocus ||
+            _decimalQuantityFocusNode.hasFocus) &&
+        !_perKiloTotalPriceFocusNode.hasFocus) {
       _isUpdatingPriceAndQuantityInternally = true;
       final String currentQuantityText = _perKiloQuantityController.text;
-      final quantity = Decimal.tryParse(currentQuantityText) ?? Decimal.zero;
+      final kgQuantity = Decimal.tryParse(currentQuantityText) ?? Decimal.zero;
 
       if (widget.product.perKiloPrice != null) {
-        final unitPrice =
+        final perKgPrice =
             Decimal.parse(widget.product.perKiloPrice!.price.toString());
 
-        if (unitPrice <= Decimal.zero) {
+        if (perKgPrice <= Decimal.zero) {
           _perKiloTotalPriceController.clear();
-        } else if (quantity > Decimal.zero) {
-          // Calculate total with Decimal precision
-          final totalPrice = quantity * unitPrice;
-          final ceiledTotalPrice = ((totalPrice * Decimal.fromInt(100)).ceil() /
-                  Decimal.fromInt(100))
-              .toDecimal(scaleOnInfinitePrecision: 4);
-
-          _perKiloTotalPriceController.text =
-              ceiledTotalPrice.toStringAsFixed(2);
+        } else if (kgQuantity > Decimal.zero) {
+          final totalPrice =
+              _calculateUnifiedTotalPrice(perKgPrice, kgQuantity);
+          _perKiloTotalPriceController.text = totalPrice.toStringAsFixed(2);
         } else {
           if (currentQuantityText.isEmpty) {
             _perKiloTotalPriceController.clear();
@@ -303,27 +297,39 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           Decimal.tryParse(currentTotalPriceText) ?? Decimal.zero;
 
       if (widget.product.perKiloPrice != null) {
-        final unitPrice =
+        final perKgPrice =
             Decimal.parse(widget.product.perKiloPrice!.price.toString());
 
-        if (unitPrice <= Decimal.zero) {
+        if (perKgPrice <= Decimal.zero) {
           _perKiloQuantityController.clear();
           _wholeQuantityController.clear();
           _decimalQuantityController.text = '00';
         } else if (totalPrice >= Decimal.zero) {
-          // Calculate quantity with Decimal precision and proper scale handling
-          final calculatedQuantity = totalPrice / unitPrice;
+          // Use gantang-adjusted price when in gantang mode for calculation
+          final effectivePrice = _isGantangMode
+              ? _getGantangAdjustedPrice(perKgPrice)
+              : perKgPrice;
+
+          // Calculate display quantity based on effective price
+          final calculatedDisplayQuantity = totalPrice / effectivePrice;
 
           // Convert to decimal with proper scale handling for infinite precision
-          final quantityDecimal =
-              calculatedQuantity.toDecimal(scaleOnInfinitePrecision: 4);
+          final displayQuantityDecimal =
+              calculatedDisplayQuantity.toDecimal(scaleOnInfinitePrecision: 3);
 
-          // Update the per kilo quantity controller
-          _perKiloQuantityController.text = quantityDecimal.toStringAsFixed(2);
+          // Calculate kg quantity for internal tracking
+          final kgQuantity = _isGantangMode
+              ? _convertGantangToKg(displayQuantityDecimal)
+              : displayQuantityDecimal;
 
-          // IMPORTANT: Always update the whole and decimal quantity displays
-          // regardless of which field has focus
-          _setQuantityFromKg(quantityDecimal);
+          // Update the per kilo quantity controller (always in kg)
+          _perKiloQuantityController.text = kgQuantity.toStringAsFixed(2);
+
+          // Update the display quantities
+          final wholePart = displayQuantityDecimal.floor();
+          final fractionalPart = displayQuantityDecimal - wholePart;
+          _wholeQuantityController.text = wholePart.toBigInt().toString();
+          _decimalQuantityController.text = fractionalPart.toStringAsFixed(2);
         } else {
           if (currentTotalPriceText.isEmpty) {
             _perKiloQuantityController.clear();
@@ -360,14 +366,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _isPerKiloSelected = true;
       _setQuantityFromKg(Decimal.one);
       if (widget.product.perKiloPrice != null) {
-        final unitPrice =
+        final perKgPrice =
             Decimal.parse(widget.product.perKiloPrice!.price.toString());
-        final quantity = Decimal.one;
-        final totalPrice = quantity * unitPrice;
-        final ceiledTotalPrice =
-            ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
-                .toDecimal(scaleOnInfinitePrecision: 4);
-        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
+        final kgQuantity = Decimal.one;
+        final totalPrice = _calculateUnifiedTotalPrice(perKgPrice, kgQuantity);
+        _perKiloTotalPriceController.text = totalPrice.toStringAsFixed(2);
       }
     });
   }
@@ -396,16 +399,11 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
   void _calculateInitialPerKiloTotalPrice() {
     if (widget.product.perKiloPrice != null) {
-      final unitPrice =
+      final perKgPrice =
           Decimal.parse(widget.product.perKiloPrice!.price.toString());
-      final quantity = Decimal.one;
-      final totalPrice = quantity * unitPrice;
-
-      final ceiledTotalPrice =
-          ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
-              .toDecimal(scaleOnInfinitePrecision: 4);
-
-      _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
+      final kgQuantity = Decimal.one;
+      final totalPrice = _calculateUnifiedTotalPrice(perKgPrice, kgQuantity);
+      _perKiloTotalPriceController.text = totalPrice.toStringAsFixed(2);
     }
   }
 
@@ -427,16 +425,12 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       _isUpdatingPriceAndQuantityInternally = true;
       _perKiloQuantityController.text = kgQuantity.toStringAsFixed(2);
 
-      // Update total price based on kg quantity with ceiling rounding
+      // Update total price using unified calculation
       if (widget.product.perKiloPrice != null && kgQuantity > Decimal.zero) {
-        final unitPrice =
+        final perKgPrice =
             Decimal.parse(widget.product.perKiloPrice!.price.toString());
-        final totalPrice = kgQuantity * unitPrice;
-        final ceiledTotalPrice =
-            ((totalPrice * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
-                .toDecimal(scaleOnInfinitePrecision: 4);
-
-        _perKiloTotalPriceController.text = ceiledTotalPrice.toStringAsFixed(2);
+        final totalPrice = _calculateUnifiedTotalPrice(perKgPrice, kgQuantity);
+        _perKiloTotalPriceController.text = totalPrice.toStringAsFixed(2);
       } else if (kgQuantity == Decimal.zero) {
         _perKiloTotalPriceController.clear();
       }
@@ -716,6 +710,112 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     focusNodes[nextIndex].requestFocus();
   }
 
+  // Unified method for calculating total price based on kg quantity and display mode
+  Decimal _calculateUnifiedTotalPrice(Decimal perKgPrice, Decimal kgQuantity) {
+    if (_isGantangMode) {
+      // Calculate gantang unit price with custom rounding rule
+      final gantangUnitPrice = _getGantangAdjustedPrice(perKgPrice);
+      // Convert kg quantity to gantang quantity for multiplication
+      final gantangQuantity = _convertKgToGantang(kgQuantity);
+      // Multiply rounded gantang unit price by gantang quantity
+      final rawTotalPrice = gantangUnitPrice * gantangQuantity;
+
+      // Apply custom rounding rule to the total: if decimal < 0.1, truncate; else round up
+      final wholePart = rawTotalPrice.floor();
+      final fractionalPart = rawTotalPrice - wholePart;
+
+      Decimal finalTotalPrice;
+      if (fractionalPart < Decimal.parse('0.1')) {
+        // Truncate - keep only whole number
+        finalTotalPrice = wholePart;
+      } else {
+        // Round up to next whole number
+        finalTotalPrice = wholePart + Decimal.one;
+      }
+
+      debugPrint('=== GANTANG TOTAL CALCULATION ===');
+      debugPrint('Gantang Unit Price: ${gantangUnitPrice.toStringAsFixed(2)}');
+      debugPrint('Gantang Quantity: ${gantangQuantity.toStringAsFixed(4)}');
+      debugPrint('Raw Total: ${rawTotalPrice.toStringAsFixed(4)}');
+      debugPrint('Fractional Part: ${fractionalPart.toStringAsFixed(4)}');
+      debugPrint('Final Total: ${finalTotalPrice.toStringAsFixed(2)}');
+
+      return finalTotalPrice;
+    } else {
+      // For kg mode, apply custom rounding rule to the total
+      final totalPrice = kgQuantity * perKgPrice;
+
+      // Apply custom rounding rule: if decimal < 0.1, truncate; else round up
+      final wholePart = totalPrice.floor();
+      final fractionalPart = totalPrice - wholePart;
+
+      Decimal roundedTotal;
+      if (fractionalPart < Decimal.parse('0.1')) {
+        // Truncate - keep only whole number
+        roundedTotal = wholePart;
+      } else {
+        // Round up to next whole number
+        roundedTotal = wholePart + Decimal.one;
+      }
+
+      debugPrint('=== KG TOTAL CALCULATION ===');
+      debugPrint('Raw Total: ${totalPrice.toStringAsFixed(4)}');
+      debugPrint('Fractional Part: ${fractionalPart.toStringAsFixed(4)}');
+      debugPrint('Rounded Total: ${roundedTotal.toStringAsFixed(2)}');
+
+      return roundedTotal;
+    }
+  }
+
+  // Helper method for consistent price calculation with ceiling rounding (legacy - for non-gantang)
+  Decimal _calculateTotalPrice(Decimal unitPrice, Decimal quantity) {
+    if (_isGantangMode) {
+      // For gantang mode, use no additional rounding since unitPrice is already rounded
+      return unitPrice * quantity;
+    } else {
+      // For kg mode, apply custom rounding rule to the total
+      final totalPrice = quantity * unitPrice;
+
+      // Apply custom rounding rule: if decimal < 0.1, truncate; else round up
+      final wholePart = totalPrice.floor();
+      final fractionalPart = totalPrice - wholePart;
+
+      if (fractionalPart < Decimal.parse('0.1')) {
+        // Truncate - keep only whole number
+        return wholePart;
+      } else {
+        // Round up to next whole number
+        return wholePart + Decimal.one;
+      }
+    }
+  }
+
+  // Helper method to get gantang-adjusted unit price with custom rounding rule
+  Decimal _getGantangAdjustedPrice(Decimal perKgPrice) {
+    final gantangPrice = perKgPrice * gantangToKgRatio;
+
+    // Apply custom rounding rule: if decimal < 0.1, truncate; else round up
+    final wholePart = gantangPrice.floor();
+    final fractionalPart = gantangPrice - wholePart;
+
+    Decimal roundedPrice;
+    if (fractionalPart < Decimal.parse('0.1')) {
+      // Truncate - keep only whole number
+      roundedPrice = wholePart;
+    } else {
+      // Round up to next whole number
+      roundedPrice = wholePart + Decimal.one;
+    }
+
+    debugPrint('=== GANTANG PRICE CALCULATION ===');
+    debugPrint('Per KG Price: ${perKgPrice.toStringAsFixed(2)}');
+    debugPrint('Gantang Price (×2.25): ${gantangPrice.toStringAsFixed(4)}');
+    debugPrint('Fractional Part: ${fractionalPart.toStringAsFixed(4)}');
+    debugPrint('Rounded Gantang Price: ${roundedPrice.toStringAsFixed(2)}');
+
+    return roundedPrice;
+  }
+
   void _addToCart() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -743,17 +843,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           (_isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price)
               .toString());
 
-      // For discounted items, ceil the discount price first
+      // For discounted items, use the discount price without additional rounding
       final finalDiscountedPrice = _isDiscounted
           ? Decimal.tryParse(
               _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
-      // Use final discount price or original price
+      // Use the original unit price for calculation - no pre-rounding
       final effectiveUnitPrice = finalDiscountedPrice ?? unitPrice;
-      final ceiledUnitPrice =
-          (effectiveUnitPrice * Decimal.fromInt(100)).ceil() /
-              Decimal.fromInt(100);
 
       debugPrint('=== SACK PRICE CALCULATION ===');
       debugPrint('Original unit price: ${unitPrice.toStringAsFixed(4)}');
@@ -764,18 +861,22 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       debugPrint(
           'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
       debugPrint(
-          'Ceiling unit price: ${ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4).toStringAsFixed(4)}');
-      debugPrint(
-          'Total: ${(ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4) * quantity).toStringAsFixed(4)}');
+          'Total (no rounding): ${(effectiveUnitPrice * quantity).toStringAsFixed(4)}');
+
+      // Calculate total for sack items
+      final totalPrice = finalDiscountedPrice != null
+          ? finalDiscountedPrice * quantity
+          : effectiveUnitPrice * quantity;
 
       productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
+        price: totalPrice, // Store the calculated total
         isGantang: false,
         isSpecialPrice: _isSpecialPrice,
         sackPrice: SackPriceDto(
           id: sackPrice.id,
-          price: ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4),
+          price: Decimal.zero, // Dummy value - server ignores this
           quantity: quantity,
           type: sackPrice.type,
         ),
@@ -786,43 +887,67 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       final perKiloPrice = widget.product.perKiloPrice!;
       final kgQuantity = _getCurrentQuantityInKg();
 
-      // For discounted items, ceil the discount price first
+      // For discounted items, use the discount price directly
       final finalDiscountedPrice = _isDiscounted
           ? Decimal.tryParse(
               _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
-      // Use final discount price or original price
-      final effectiveUnitPrice =
-          finalDiscountedPrice ?? Decimal.parse(perKiloPrice.price.toString());
-      final ceiledUnitPrice =
-          (effectiveUnitPrice * Decimal.fromInt(100)).ceil() /
-              Decimal.fromInt(100);
+      // Use the exact total price from the text field (no recalculation)
+      final totalPriceFromField = Decimal.tryParse(
+              _perKiloTotalPriceController.text.replaceAll(',', '')) ??
+          Decimal.zero;
+
+      // Use appropriate pricing based on mode
+      final baseUnitPrice = Decimal.parse(perKiloPrice.price.toString());
+
+      Decimal effectiveUnitPrice;
+      Decimal effectiveQuantity;
+
+      if (finalDiscountedPrice != null) {
+        // For discounted items, use the discount price as the total price
+        if (_isGantangMode) {
+          effectiveQuantity = _convertKgToGantang(kgQuantity);
+        } else {
+          effectiveQuantity = kgQuantity;
+        }
+        effectiveUnitPrice =
+            finalDiscountedPrice; // Store discount price as total
+      } else {
+        // For non-discounted items, use exact total from field as price
+        if (_isGantangMode) {
+          effectiveQuantity = _convertKgToGantang(kgQuantity);
+        } else {
+          effectiveQuantity = kgQuantity;
+        }
+        // Use the exact total price from field as the "price"
+        effectiveUnitPrice = totalPriceFromField;
+      }
 
       debugPrint('=== PER KILO CALCULATION ===');
-      debugPrint(
-          'Original unit price: ${perKiloPrice.price.toStringAsFixed(4)}');
-      debugPrint('Quantity: ${kgQuantity.toStringAsFixed(4)}');
+      debugPrint('Original per-kg price: ${baseUnitPrice.toStringAsFixed(4)}');
+      debugPrint('KG Quantity: ${kgQuantity.toStringAsFixed(4)}');
+      debugPrint('Total from field: ${totalPriceFromField.toStringAsFixed(4)}');
       debugPrint('Is discounted: $_isDiscounted');
       debugPrint(
           'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
+      debugPrint('Storing as price: ${effectiveUnitPrice.toStringAsFixed(4)}');
       debugPrint(
-          'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
-      debugPrint(
-          'Ceiling unit price: ${ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4).toStringAsFixed(4)}');
-      debugPrint(
-          'Total: ${(ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4) * kgQuantity).toStringAsFixed(4)}');
+          'Storing as quantity: ${effectiveQuantity.toStringAsFixed(4)}');
       debugPrint('Is Gantang: $_isGantangMode');
 
       productDto = ProductDto(
         id: widget.product.id,
         name: widget.product.name,
+        price: finalDiscountedPrice ??
+            totalPriceFromField, // Store the exact total from field
         isGantang: _isGantangMode,
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
-          price: ceiledUnitPrice.toDecimal(scaleOnInfinitePrecision: 4),
-          quantity: kgQuantity,
+          quantity:
+              effectiveQuantity, // Store the actual quantity (gantang or kg)
+          price: Decimal.zero, // Dummy value - server ignores this field
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: finalDiscountedPrice,
@@ -924,6 +1049,28 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                                 _isGantangMode = isGantang;
                                 final currentKg = _getCurrentQuantityInKg();
                                 _setQuantityFromKg(currentKg);
+                                // Recalculate total with new pricing mode
+                                if (widget.product.perKiloPrice != null) {
+                                  final unitPrice = Decimal.parse(widget
+                                      .product.perKiloPrice!.price
+                                      .toString());
+                                  final displayQuantity = Decimal.fromInt(
+                                          int.tryParse(_wholeQuantityController
+                                                  .text) ??
+                                              0) +
+                                      Decimal.parse((double.tryParse(
+                                                  _decimalQuantityController
+                                                      .text) ??
+                                              0.0)
+                                          .toString());
+                                  final effectivePrice = _isGantangMode
+                                      ? _getGantangAdjustedPrice(unitPrice)
+                                      : unitPrice;
+                                  final totalPrice = _calculateTotalPrice(
+                                      effectivePrice, displayQuantity);
+                                  _perKiloTotalPriceController.text =
+                                      totalPrice.toStringAsFixed(2);
+                                }
                               }
                             });
                           },

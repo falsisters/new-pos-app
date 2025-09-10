@@ -262,8 +262,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           if (mounted) {
             setState(() {
               _itemsForSubmission = data.expenseList!.expenseItems
-                  .map((item) =>
-                      ExpenseItemDto(name: item.name, amount: item.amount))
+                  .map((item) => ExpenseItemDto(
+                      name: item.name, amount: item.amount.toDouble()))
                   .toList();
               _loadedExpenseListId = data.expenseList!.id;
               debugPrint(

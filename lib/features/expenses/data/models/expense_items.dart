@@ -1,3 +1,5 @@
+import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/utils/decimal_converter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'expense_items.freezed.dart';
@@ -8,7 +10,7 @@ sealed class ExpenseItems with _$ExpenseItems {
   const factory ExpenseItems({
     required String id,
     required String name,
-    required double amount,
+    @DecimalConverter() required Decimal amount,
     required String expenseListId,
     required String createdAt,
     required String updatedAt,

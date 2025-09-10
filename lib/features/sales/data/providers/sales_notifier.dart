@@ -318,4 +318,33 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
       state = AsyncValue.data(currentState.copyWith(saleToPrint: null));
     }
   }
+
+  // Helper method to calculate cart total with proper rounding (prevents double rounding)
+  Decimal _calculateCartItemTotal(ProductDto product) {
+    if (product.sackPrice != null) {
+      // For sack prices, calculate total directly without rounding
+      final unitPrice = product.sackPrice!.price;
+      final quantity = product.sackPrice!.quantity;
+      return unitPrice *
+          quantity; // No additional rounding - use the price as-is
+    } else if (product.perKiloPrice != null) {
+      // For per kilo prices, use the exact unit price and kg quantity
+      final unitPrice =
+          product.perKiloPrice!.price; // This is always per-kg price
+      final kgQuantity =
+          product.perKiloPrice!.quantity; // This is always kg quantity
+
+      if (product.isGantang == true) {
+        // For gantang mode, the price has already been calculated with proper rounding
+        // Don't apply additional rounding here
+        return unitPrice * kgQuantity;
+      } else {
+        // For kg mode, apply ceiling rounding as before
+        final total = unitPrice * kgQuantity;
+        return ((total * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
+            .toDecimal(scaleOnInfinitePrecision: 4);
+      }
+    }
+    return Decimal.zero;
+  }
 }

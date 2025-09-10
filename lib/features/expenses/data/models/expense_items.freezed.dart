@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$ExpenseItems {
   String get id;
   String get name;
-  double get amount;
+  @DecimalConverter()
+  Decimal get amount;
   String get expenseListId;
   String get createdAt;
   String get updatedAt;
@@ -69,7 +70,7 @@ abstract mixin class $ExpenseItemsCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      double amount,
+      @DecimalConverter() Decimal amount,
       String expenseListId,
       String createdAt,
       String updatedAt});
@@ -106,7 +107,7 @@ class _$ExpenseItemsCopyWithImpl<$Res> implements $ExpenseItemsCopyWith<$Res> {
       amount: null == amount
           ? _self.amount
           : amount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       expenseListId: null == expenseListId
           ? _self.expenseListId
           : expenseListId // ignore: cast_nullable_to_non_nullable
@@ -129,7 +130,7 @@ class _ExpenseItems implements ExpenseItems {
   const _ExpenseItems(
       {required this.id,
       required this.name,
-      required this.amount,
+      @DecimalConverter() required this.amount,
       required this.expenseListId,
       required this.createdAt,
       required this.updatedAt});
@@ -141,7 +142,8 @@ class _ExpenseItems implements ExpenseItems {
   @override
   final String name;
   @override
-  final double amount;
+  @DecimalConverter()
+  final Decimal amount;
   @override
   final String expenseListId;
   @override
@@ -202,7 +204,7 @@ abstract mixin class _$ExpenseItemsCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      double amount,
+      @DecimalConverter() Decimal amount,
       String expenseListId,
       String createdAt,
       String updatedAt});
@@ -240,7 +242,7 @@ class __$ExpenseItemsCopyWithImpl<$Res>
       amount: null == amount
           ? _self.amount
           : amount // ignore: cast_nullable_to_non_nullable
-              as double,
+              as Decimal,
       expenseListId: null == expenseListId
           ? _self.expenseListId
           : expenseListId // ignore: cast_nullable_to_non_nullable

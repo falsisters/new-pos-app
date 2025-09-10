@@ -10,7 +10,7 @@ _ExpenseItems _$ExpenseItemsFromJson(Map<String, dynamic> json) =>
     _ExpenseItems(
       id: json['id'] as String,
       name: json['name'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: const DecimalConverter().fromJson(json['amount']),
       expenseListId: json['expenseListId'] as String,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
@@ -20,7 +20,7 @@ Map<String, dynamic> _$ExpenseItemsToJson(_ExpenseItems instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'amount': instance.amount,
+      'amount': const DecimalConverter().toJson(instance.amount),
       'expenseListId': instance.expenseListId,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,

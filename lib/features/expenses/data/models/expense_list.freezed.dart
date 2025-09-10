@@ -18,10 +18,9 @@ mixin _$ExpenseList {
   String get id;
   String? get userId;
   String? get cashierId;
-  @JsonKey(name: 'ExpenseItems')
-  List<ExpenseItems> get expenseItems;
   String get createdAt;
   String get updatedAt;
+  List<ExpenseItems> get expenseItems;
 
   /// Create a copy of ExpenseList
   /// with the given fields replaced by the non-null parameter values.
@@ -29,9 +28,6 @@ mixin _$ExpenseList {
   @pragma('vm:prefer-inline')
   $ExpenseListCopyWith<ExpenseList> get copyWith =>
       _$ExpenseListCopyWithImpl<ExpenseList>(this as ExpenseList, _$identity);
-
-  /// Serializes this ExpenseList to a JSON map.
-  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
@@ -42,22 +38,21 @@ mixin _$ExpenseList {
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.cashierId, cashierId) ||
                 other.cashierId == cashierId) &&
-            const DeepCollectionEquality()
-                .equals(other.expenseItems, expenseItems) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality()
+                .equals(other.expenseItems, expenseItems));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId, cashierId,
-      const DeepCollectionEquality().hash(expenseItems), createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, userId, cashierId, createdAt,
+      updatedAt, const DeepCollectionEquality().hash(expenseItems));
 
   @override
   String toString() {
-    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, createdAt: $createdAt, updatedAt: $updatedAt, expenseItems: $expenseItems)';
   }
 }
 
@@ -71,9 +66,9 @@ abstract mixin class $ExpenseListCopyWith<$Res> {
       {String id,
       String? userId,
       String? cashierId,
-      @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
-      String updatedAt});
+      String updatedAt,
+      List<ExpenseItems> expenseItems});
 }
 
 /// @nodoc
@@ -91,9 +86,9 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
     Object? id = null,
     Object? userId = freezed,
     Object? cashierId = freezed,
-    Object? expenseItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? expenseItems = null,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -108,10 +103,6 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
           ? _self.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable
               as String?,
-      expenseItems: null == expenseItems
-          ? _self.expenseItems
-          : expenseItems // ignore: cast_nullable_to_non_nullable
-              as List<ExpenseItems>,
       createdAt: null == createdAt
           ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -120,25 +111,25 @@ class _$ExpenseListCopyWithImpl<$Res> implements $ExpenseListCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as String,
+      expenseItems: null == expenseItems
+          ? _self.expenseItems
+          : expenseItems // ignore: cast_nullable_to_non_nullable
+              as List<ExpenseItems>,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
-class _ExpenseList extends ExpenseList {
+
+class _ExpenseList implements ExpenseList {
   const _ExpenseList(
       {required this.id,
       this.userId,
       this.cashierId,
-      @JsonKey(name: 'ExpenseItems')
-      required final List<ExpenseItems> expenseItems,
       required this.createdAt,
-      required this.updatedAt})
-      : _expenseItems = expenseItems,
-        super._();
-  factory _ExpenseList.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseListFromJson(json);
+      required this.updatedAt,
+      required final List<ExpenseItems> expenseItems})
+      : _expenseItems = expenseItems;
 
   @override
   final String id;
@@ -146,19 +137,17 @@ class _ExpenseList extends ExpenseList {
   final String? userId;
   @override
   final String? cashierId;
+  @override
+  final String createdAt;
+  @override
+  final String updatedAt;
   final List<ExpenseItems> _expenseItems;
   @override
-  @JsonKey(name: 'ExpenseItems')
   List<ExpenseItems> get expenseItems {
     if (_expenseItems is EqualUnmodifiableListView) return _expenseItems;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_expenseItems);
   }
-
-  @override
-  final String createdAt;
-  @override
-  final String updatedAt;
 
   /// Create a copy of ExpenseList
   /// with the given fields replaced by the non-null parameter values.
@@ -169,13 +158,6 @@ class _ExpenseList extends ExpenseList {
       __$ExpenseListCopyWithImpl<_ExpenseList>(this, _$identity);
 
   @override
-  Map<String, dynamic> toJson() {
-    return _$ExpenseListToJson(
-      this,
-    );
-  }
-
-  @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
@@ -184,22 +166,21 @@ class _ExpenseList extends ExpenseList {
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.cashierId, cashierId) ||
                 other.cashierId == cashierId) &&
-            const DeepCollectionEquality()
-                .equals(other._expenseItems, _expenseItems) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality()
+                .equals(other._expenseItems, _expenseItems));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId, cashierId,
-      const DeepCollectionEquality().hash(_expenseItems), createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, userId, cashierId, createdAt,
+      updatedAt, const DeepCollectionEquality().hash(_expenseItems));
 
   @override
   String toString() {
-    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, expenseItems: $expenseItems, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ExpenseList(id: $id, userId: $userId, cashierId: $cashierId, createdAt: $createdAt, updatedAt: $updatedAt, expenseItems: $expenseItems)';
   }
 }
 
@@ -215,9 +196,9 @@ abstract mixin class _$ExpenseListCopyWith<$Res>
       {String id,
       String? userId,
       String? cashierId,
-      @JsonKey(name: 'ExpenseItems') List<ExpenseItems> expenseItems,
       String createdAt,
-      String updatedAt});
+      String updatedAt,
+      List<ExpenseItems> expenseItems});
 }
 
 /// @nodoc
@@ -235,9 +216,9 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
     Object? id = null,
     Object? userId = freezed,
     Object? cashierId = freezed,
-    Object? expenseItems = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? expenseItems = null,
   }) {
     return _then(_ExpenseList(
       id: null == id
@@ -252,10 +233,6 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
           ? _self.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable
               as String?,
-      expenseItems: null == expenseItems
-          ? _self._expenseItems
-          : expenseItems // ignore: cast_nullable_to_non_nullable
-              as List<ExpenseItems>,
       createdAt: null == createdAt
           ? _self.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -264,6 +241,10 @@ class __$ExpenseListCopyWithImpl<$Res> implements _$ExpenseListCopyWith<$Res> {
           ? _self.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as String,
+      expenseItems: null == expenseItems
+          ? _self._expenseItems
+          : expenseItems // ignore: cast_nullable_to_non_nullable
+              as List<ExpenseItems>,
     ));
   }
 }

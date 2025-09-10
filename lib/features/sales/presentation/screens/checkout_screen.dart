@@ -56,27 +56,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Decimal itemTotal;
 
     if (isDiscountApplied) {
-      Decimal quantity = Decimal.one;
-      if (product.perKiloPrice != null) {
-        quantity = product.perKiloPrice!.quantity;
-      } else if (product.sackPrice != null) {
-        quantity = product.sackPrice!.quantity;
-      }
-
-      // Use ceiling-rounded discount price
-      final ceiledDiscountPrice =
-          _ceilRoundPrice(Decimal.parse(product.discountedPrice!.toString()));
-      itemTotal = ceiledDiscountPrice * quantity;
-    } else if (product.sackPrice != null) {
-      // Use ceiling-rounded unit price
-      final ceiledUnitPrice = _ceilRoundPrice(product.sackPrice!.price);
-      itemTotal = ceiledUnitPrice * product.sackPrice!.quantity;
-    } else if (product.perKiloPrice != null) {
-      // Use ceiling-rounded unit price
-      final ceiledUnitPrice = _ceilRoundPrice(product.perKiloPrice!.price);
-      itemTotal = ceiledUnitPrice * product.perKiloPrice!.quantity;
+      // For discounted items, use the discountedPrice directly (it's already the total)
+      itemTotal = product.discountedPrice!;
     } else {
-      itemTotal = Decimal.zero;
+      // For non-discounted items, use the main price field which contains the exact total
+      itemTotal = product.price ?? Decimal.zero;
     }
 
     // Apply ceiling rounding to individual item total

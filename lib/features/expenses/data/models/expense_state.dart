@@ -2,16 +2,12 @@ import 'package:falsisters_pos_android/features/expenses/data/models/expense_lis
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'expense_state.freezed.dart';
-part 'expense_state.g.dart';
 
 @freezed
 sealed class ExpenseState with _$ExpenseState {
   const factory ExpenseState({
-    ExpenseList? expenseList, // Made nullable
+    ExpenseList? expenseList,
     @Default(false) bool isLoading,
     String? error,
   }) = _ExpenseState;
-
-  factory ExpenseState.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseStateFromJson(json);
 }

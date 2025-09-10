@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$ExpenseState {
-  ExpenseList? get expenseList; // Made nullable
+  ExpenseList? get expenseList;
   bool get isLoading;
   String? get error;
 
@@ -26,9 +26,6 @@ mixin _$ExpenseState {
   $ExpenseStateCopyWith<ExpenseState> get copyWith =>
       _$ExpenseStateCopyWithImpl<ExpenseState>(
           this as ExpenseState, _$identity);
-
-  /// Serializes this ExpenseState to a JSON map.
-  Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
@@ -42,7 +39,6 @@ mixin _$ExpenseState {
             (identical(other.error, error) || other.error == error));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, expenseList, isLoading, error);
 
@@ -111,15 +107,12 @@ class _$ExpenseStateCopyWithImpl<$Res> implements $ExpenseStateCopyWith<$Res> {
 }
 
 /// @nodoc
-@JsonSerializable()
+
 class _ExpenseState implements ExpenseState {
   const _ExpenseState({this.expenseList, this.isLoading = false, this.error});
-  factory _ExpenseState.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseStateFromJson(json);
 
   @override
   final ExpenseList? expenseList;
-// Made nullable
   @override
   @JsonKey()
   final bool isLoading;
@@ -135,13 +128,6 @@ class _ExpenseState implements ExpenseState {
       __$ExpenseStateCopyWithImpl<_ExpenseState>(this, _$identity);
 
   @override
-  Map<String, dynamic> toJson() {
-    return _$ExpenseStateToJson(
-      this,
-    );
-  }
-
-  @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
@@ -153,7 +139,6 @@ class _ExpenseState implements ExpenseState {
             (identical(other.error, error) || other.error == error));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, expenseList, isLoading, error);
 

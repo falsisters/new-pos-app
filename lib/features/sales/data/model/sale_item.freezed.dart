@@ -21,6 +21,8 @@ mixin _$SaleItem {
   @DecimalConverter()
   Decimal get quantity;
   @NullableDecimalConverter()
+  Decimal? get price;
+  @NullableDecimalConverter()
   Decimal? get discountedPrice;
   @JsonKey(name: 'SackPrice')
   SackPrice? get sackPrice;
@@ -56,6 +58,7 @@ mixin _$SaleItem {
             (identical(other.product, product) || other.product == product) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.discountedPrice, discountedPrice) ||
                 other.discountedPrice == discountedPrice) &&
             (identical(other.sackPrice, sackPrice) ||
@@ -89,6 +92,7 @@ mixin _$SaleItem {
       productId,
       product,
       quantity,
+      price,
       discountedPrice,
       sackPrice,
       sackPriceId,
@@ -104,7 +108,7 @@ mixin _$SaleItem {
 
   @override
   String toString() {
-    return 'SaleItem(id: $id, productId: $productId, product: $product, quantity: $quantity, discountedPrice: $discountedPrice, sackPrice: $sackPrice, sackPriceId: $sackPriceId, sackType: $sackType, perKiloPrice: $perKiloPrice, perKiloPriceId: $perKiloPriceId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleItem(id: $id, productId: $productId, product: $product, quantity: $quantity, price: $price, discountedPrice: $discountedPrice, sackPrice: $sackPrice, sackPriceId: $sackPriceId, sackType: $sackType, perKiloPrice: $perKiloPrice, perKiloPriceId: $perKiloPriceId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -118,6 +122,7 @@ abstract mixin class $SaleItemCopyWith<$Res> {
       String productId,
       Product product,
       @DecimalConverter() Decimal quantity,
+      @NullableDecimalConverter() Decimal? price,
       @NullableDecimalConverter() Decimal? discountedPrice,
       @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
       String? sackPriceId,
@@ -152,6 +157,7 @@ class _$SaleItemCopyWithImpl<$Res> implements $SaleItemCopyWith<$Res> {
     Object? productId = null,
     Object? product = null,
     Object? quantity = null,
+    Object? price = freezed,
     Object? discountedPrice = freezed,
     Object? sackPrice = freezed,
     Object? sackPriceId = freezed,
@@ -182,6 +188,10 @@ class _$SaleItemCopyWithImpl<$Res> implements $SaleItemCopyWith<$Res> {
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as Decimal,
+      price: freezed == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
@@ -280,6 +290,7 @@ class _SaleItem implements SaleItem {
       required this.productId,
       required this.product,
       @DecimalConverter() required this.quantity,
+      @NullableDecimalConverter() this.price,
       @NullableDecimalConverter() this.discountedPrice,
       @JsonKey(name: 'SackPrice') this.sackPrice,
       this.sackPriceId,
@@ -304,6 +315,9 @@ class _SaleItem implements SaleItem {
   @override
   @DecimalConverter()
   final Decimal quantity;
+  @override
+  @NullableDecimalConverter()
+  final Decimal? price;
   @override
   @NullableDecimalConverter()
   final Decimal? discountedPrice;
@@ -357,6 +371,7 @@ class _SaleItem implements SaleItem {
             (identical(other.product, product) || other.product == product) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.discountedPrice, discountedPrice) ||
                 other.discountedPrice == discountedPrice) &&
             (identical(other.sackPrice, sackPrice) ||
@@ -390,6 +405,7 @@ class _SaleItem implements SaleItem {
       productId,
       product,
       quantity,
+      price,
       discountedPrice,
       sackPrice,
       sackPriceId,
@@ -405,7 +421,7 @@ class _SaleItem implements SaleItem {
 
   @override
   String toString() {
-    return 'SaleItem(id: $id, productId: $productId, product: $product, quantity: $quantity, discountedPrice: $discountedPrice, sackPrice: $sackPrice, sackPriceId: $sackPriceId, sackType: $sackType, perKiloPrice: $perKiloPrice, perKiloPriceId: $perKiloPriceId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SaleItem(id: $id, productId: $productId, product: $product, quantity: $quantity, price: $price, discountedPrice: $discountedPrice, sackPrice: $sackPrice, sackPriceId: $sackPriceId, sackType: $sackType, perKiloPrice: $perKiloPrice, perKiloPriceId: $perKiloPriceId, saleId: $saleId, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, isDiscounted: $isDiscounted, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
@@ -421,6 +437,7 @@ abstract mixin class _$SaleItemCopyWith<$Res>
       String productId,
       Product product,
       @DecimalConverter() Decimal quantity,
+      @NullableDecimalConverter() Decimal? price,
       @NullableDecimalConverter() Decimal? discountedPrice,
       @JsonKey(name: 'SackPrice') SackPrice? sackPrice,
       String? sackPriceId,
@@ -458,6 +475,7 @@ class __$SaleItemCopyWithImpl<$Res> implements _$SaleItemCopyWith<$Res> {
     Object? productId = null,
     Object? product = null,
     Object? quantity = null,
+    Object? price = freezed,
     Object? discountedPrice = freezed,
     Object? sackPrice = freezed,
     Object? sackPriceId = freezed,
@@ -488,6 +506,10 @@ class __$SaleItemCopyWithImpl<$Res> implements _$SaleItemCopyWith<$Res> {
           ? _self.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as Decimal,
+      price: freezed == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable

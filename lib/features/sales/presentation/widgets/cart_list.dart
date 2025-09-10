@@ -563,26 +563,9 @@ class _CartListState extends ConsumerState<CartList> {
   }
 
   Widget _buildPriceInfo(ProductDto product) {
-    if (product.perKiloPrice != null) {
+    if (product.price != null) {
       String priceText =
-          '₱${NumberFormat('#,##0.00').format(product.perKiloPrice!.price.toDouble())}/kg';
-      if (product.isDiscounted == true && product.discountedPrice != null) {
-        priceText += ' (Original)';
-      }
-      return Text(
-        priceText,
-        style: TextStyle(
-          color: Colors.grey[700],
-          fontSize: 14,
-          decoration:
-              (product.isDiscounted == true && product.discountedPrice != null)
-                  ? TextDecoration.lineThrough
-                  : TextDecoration.none,
-        ),
-      );
-    } else if (product.sackPrice != null) {
-      String priceText =
-          '₱${NumberFormat('#,##0.00').format(product.sackPrice!.price.toDouble())}/sack';
+          '₱${NumberFormat('#,##0.00').format(product.price!.toDouble())}';
       if (product.isDiscounted == true && product.discountedPrice != null) {
         priceText += ' (Original)';
       }
@@ -645,34 +628,33 @@ class _CartListState extends ConsumerState<CartList> {
       return (Decimal.fromInt(ceiledCents) / Decimal.fromInt(100)).toDecimal();
     }
 
-    if (product.isDiscounted == true && product.discountedPrice != null) {
-      // Apply ceiling-rounded discount per quantity
-      Decimal quantity = Decimal.one;
-      if (product.perKiloPrice != null) {
-        quantity = product.perKiloPrice!.quantity;
-      } else if (product.sackPrice != null) {
-        quantity = product.sackPrice!.quantity;
-      }
+    debugPrint('=== CART ITEM CALCULATION ===');
+    debugPrint('Product ID: ${product.id}');
+    debugPrint('Product name: ${product.name}');
+    debugPrint('Product price: ${product.price?.toStringAsFixed(4) ?? "NULL"}');
+    debugPrint(
+        'Product discountedPrice: ${product.discountedPrice?.toStringAsFixed(4) ?? "NULL"}');
+    debugPrint('Is discounted: ${product.isDiscounted}');
+    debugPrint('Has perKiloPrice: ${product.perKiloPrice != null}');
+    debugPrint('Has sackPrice: ${product.sackPrice != null}');
 
-      // Use ceiling-rounded discount price
-      final ceiledDiscountPrice =
-          ceilRoundPrice(Decimal.parse(product.discountedPrice!.toString()));
-      final total = ceiledDiscountPrice * quantity;
-      return ceilRoundPrice(total).toString();
+    if (product.isDiscounted == true && product.discountedPrice != null) {
+      // For discounted items, use the discountedPrice directly (it's already the total)
+      debugPrint(
+          'Using discountedPrice: ${product.discountedPrice!.toString()}');
+      return product.discountedPrice!.toString();
     }
 
     Decimal total = Decimal.zero;
-    if (product.perKiloPrice != null) {
-      // Use ceiling-rounded unit price
-      final ceiledUnitPrice = ceilRoundPrice(product.perKiloPrice!.price);
-      total = ceiledUnitPrice * product.perKiloPrice!.quantity;
-    } else if (product.sackPrice != null) {
-      // Use ceiling-rounded unit price
-      final ceiledUnitPrice = ceilRoundPrice(product.sackPrice!.price);
-      total = ceiledUnitPrice * product.sackPrice!.quantity;
+    if (product.perKiloPrice != null || product.sackPrice != null) {
+      // For both per kilo and sack items, use the main price field which contains the exact total
+      total = product.price ?? Decimal.zero;
+      debugPrint('Using main price field: ${total.toStringAsFixed(4)}');
     }
 
-    return ceilRoundPrice(total).toString();
+    final result = ceilRoundPrice(total).toString();
+    debugPrint('Final calculated total: $result');
+    return result;
   }
 
   String _calculateTotal(AsyncValue<SalesState> salesState) {

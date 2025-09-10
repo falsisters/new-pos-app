@@ -1,26 +1,32 @@
-// ignore_for_file: invalid_annotation_target
-
 import 'package:falsisters_pos_android/features/expenses/data/models/expense_items.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'expense_list.freezed.dart';
-part 'expense_list.g.dart';
 
 @freezed
 sealed class ExpenseList with _$ExpenseList {
-  const ExpenseList._(); // Add this private constructor
   const factory ExpenseList({
     required String id,
     String? userId,
     String? cashierId,
-    @JsonKey(name: 'ExpenseItems') required List<ExpenseItems> expenseItems,
     required String createdAt,
     required String updatedAt,
+    required List<ExpenseItems> expenseItems,
   }) = _ExpenseList;
 
-  factory ExpenseList.fromJson(Map<String, dynamic> json) =>
-      _$ExpenseListFromJson(json);
+  factory ExpenseList.fromJson(Map<String, dynamic> json) {
+    // Handle the ExpenseItems key from server response
+    final expenseItemsJson = json['ExpenseItems'] as List<dynamic>? ?? [];
 
-  double get totalAmount =>
-      expenseItems.fold(0.0, (sum, item) => sum + item.amount);
+    return ExpenseList(
+      id: json['id'] as String,
+      userId: json['userId'] as String?,
+      cashierId: json['cashierId'] as String?,
+      createdAt: json['createdAt'] as String,
+      updatedAt: json['updatedAt'] as String,
+      expenseItems: expenseItemsJson
+          .map((item) => ExpenseItems.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

@@ -18,6 +18,8 @@ mixin _$ProductDto {
   String get id;
   String get name;
   @NullableDecimalConverter()
+  Decimal? get price;
+  @NullableDecimalConverter()
   Decimal? get discountedPrice;
   bool? get isDiscounted;
   bool? get isGantang;
@@ -42,6 +44,7 @@ mixin _$ProductDto {
             other is ProductDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.discountedPrice, discountedPrice) ||
                 other.discountedPrice == discountedPrice) &&
             (identical(other.isDiscounted, isDiscounted) ||
@@ -58,12 +61,12 @@ mixin _$ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, discountedPrice,
+  int get hashCode => Object.hash(runtimeType, id, name, price, discountedPrice,
       isDiscounted, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, name: $name, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, price: $price, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -76,6 +79,7 @@ abstract mixin class $ProductDtoCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
+      @NullableDecimalConverter() Decimal? price,
       @NullableDecimalConverter() Decimal? discountedPrice,
       bool? isDiscounted,
       bool? isGantang,
@@ -101,6 +105,7 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? price = freezed,
     Object? discountedPrice = freezed,
     Object? isDiscounted = freezed,
     Object? isGantang = freezed,
@@ -117,6 +122,10 @@ class _$ProductDtoCopyWithImpl<$Res> implements $ProductDtoCopyWith<$Res> {
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      price: freezed == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
@@ -179,6 +188,7 @@ class _ProductDto implements ProductDto {
   const _ProductDto(
       {required this.id,
       required this.name,
+      @NullableDecimalConverter() this.price,
       @NullableDecimalConverter() this.discountedPrice,
       this.isDiscounted,
       this.isGantang,
@@ -192,6 +202,9 @@ class _ProductDto implements ProductDto {
   final String id;
   @override
   final String name;
+  @override
+  @NullableDecimalConverter()
+  final Decimal? price;
   @override
   @NullableDecimalConverter()
   final Decimal? discountedPrice;
@@ -228,6 +241,7 @@ class _ProductDto implements ProductDto {
             other is _ProductDto &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.price, price) || other.price == price) &&
             (identical(other.discountedPrice, discountedPrice) ||
                 other.discountedPrice == discountedPrice) &&
             (identical(other.isDiscounted, isDiscounted) ||
@@ -244,12 +258,12 @@ class _ProductDto implements ProductDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, discountedPrice,
+  int get hashCode => Object.hash(runtimeType, id, name, price, discountedPrice,
       isDiscounted, isGantang, isSpecialPrice, perKiloPrice, sackPrice);
 
   @override
   String toString() {
-    return 'ProductDto(id: $id, name: $name, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
+    return 'ProductDto(id: $id, name: $name, price: $price, discountedPrice: $discountedPrice, isDiscounted: $isDiscounted, isGantang: $isGantang, isSpecialPrice: $isSpecialPrice, perKiloPrice: $perKiloPrice, sackPrice: $sackPrice)';
   }
 }
 
@@ -264,6 +278,7 @@ abstract mixin class _$ProductDtoCopyWith<$Res>
   $Res call(
       {String id,
       String name,
+      @NullableDecimalConverter() Decimal? price,
       @NullableDecimalConverter() Decimal? discountedPrice,
       bool? isDiscounted,
       bool? isGantang,
@@ -291,6 +306,7 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? price = freezed,
     Object? discountedPrice = freezed,
     Object? isDiscounted = freezed,
     Object? isGantang = freezed,
@@ -307,6 +323,10 @@ class __$ProductDtoCopyWithImpl<$Res> implements _$ProductDtoCopyWith<$Res> {
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      price: freezed == price
+          ? _self.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as Decimal?,
       discountedPrice: freezed == discountedPrice
           ? _self.discountedPrice
           : discountedPrice // ignore: cast_nullable_to_non_nullable
