@@ -79,9 +79,14 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
       setState(() => _isProcessing = true);
 
       try {
+        // Validate the date before sending
+        if (_deliveryTimeStart!.millisecondsSinceEpoch.isNaN) {
+          throw Exception('Invalid delivery date selected');
+        }
+
         await ref.read(deliveryProvider.notifier).createDelivery(
               _driverNameController.text.trim(),
-              _deliveryTimeStart!.toUtc(),
+              _deliveryTimeStart!,
             );
 
         if (mounted) {
@@ -745,12 +750,20 @@ class _ConfirmDeliveryScreenState extends ConsumerState<ConfirmDeliveryScreen> {
       context: context,
       pickerType: DateTimePickerType.datetime,
       initialDate: DateTime.now(),
+      minimumDate: DateTime.now().subtract(const Duration(days: 1)),
+      maximumDate: DateTime.now().add(const Duration(days: 365)),
     );
 
     if (result != null && mounted) {
-      setState(() {
-        _deliveryTimeStart = result;
-      });
+      // Validate the selected date
+      if (!result.millisecondsSinceEpoch.isNaN &&
+          result.isAfter(DateTime(1900))) {
+        setState(() {
+          _deliveryTimeStart = result;
+        });
+      } else {
+        _showErrorMessage('Invalid date selected. Please try again.');
+      }
     }
   }
 
