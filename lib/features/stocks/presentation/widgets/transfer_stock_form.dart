@@ -78,7 +78,7 @@ class TransferStockFormState extends ConsumerState<TransferStockForm> {
           id: widget.product.id,
           perKiloPrice: TransferPerKiloPriceDto(
             id: widget.product.perKiloPrice!.id,
-            quantity: _quantity,
+            quantity: Decimal.parse(_quantity.toString()),
           ),
         );
       } else if (_selectedSackIndex >= 0) {
