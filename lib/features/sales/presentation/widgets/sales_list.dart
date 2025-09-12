@@ -530,7 +530,7 @@ class _SalesListWidgetState extends ConsumerState<SalesListWidget> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      'Sale #${sale.id.substring(0, 8).toUpperCase()}',
+                                      'Sale #${sale.id.substring(sale.id.length - 8).toUpperCase()}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.primary,

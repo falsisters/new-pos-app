@@ -767,6 +767,61 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
     }
   }
 
+  // Calculate total discounted price respecting current mode (gantang/kg)
+  // The discountedUnitPrice parameter should be the actual unit price in current mode
+  Decimal _calculateDiscountedTotalPrice(
+      Decimal discountedUnitPrice, Decimal kgQuantity) {
+    if (_isGantangMode) {
+      // In gantang mode, the discounted price is already in gantang units
+      // Convert kg quantity to gantang quantity for multiplication
+      final gantangQuantity = _convertKgToGantang(kgQuantity);
+      final rawTotalPrice = discountedUnitPrice * gantangQuantity;
+
+      // Apply custom rounding rule to the total: if decimal < 0.1, truncate; else round up
+      final wholePart = rawTotalPrice.floor();
+      final fractionalPart = rawTotalPrice - wholePart;
+
+      Decimal finalTotalPrice;
+      if (fractionalPart < Decimal.parse('0.1')) {
+        finalTotalPrice = wholePart;
+      } else {
+        finalTotalPrice = wholePart + Decimal.one;
+      }
+
+      debugPrint('=== DISCOUNTED GANTANG TOTAL CALCULATION ===');
+      debugPrint(
+          'Discounted Gantang Unit Price: ${discountedUnitPrice.toStringAsFixed(2)}');
+      debugPrint('Gantang Quantity: ${gantangQuantity.toStringAsFixed(4)}');
+      debugPrint('Raw Total: ${rawTotalPrice.toStringAsFixed(4)}');
+      debugPrint('Final Total: ${finalTotalPrice.toStringAsFixed(2)}');
+
+      return finalTotalPrice;
+    } else {
+      // In kg mode, the discounted price is already in kg units
+      final rawTotalPrice = discountedUnitPrice * kgQuantity;
+
+      // Apply custom rounding rule to the total: if decimal < 0.1, truncate; else round up
+      final wholePart = rawTotalPrice.floor();
+      final fractionalPart = rawTotalPrice - wholePart;
+
+      Decimal finalTotalPrice;
+      if (fractionalPart < Decimal.parse('0.1')) {
+        finalTotalPrice = wholePart;
+      } else {
+        finalTotalPrice = wholePart + Decimal.one;
+      }
+
+      debugPrint('=== DISCOUNTED KG TOTAL CALCULATION ===');
+      debugPrint(
+          'Discounted KG Unit Price: ${discountedUnitPrice.toStringAsFixed(2)}');
+      debugPrint('KG Quantity: ${kgQuantity.toStringAsFixed(4)}');
+      debugPrint('Raw Total: ${rawTotalPrice.toStringAsFixed(4)}');
+      debugPrint('Final Total: ${finalTotalPrice.toStringAsFixed(2)}');
+
+      return finalTotalPrice;
+    }
+  }
+
   // Helper method for consistent price calculation with ceiling rounding (legacy - for non-gantang)
   Decimal _calculateTotalPrice(Decimal unitPrice, Decimal quantity) {
     if (_isGantangMode) {
@@ -900,9 +955,10 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
               _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
-      // Calculate the total discounted price using the same rounding rules
+      // Calculate the total discounted price respecting current mode (gantang/kg)
+      // The discounted price input is treated as the actual unit price in current mode
       final finalDiscountedPrice = discountedUnitPrice != null
-          ? _calculateUnifiedTotalPrice(discountedUnitPrice, kgQuantity)
+          ? _calculateDiscountedTotalPrice(discountedUnitPrice, kgQuantity)
           : null;
 
       // Use the exact total price from the text field (no recalculation)
@@ -1117,6 +1173,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
                             DiscountSectionWidget(
                               isDiscounted: _isDiscounted,
                               isSackSelected: _selectedSackPriceId != null,
+                              isGantangMode: _isGantangMode,
                               discountedPriceController:
                                   _discountedPriceController,
                               onDiscountToggle: (bool? value) {

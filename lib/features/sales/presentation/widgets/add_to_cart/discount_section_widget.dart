@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 class DiscountSectionWidget extends StatefulWidget {
   final bool isDiscounted;
   final bool isSackSelected;
+  final bool isGantangMode;
   final TextEditingController discountedPriceController;
   final Function(bool?) onDiscountToggle;
   final FocusNode focusNode;
@@ -13,6 +14,7 @@ class DiscountSectionWidget extends StatefulWidget {
     super.key,
     required this.isDiscounted,
     required this.isSackSelected,
+    required this.isGantangMode,
     required this.discountedPriceController,
     required this.onDiscountToggle,
     required this.focusNode,
@@ -47,6 +49,14 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
           _isInternalUpdate = false;
         });
       }
+    }
+  }
+
+  String _getUnitText() {
+    if (widget.isSackSelected) {
+      return 'sack';
+    } else {
+      return widget.isGantangMode ? 'gantang' : 'kg';
     }
   }
 
@@ -155,7 +165,7 @@ class _DiscountSectionWidgetState extends State<DiscountSectionWidget> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Enter discounted price per ${widget.isSackSelected ? 'sack' : 'kg'}',
+                        'Enter discounted price per ${_getUnitText()}',
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontSize: 11,
