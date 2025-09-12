@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
-import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/utils/currency_input_formatter.dart';
 
 class BeginningBalanceDialog extends StatefulWidget {
@@ -9,10 +8,10 @@ class BeginningBalanceDialog extends StatefulWidget {
   final Function(double) onSave;
 
   const BeginningBalanceDialog({
-    Key? key,
+    super.key,
     required this.initialValue,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   State<BeginningBalanceDialog> createState() => _BeginningBalanceDialogState();

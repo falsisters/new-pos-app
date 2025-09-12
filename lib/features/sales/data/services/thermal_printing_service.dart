@@ -20,11 +20,6 @@ class ThermalPrintingService {
   static const int _bluetoothChunkSize = 20; // Bytes per chunk for Bluetooth
   static const int _bluetoothLineDelay = 100; // ms between lines
   static const int _bluetoothChunkDelay = 50; // ms between chunks
-  static const int _maxLineLength =
-      32; // Characters per line for 57mm paper (reduced from 48)
-
-  // Line spacing constants
-  static const String _lineSpacing = ''; // Remove extra spacing
   static const String _sectionSpacing = ''; // Reduce to single line spacing
 
   Future<bool> _ensureLocationServices() async {
@@ -65,8 +60,6 @@ class ThermalPrintingService {
       final bluetoothScanStatus = await Permission.bluetoothScan.request();
       final bluetoothConnectStatus =
           await Permission.bluetoothConnect.request();
-      final bluetoothAdvertiseStatus =
-          await Permission.bluetoothAdvertise.request();
 
       if (bluetoothScanStatus.isPermanentlyDenied ||
           bluetoothConnectStatus.isPermanentlyDenied) {
@@ -343,7 +336,6 @@ class ThermalPrintingService {
       }
     } catch (e) {
       debugPrint('Bluetooth printing error: $e');
-      throw e;
     }
   }
 
@@ -370,7 +362,6 @@ class ThermalPrintingService {
       }
     } catch (e) {
       debugPrint('USB printing error: $e');
-      throw e;
     }
   }
 
@@ -411,7 +402,7 @@ class ThermalPrintingService {
       String receiptId = 'RECEIPT';
       String dateTime = DateTime.now().toString().substring(0, 19);
       String cashier = 'CASHIER';
-      String paymentMethod = 'CASH';
+
       String changeAmount = '0.00';
       String tenderedAmount = '0.00';
       List<Map<String, dynamic>> items = [];
@@ -441,9 +432,6 @@ class ThermalPrintingService {
               : sale.cashierId;
           debugPrint('Using cashier ID as fallback: $cashier');
         }
-
-        paymentMethod =
-            sale.paymentMethod.toString().split('.').last.replaceAll('_', ' ');
 
         // Get change amount and tendered amount from sale metadata
         if (sale.metadata != null && sale.metadata!.containsKey('change')) {
@@ -506,26 +494,38 @@ class ThermalPrintingService {
                 item.product.perKiloPrice != null) {
               // For per kilo items, show as KG
               itemQty = item.quantity.toStringAsFixed(2);
-              variant = 'KG';
+              variant = item.isGantang ? 'gant' : 'KG';
             }
 
-            // Calculate prices
-            if (isDiscounted && item.discountedPrice != null) {
-              unitPrice = item.discountedPrice!;
-              itemPrice = unitPrice * item.quantity;
-            } else if (item.sackPriceId != null &&
-                item.product.sackPrice.isNotEmpty) {
-              final sackPrice = item.product.sackPrice.firstWhere(
-                (sp) => sp.id == item.sackPriceId,
-                orElse: () => item.product.sackPrice.first,
-              );
-              unitPrice = Decimal.parse(sackPrice.price.toString());
-              itemPrice = unitPrice * item.quantity;
-            } else if (item.perKiloPriceId != null &&
-                item.product.perKiloPrice != null) {
-              unitPrice =
-                  Decimal.parse(item.product.perKiloPrice!.price.toString());
-              itemPrice = unitPrice * item.quantity;
+            // Use the final price from SaleItem.price field
+            if (item.price != null) {
+              // The item.price field contains the total price for this item
+              itemPrice = item.price!;
+              // Calculate unit price by dividing total by quantity
+              if (item.quantity > Decimal.zero) {
+                unitPrice = (itemPrice / item.quantity).toDecimal();
+              } else {
+                unitPrice = itemPrice;
+              }
+            } else {
+              // Fallback to complex calculation if price is not set
+              if (isDiscounted && item.discountedPrice != null) {
+                unitPrice = item.discountedPrice!;
+                itemPrice = unitPrice * item.quantity;
+              } else if (item.sackPriceId != null &&
+                  item.product.sackPrice.isNotEmpty) {
+                final sackPrice = item.product.sackPrice.firstWhere(
+                  (sp) => sp.id == item.sackPriceId,
+                  orElse: () => item.product.sackPrice.first,
+                );
+                unitPrice = Decimal.parse(sackPrice.price.toString());
+                itemPrice = unitPrice * item.quantity;
+              } else if (item.perKiloPriceId != null &&
+                  item.product.perKiloPrice != null) {
+                unitPrice =
+                    Decimal.parse(item.product.perKiloPrice!.price.toString());
+                itemPrice = unitPrice * item.quantity;
+              }
             }
 
             items.add({
@@ -594,7 +594,7 @@ class ThermalPrintingService {
         if (item['variant'] == 'KG') {
           qtyVariantStr = '${item['quantity']} KG';
         } else if (item['variant'].isNotEmpty) {
-          qtyVariantStr = '${item['quantity']} x ${item['variant']}';
+          qtyVariantStr = '${item['quantity']} ${item['variant']}';
         } else {
           qtyVariantStr = '${item['quantity']} pcs';
         }
@@ -687,7 +687,8 @@ class ThermalPrintingService {
   // Helper method to format date and time for 57mm
   String _formatDateTimeFor57mm(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date =
+          DateTime.parse(dateString).toLocal(); // Convert to local timezone
       final dateStr =
           '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
       final timeStr =
@@ -697,11 +698,6 @@ class ThermalPrintingService {
       debugPrint('Date parsing error: $e');
       return dateString.substring(0, 19); // Return original if parsing fails
     }
-  }
-
-  // Helper method to format date for 57mm (keeping for backward compatibility)
-  String _formatDateFor57mm(String dateString) {
-    return _formatDateTimeFor57mm(dateString);
   }
 
   Future<void> _sendBluetoothChunked57mmReceipt(
@@ -824,7 +820,6 @@ class ThermalPrintingService {
       debugPrint('All lines sent successfully via Bluetooth for 57mm');
     } catch (e) {
       debugPrint('Bluetooth 57mm receipt sending failed: $e');
-      throw e;
     }
   }
 

@@ -595,7 +595,7 @@ class _CartListState extends ConsumerState<CartList> {
   Widget _buildQuantityInfo(ProductDto product) {
     if (product.perKiloPrice != null) {
       return Text(
-        '${product.perKiloPrice!.quantity.toStringAsFixed(2)} kg',
+        '${product.perKiloPrice!.quantity.toStringAsFixed(2)} ${product.isGantang == true ? 'gant' : 'kg'}',
         style: TextStyle(
           color: Colors.grey[700],
           fontSize: 14,

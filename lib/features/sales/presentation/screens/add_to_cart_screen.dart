@@ -872,7 +872,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         id: widget.product.id,
         name: widget.product.name,
         price: totalPrice, // Store the calculated total
-        isGantang: false,
+        isGantang: _isGantangMode,
         isSpecialPrice: _isSpecialPrice,
         sackPrice: SackPriceDto(
           id: sackPrice.id,
