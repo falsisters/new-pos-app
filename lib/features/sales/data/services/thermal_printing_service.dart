@@ -478,23 +478,23 @@ class ThermalPrintingService {
               // Set variant for sack types
               switch (sackPrice.type.toString().split('.').last) {
                 case 'FIFTY_KG':
-                  variant = '50KG';
+                  variant = 'x 50KG';
                   break;
                 case 'TWENTY_FIVE_KG':
-                  variant = '25KG';
+                  variant = 'x 25KG';
                   break;
                 case 'FIVE_KG':
-                  variant = '5KG';
+                  variant = 'x 5KG';
                   break;
                 default:
-                  variant = 'SACK';
+                  variant = 'x SACK';
               }
               itemQty = qty.toString();
             } else if (item.perKiloPriceId != null &&
                 item.product.perKiloPrice != null) {
               // For per kilo items, show as KG
               itemQty = item.quantity.toStringAsFixed(2);
-              variant = item.isGantang ? 'gant' : 'KG';
+              variant = item.isGantang ? 'gantang' : 'KG';
             }
 
             // Use the final price from SaleItem.price field
