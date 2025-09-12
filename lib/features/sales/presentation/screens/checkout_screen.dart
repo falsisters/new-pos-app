@@ -56,7 +56,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Decimal itemTotal;
 
     if (isDiscountApplied) {
-      // For discounted items, use the discountedPrice directly (it's already the total)
+      // For discounted items, use the discountedPrice directly (it's now the total)
       itemTotal = product.discountedPrice!;
     } else {
       // For non-discounted items, use the main price field which contains the exact total

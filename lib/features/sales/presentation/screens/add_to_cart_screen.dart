@@ -843,21 +843,28 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           (_isSpecialPrice ? sackPrice.specialPrice!.price : sackPrice.price)
               .toString());
 
-      // For discounted items, use the discount price without additional rounding
-      final finalDiscountedPrice = _isDiscounted
+      // For discounted items, get the per-unit discount price and multiply by quantity
+      final discountedUnitPrice = _isDiscounted
           ? Decimal.tryParse(
               _discountedPriceController.text.replaceAll(',', ''))
           : null;
 
+      // Calculate the total discounted price (per-unit × quantity)
+      final finalDiscountedPrice = discountedUnitPrice != null
+          ? _calculateTotalPrice(discountedUnitPrice, quantity)
+          : null;
+
       // Use the original unit price for calculation - no pre-rounding
-      final effectiveUnitPrice = finalDiscountedPrice ?? unitPrice;
+      final effectiveUnitPrice = discountedUnitPrice ?? unitPrice;
 
       debugPrint('=== SACK PRICE CALCULATION ===');
       debugPrint('Original unit price: ${unitPrice.toStringAsFixed(4)}');
       debugPrint('Quantity: ${quantity.toStringAsFixed(4)}');
       debugPrint('Is discounted: $_isDiscounted');
       debugPrint(
-          'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
+          'Discount unit price input: ${discountedUnitPrice?.toStringAsFixed(4) ?? "none"}');
+      debugPrint(
+          'Calculated total discount price: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
       debugPrint(
           'Effective unit price: ${effectiveUnitPrice.toStringAsFixed(4)}');
       debugPrint(
@@ -865,8 +872,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
 
       // Calculate total for sack items
       final totalPrice = finalDiscountedPrice != null
-          ? finalDiscountedPrice * quantity
-          : effectiveUnitPrice * quantity;
+          ? finalDiscountedPrice
+          : _calculateTotalPrice(effectiveUnitPrice, quantity);
 
       productDto = ProductDto(
         id: widget.product.id,
@@ -881,16 +888,21 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           type: sackPrice.type,
         ),
         isDiscounted: _isDiscounted,
-        discountedPrice: finalDiscountedPrice,
+        discountedPrice: finalDiscountedPrice, // Store total discounted price
       );
     } else if (_isPerKiloSelected && widget.product.perKiloPrice != null) {
       final perKiloPrice = widget.product.perKiloPrice!;
       final kgQuantity = _getCurrentQuantityInKg();
 
-      // For discounted items, use the discount price directly
-      final finalDiscountedPrice = _isDiscounted
+      // For discounted items, get the per-unit discount price and calculate total
+      final discountedUnitPrice = _isDiscounted
           ? Decimal.tryParse(
               _discountedPriceController.text.replaceAll(',', ''))
+          : null;
+
+      // Calculate the total discounted price using the same rounding rules
+      final finalDiscountedPrice = discountedUnitPrice != null
+          ? _calculateUnifiedTotalPrice(discountedUnitPrice, kgQuantity)
           : null;
 
       // Use the exact total price from the text field (no recalculation)
@@ -905,14 +917,14 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       Decimal effectiveQuantity;
 
       if (finalDiscountedPrice != null) {
-        // For discounted items, use the discount price as the total price
+        // For discounted items, use the calculated total discount price
         if (_isGantangMode) {
           effectiveQuantity = _convertKgToGantang(kgQuantity);
         } else {
           effectiveQuantity = kgQuantity;
         }
         effectiveUnitPrice =
-            finalDiscountedPrice; // Store discount price as total
+            finalDiscountedPrice; // Store calculated discount total
       } else {
         // For non-discounted items, use exact total from field as price
         if (_isGantangMode) {
@@ -930,7 +942,9 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
       debugPrint('Total from field: ${totalPriceFromField.toStringAsFixed(4)}');
       debugPrint('Is discounted: $_isDiscounted');
       debugPrint(
-          'Discount price input: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
+          'Discount unit price input: ${discountedUnitPrice?.toStringAsFixed(4) ?? "none"}');
+      debugPrint(
+          'Calculated total discount price: ${finalDiscountedPrice?.toStringAsFixed(4) ?? "none"}');
       debugPrint('Storing as price: ${effectiveUnitPrice.toStringAsFixed(4)}');
       debugPrint(
           'Storing as quantity: ${effectiveQuantity.toStringAsFixed(4)}');
@@ -950,7 +964,7 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
           price: Decimal.zero, // Dummy value - server ignores this field
         ),
         isDiscounted: _isDiscounted,
-        discountedPrice: finalDiscountedPrice,
+        discountedPrice: finalDiscountedPrice, // Store total discounted price
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

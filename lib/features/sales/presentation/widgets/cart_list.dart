@@ -362,7 +362,7 @@ class _CartListState extends ConsumerState<CartList> {
                                                 color: AppColors.secondary),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'Discount: ₱${NumberFormat('#,##0.00').format(product.discountedPrice!.toDouble())} per ${product.perKiloPrice != null ? 'kg' : 'sack'}',
+                                              _buildDiscountText(product),
                                               style: TextStyle(
                                                 color: AppColors.secondary,
                                                 fontWeight: FontWeight.bold,
@@ -616,6 +616,29 @@ class _CartListState extends ConsumerState<CartList> {
     }
   }
 
+  String _buildDiscountText(ProductDto product) {
+    if (product.discountedPrice == null) return '';
+
+    // Calculate per-unit discount price from total discounted price
+    Decimal quantity = Decimal.zero;
+    String unit = '';
+
+    if (product.perKiloPrice != null) {
+      quantity = product.perKiloPrice!.quantity;
+      unit = product.isGantang == true ? 'gantang' : 'kg';
+    } else if (product.sackPrice != null) {
+      quantity = product.sackPrice!.quantity;
+      unit = 'sack';
+    }
+
+    if (quantity > Decimal.zero) {
+      final perUnitDiscountPrice = product.discountedPrice! / quantity;
+      return 'Discount: ₱${NumberFormat('#,##0.00').format(perUnitDiscountPrice.toDouble())} per $unit';
+    }
+
+    return 'Discounted';
+  }
+
   String _calculateItemTotal(ProductDto product) {
     // Use the same ceiling rounding function as checkout screen
     Decimal ceilRoundPrice(Decimal value) {
@@ -639,9 +662,9 @@ class _CartListState extends ConsumerState<CartList> {
     debugPrint('Has sackPrice: ${product.sackPrice != null}');
 
     if (product.isDiscounted == true && product.discountedPrice != null) {
-      // For discounted items, use the discountedPrice directly (it's already the total)
+      // For discounted items, use the discountedPrice directly (it's now the total)
       debugPrint(
-          'Using discountedPrice: ${product.discountedPrice!.toString()}');
+          'Using discountedPrice (total): ${product.discountedPrice!.toString()}');
       return product.discountedPrice!.toString();
     }
 

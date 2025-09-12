@@ -5,6 +5,7 @@ import 'package:falsisters_pos_android/features/products/data/providers/product_
 import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
+import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
@@ -15,11 +16,15 @@ import 'package:falsisters_pos_android/features/sales/data/services/sales_queue_
 class SalesNotifier extends AsyncNotifier<SalesState> {
   final SalesRepository _salesRepository = SalesRepository();
   late SalesQueueService _queueService;
+  StreamSubscription? _queueSubscription;
+  StreamSubscription? _processedSaleSubscription;
   bool _isSubmitting = false; // Add submission lock
 
   @override
   Future<SalesState> build() async {
     _queueService = ref.read(salesQueueServiceProvider);
+    _setupQueueListener();
+    _setupProcessedSaleListener();
 
     try {
       final today = DateTime.now();
@@ -32,6 +37,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         selectedDate: today,
       );
     } catch (e) {
+      print('Error in SalesNotifier.build: $e');
       return SalesState(
         cart: CartModel(),
         sales: [],
@@ -40,6 +46,31 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         selectedDate: DateTime.now(),
       );
     }
+  }
+
+  void _setupQueueListener() {
+    _queueSubscription = _queueService.queueStream.listen((pendingSales) {
+      final currentState = state.value;
+      if (currentState != null) {
+        state =
+            AsyncValue.data(currentState.copyWith(pendingSales: pendingSales));
+      }
+    });
+  }
+
+  void _setupProcessedSaleListener() {
+    _processedSaleSubscription =
+        _queueService.processedSaleStream.listen((processedSale) {
+      final currentState = state.value;
+      if (currentState != null) {
+        // Add the new sale to the list and set it as the one to be printed
+        final updatedSales = [processedSale, ...currentState.sales];
+        state = AsyncValue.data(currentState.copyWith(
+          sales: updatedSales,
+          saleToPrint: processedSale,
+        ));
+      }
+    });
   }
 
   // @override
@@ -100,6 +131,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
           selectedDate: targetDate,
         );
       } catch (e) {
+        print('Error in SalesNotifier.getSales: $e');
         return SalesState(
           cart: currentCart,
           sales: state.value?.sales ?? [], // Preserve current sales on error
@@ -285,5 +317,34 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     if (currentState != null) {
       state = AsyncValue.data(currentState.copyWith(saleToPrint: null));
     }
+  }
+
+  // Helper method to calculate cart total with proper rounding (prevents double rounding)
+  Decimal _calculateCartItemTotal(ProductDto product) {
+    if (product.sackPrice != null) {
+      // For sack prices, calculate total directly without rounding
+      final unitPrice = product.sackPrice!.price;
+      final quantity = product.sackPrice!.quantity;
+      return unitPrice *
+          quantity; // No additional rounding - use the price as-is
+    } else if (product.perKiloPrice != null) {
+      // For per kilo prices, use the exact unit price and kg quantity
+      final unitPrice =
+          product.perKiloPrice!.price; // This is always per-kg price
+      final kgQuantity =
+          product.perKiloPrice!.quantity; // This is always kg quantity
+
+      if (product.isGantang == true) {
+        // For gantang mode, the price has already been calculated with proper rounding
+        // Don't apply additional rounding here
+        return unitPrice * kgQuantity;
+      } else {
+        // For kg mode, apply ceiling rounding as before
+        final total = unitPrice * kgQuantity;
+        return ((total * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
+            .toDecimal(scaleOnInfinitePrecision: 4);
+      }
+    }
+    return Decimal.zero;
   }
 }
