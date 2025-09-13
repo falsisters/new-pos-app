@@ -460,6 +460,18 @@ class ThermalPrintingService {
           final item = sale.saleItems[i];
 
           try {
+            debugPrint('=== PROCESSING SALE ITEM ${i + 1} ===');
+            debugPrint('Product ID: ${item.productId}');
+            debugPrint('Product name: ${item.product.name}');
+            debugPrint('Item price field: ${item.price?.toString() ?? "NULL"}');
+            debugPrint(
+                'Item discountedPrice field: ${item.discountedPrice?.toString() ?? "NULL"}');
+            debugPrint('Item quantity: ${item.quantity}');
+            debugPrint('Is discounted: ${item.isDiscounted}');
+            debugPrint('Is gantang: ${item.isGantang}');
+            debugPrint('SackPriceId: ${item.sackPriceId ?? "NULL"}');
+            debugPrint('PerKiloPriceId: ${item.perKiloPriceId ?? "NULL"}');
+
             String itemName = item.product.name;
             Decimal itemPrice = Decimal.zero;
             Decimal unitPrice = Decimal.zero;
@@ -490,11 +502,23 @@ class ThermalPrintingService {
                   variant = 'x SACK';
               }
               itemQty = qty.toString();
-            } else if (item.perKiloPriceId != null &&
-                item.product.perKiloPrice != null) {
-              // For per kilo items, show as KG
+            } else if ((item.perKiloPriceId != null &&
+                    item.product.perKiloPrice != null) ||
+                item.quantity != item.quantity.truncate()) {
+              // For per kilo items OR any items with decimal quantities, show as KG
               itemQty = item.quantity.toStringAsFixed(2);
               variant = item.isGantang ? 'gantang' : 'KG';
+            } else {
+              // For whole number quantities without specific sack or per-kilo pricing
+              // Still format the quantity properly instead of defaulting to '1'
+              itemQty = item.quantity.toStringAsFixed(2);
+              // If quantity has no decimal part, format as whole number
+              if (item.quantity == item.quantity.truncate()) {
+                itemQty = item.quantity.toBigInt().toString();
+                variant = 'pcs';
+              } else {
+                variant = 'KG'; // Decimal quantities are treated as KG
+              }
             }
 
             // Use the final price from SaleItem.price field
@@ -503,15 +527,22 @@ class ThermalPrintingService {
               itemPrice = item.price!;
               // Calculate unit price by dividing total by quantity
               if (item.quantity > Decimal.zero) {
-                unitPrice = (itemPrice / item.quantity).toDecimal();
+                unitPrice = (itemPrice / item.quantity)
+                    .toDecimal(scaleOnInfinitePrecision: 4);
               } else {
                 unitPrice = itemPrice;
               }
+              debugPrint('Using item.price field: ${item.price}');
+              debugPrint('Calculated itemPrice: $itemPrice');
+              debugPrint('Calculated unitPrice: $unitPrice');
             } else {
               // Fallback to complex calculation if price is not set
+              debugPrint('Item.price is NULL, using fallback calculation');
               if (isDiscounted && item.discountedPrice != null) {
                 unitPrice = item.discountedPrice!;
                 itemPrice = unitPrice * item.quantity;
+                debugPrint(
+                    'Using discountedPrice fallback: unitPrice=$unitPrice, itemPrice=$itemPrice');
               } else if (item.sackPriceId != null &&
                   item.product.sackPrice.isNotEmpty) {
                 final sackPrice = item.product.sackPrice.firstWhere(
@@ -520,11 +551,18 @@ class ThermalPrintingService {
                 );
                 unitPrice = Decimal.parse(sackPrice.price.toString());
                 itemPrice = unitPrice * item.quantity;
+                debugPrint(
+                    'Using sackPrice fallback: unitPrice=$unitPrice, itemPrice=$itemPrice');
               } else if (item.perKiloPriceId != null &&
                   item.product.perKiloPrice != null) {
                 unitPrice =
                     Decimal.parse(item.product.perKiloPrice!.price.toString());
                 itemPrice = unitPrice * item.quantity;
+                debugPrint(
+                    'Using perKiloPrice fallback: unitPrice=$unitPrice, itemPrice=$itemPrice');
+              } else {
+                debugPrint(
+                    'No fallback calculation available, prices remain zero');
               }
             }
 
@@ -543,10 +581,24 @@ class ThermalPrintingService {
                 'Added item: $itemName - Qty: $itemQty $variant - Total: PHP ${itemPrice.toStringAsFixed(0)}');
           } catch (e) {
             debugPrint('Error processing item ${i + 1}: $e');
+            // Even in error cases, use the actual quantity from the item
+            String fallbackQty = item.quantity.toStringAsFixed(2);
+            String fallbackVariant = '';
+
+            // Format fallback quantity properly
+            if (item.quantity == item.quantity.truncate()) {
+              // Whole number - show without decimals
+              fallbackQty = item.quantity.toBigInt().toString();
+              fallbackVariant = 'pcs';
+            } else {
+              // Decimal quantity - show as KG
+              fallbackVariant = item.isGantang ? 'gantang' : 'KG';
+            }
+
             items.add({
               'name': item.product.name,
-              'quantity': '1',
-              'variant': '',
+              'quantity': fallbackQty,
+              'variant': fallbackVariant,
               'unitPrice': 0.0,
               'totalPrice': 0.0,
               'isDiscounted': false,
@@ -593,10 +645,20 @@ class ThermalPrintingService {
         String qtyVariantStr;
         if (item['variant'] == 'KG') {
           qtyVariantStr = '${item['quantity']} KG';
+        } else if (item['variant'] == 'gantang') {
+          qtyVariantStr = '${item['quantity']} gantang';
         } else if (item['variant'].isNotEmpty) {
           qtyVariantStr = '${item['quantity']} ${item['variant']}';
         } else {
-          qtyVariantStr = '${item['quantity']} pcs';
+          // For empty variant, check if quantity has decimal places
+          final qtyStr = item['quantity'] as String;
+          if (qtyStr.contains('.') && !qtyStr.endsWith('.00')) {
+            // Has decimal places - treat as KG
+            qtyVariantStr = '${item['quantity']} KG';
+          } else {
+            // Whole number - treat as pieces
+            qtyVariantStr = '${item['quantity']} pcs';
+          }
         }
         receiptLines.add({'text': qtyVariantStr, 'format': 'item_details'});
 

@@ -1015,9 +1015,8 @@ class _AddToCartScreenState extends ConsumerState<AddToCartScreen> {
         isSpecialPrice: false,
         perKiloPrice: PerKiloPriceDto(
           id: perKiloPrice.id,
-          quantity:
-              effectiveQuantity, // Store the actual quantity (gantang or kg)
-          price: Decimal.zero, // Dummy value - server ignores this field
+          quantity: effectiveQuantity, // Always store quantity in KG for server
+          price: Decimal.zero, // Store the actual per-kg unit price
         ),
         isDiscounted: _isDiscounted,
         discountedPrice: finalDiscountedPrice, // Store total discounted price
