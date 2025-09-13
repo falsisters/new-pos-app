@@ -245,7 +245,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
 
       // Create metadata for additional receipt information
       final metadata = <String, dynamic>{};
-      if (changeAmount != null && changeAmount > Decimal.zero) {
+      if (changeAmount != null && changeAmount >= Decimal.zero) {
         metadata['change'] = changeAmount.toStringAsFixed(2);
         metadata['tenderedAmount'] =
             (totalAmount + changeAmount).toStringAsFixed(2);
