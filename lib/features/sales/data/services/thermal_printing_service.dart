@@ -703,6 +703,10 @@ class ThermalPrintingService {
       // Footer with minimal spacing
       receiptLines
           .add({'text': _centerText('Thank you', 32), 'format': 'footer'});
+      receiptLines.add({
+        'text': _centerText('FOR CHECKING PURPOSES ONLY', 32),
+        'format': 'footer'
+      });
       receiptLines.add(
           {'text': _sectionSpacing, 'format': 'spacing'}); // Add single spacing
 
