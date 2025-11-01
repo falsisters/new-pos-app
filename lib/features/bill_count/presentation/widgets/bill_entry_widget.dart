@@ -7,13 +7,13 @@ import 'package:falsisters_pos_android/features/bill_count/presentation/utils/cu
 class BillEntryWidget extends StatefulWidget {
   final BillType type;
   final int initialAmount;
-  final Function(int) onChanged;
+  final Function(int)? onChanged;
 
   const BillEntryWidget({
     Key? key,
     required this.type,
     required this.initialAmount,
-    required this.onChanged,
+    this.onChanged,
   }) : super(key: key);
 
   @override
@@ -52,7 +52,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
       _currentAmount = value;
       _controller.text = _currentAmount.toString();
     });
-    widget.onChanged(_currentAmount);
+    widget.onChanged?.call(_currentAmount);
   }
 
   @override
@@ -103,6 +103,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
               controller: _controller,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
+              enabled: widget.onChanged != null,
               decoration: const InputDecoration(
                 contentPadding:
                     EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -110,9 +111,10 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
                 isDense: true,
                 hintText: "0",
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: widget.onChanged != null ? Colors.black : Colors.grey,
               ),
               inputFormatters: [
                 CurrencyInputFormatter(),
@@ -120,6 +122,7 @@ class _BillEntryWidgetState extends State<BillEntryWidget> {
                     15), // Allow up to 999,999,999,999
               ],
               onChanged: (value) {
+                if (widget.onChanged == null) return;
                 // Remove commas and parse the value
                 final cleanValue = value.replaceAll(',', '');
                 final intValue = int.tryParse(cleanValue) ?? 0;

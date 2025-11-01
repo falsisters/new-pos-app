@@ -70,6 +70,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
   }
 
+  bool _isSelectedDateToday() {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+  }
+
   Future<void> _fetchExpensesForSelectedDate() async {
     final formattedDate =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
@@ -106,6 +113,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   void _addItem() {
+    if (!_isSelectedDateToday()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only add expenses for today.')),
+      );
+      return;
+    }
+
     final name = _expenseNameController.text.trim();
     final amountText = _expenseAmountController.text.replaceAll(',', '');
     final amount = double.tryParse(amountText);
@@ -125,12 +139,26 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   void _removeItem(int index) {
+    if (!_isSelectedDateToday()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only edit expenses for today.')),
+      );
+      return;
+    }
+
     setState(() {
       _itemsForSubmission.removeAt(index);
     });
   }
 
   Future<void> _saveExpenses() async {
+    if (!_isSelectedDateToday()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only save expenses for today.')),
+      );
+      return;
+    }
+
     // If it's a new expense list (no _loadedExpenseListId) AND there are no items,
     // then prevent saving an empty new list.
     if (_loadedExpenseListId == null && _itemsForSubmission.isEmpty) {
@@ -177,6 +205,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   Future<void> _deleteExpenseList() async {
     if (_loadedExpenseListId == null) return;
+
+    if (!_isSelectedDateToday()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('You can only delete expenses for today.')),
+      );
+      return;
+    }
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -347,7 +383,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             if (_loadedExpenseListId != null)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                onPressed: _deleteExpenseList,
+                onPressed: _isSelectedDateToday() ? _deleteExpenseList : null,
+                color: _isSelectedDateToday()
+                    ? AppColors.white
+                    : AppColors.white.withOpacity(0.5),
               ),
           ],
         ),
@@ -473,6 +512,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                               // Form fields
                               TextFormField(
                                 controller: _expenseNameController,
+                                enabled: _isSelectedDateToday(),
                                 decoration: InputDecoration(
                                   labelText: 'Expense Name',
                                   hintText:
@@ -508,6 +548,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _expenseAmountController,
+                                      enabled: _isSelectedDateToday(),
                                       inputFormatters: [NumberFormatter()],
                                       decoration: InputDecoration(
                                         labelText: 'Amount',
@@ -565,7 +606,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                   Container(
                                     height: 56,
                                     child: ElevatedButton(
-                                      onPressed: _addItem,
+                                      onPressed: _isSelectedDateToday()
+                                          ? _addItem
+                                          : null,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.secondary,
                                         foregroundColor: AppColors.white,
@@ -591,7 +634,36 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     const SizedBox(height: 24),
 
                     // Status indicator
-                    if (_loadedExpenseListId != null)
+                    if (!_isSelectedDateToday())
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_outline,
+                                color: Colors.orange.shade700, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Expenses can only be added or edited for today',
+                                style: TextStyle(
+                                  color: Colors.orange.shade700,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_loadedExpenseListId != null)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
@@ -626,7 +698,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             "BUILDING UI WITH ${_itemsForSubmission.length} ITEMS");
                         return ExpenseListWidget(
                           items: _itemsForSubmission,
-                          onItemRemove: _removeItem,
+                          onItemRemove:
+                              _isSelectedDateToday() ? _removeItem : null,
                         );
                       },
                       loading: () => Card(
@@ -685,7 +758,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _saveExpenses,
+                        onPressed:
+                            _isSelectedDateToday() ? _saveExpenses : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.white,

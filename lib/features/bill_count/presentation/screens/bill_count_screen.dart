@@ -28,6 +28,15 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
     Future.microtask(() => _loadBillCount());
   }
 
+  // Helper to check if selected date is in the past
+  bool get _isPastDate {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    return selected.isBefore(today);
+  }
+
   void _loadBillCount() {
     ref.read(billCountProvider.notifier).loadBillCountForDate(
           date: DateFormat('yyyy-MM-dd').format(_selectedDate),
@@ -74,6 +83,17 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   }
 
   void _showBeginningBalanceDialog() {
+    if (_isPastDate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cannot edit past dates"),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     final billCountState = ref.read(billCountProvider).value;
     if (billCountState == null || billCountState.billCount == null) return;
 
@@ -90,11 +110,33 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   }
 
   void _toggleBeginningBalance() {
+    if (_isPastDate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cannot edit past dates"),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     ref.read(billCountProvider.notifier).toggleBeginningBalanceVisibility();
     // Do not auto-save, let the user decide when to save
   }
 
   void _saveBillCount() {
+    if (_isPastDate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cannot save past dates"),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     ref.read(billCountProvider.notifier).saveBillCount(
           date: DateFormat('yyyy-MM-dd').format(_selectedDate),
         );
@@ -174,6 +216,34 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   }
 
   Widget _buildSaveButton() {
+    if (_isPastDate) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock, size: 24, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Text(
+                "PAST DATE - READ ONLY",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: ElevatedButton(
@@ -291,6 +361,9 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.white,
                                 borderRadius: BorderRadius.circular(8),
+                                border: _isPastDate
+                                    ? Border.all(color: Colors.orange, width: 2)
+                                    : null,
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.05),
@@ -303,13 +376,49 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    DateFormat('MMMM dd, yyyy')
-                                        .format(_selectedDate),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        DateFormat('MMMM dd, yyyy')
+                                            .format(_selectedDate),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      if (_isPastDate) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade100,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.lock,
+                                                size: 12,
+                                                color: Colors.orange.shade700,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "READ ONLY",
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                   const Icon(Icons.calendar_today),
                                 ],
@@ -545,14 +654,20 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                               ),
                               Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.secondary.withOpacity(0.1),
+                                  color: _isPastDate
+                                      ? Colors.grey.withOpacity(0.1)
+                                      : AppColors.secondary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: IconButton(
                                   icon: const Icon(Icons.edit_rounded),
-                                  color: AppColors.secondary,
+                                  color: _isPastDate
+                                      ? Colors.grey
+                                      : AppColors.secondary,
                                   iconSize: 24,
-                                  onPressed: _showBeginningBalanceDialog,
+                                  onPressed: _isPastDate
+                                      ? null
+                                      : _showBeginningBalanceDialog,
                                 ),
                               ),
                             ],
@@ -592,79 +707,91 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 type: BillType.THOUSAND,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "THOUSAND"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.THOUSAND,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.THOUSAND,
+                                              value,
+                                            );
+                                      },
                               ),
                               BillEntryWidget(
                                 type: BillType.FIVE_HUNDRED,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "FIVE_HUNDRED"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.FIVE_HUNDRED,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.FIVE_HUNDRED,
+                                              value,
+                                            );
+                                      },
                               ),
                               BillEntryWidget(
                                 type: BillType.HUNDRED,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "HUNDRED"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.HUNDRED,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.HUNDRED,
+                                              value,
+                                            );
+                                      },
                               ),
                               BillEntryWidget(
                                 type: BillType.FIFTY,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "FIFTY"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.FIFTY,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.FIFTY,
+                                              value,
+                                            );
+                                      },
                               ),
                               BillEntryWidget(
                                 type: BillType.TWENTY,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "TWENTY"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.TWENTY,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.TWENTY,
+                                              value,
+                                            );
+                                      },
                               ),
                               BillEntryWidget(
                                 type: BillType.COINS,
                                 initialAmount: _getBillAmount(
                                     billCount.billsByType, "COINS"),
-                                onChanged: (int value) {
-                                  ref
-                                      .read(billCountProvider.notifier)
-                                      .updateBillAmount(
-                                        BillType.COINS,
-                                        value,
-                                      );
-                                },
+                                onChanged: _isPastDate
+                                    ? null
+                                    : (int value) {
+                                        ref
+                                            .read(billCountProvider.notifier)
+                                            .updateBillAmount(
+                                              BillType.COINS,
+                                              value,
+                                            );
+                                      },
                               ),
 
                               Container(
@@ -729,7 +856,9 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                 scale: 1.1,
                                 child: Checkbox(
                                   value: billCount.showBeginningBalance,
-                                  onChanged: (_) => _toggleBeginningBalance(),
+                                  onChanged: _isPastDate
+                                      ? null
+                                      : (_) => _toggleBeginningBalance(),
                                   activeColor: AppColors.secondary,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(4),
@@ -742,9 +871,11 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: billCount.showBeginningBalance
-                                        ? AppColors.secondary
-                                        : Colors.grey.shade600,
+                                    color: _isPastDate
+                                        ? Colors.grey.shade400
+                                        : billCount.showBeginningBalance
+                                            ? AppColors.secondary
+                                            : Colors.grey.shade600,
                                   ),
                                 ),
                               ),
