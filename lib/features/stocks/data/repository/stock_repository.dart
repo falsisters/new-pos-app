@@ -120,4 +120,31 @@ class StockRepository {
       }
     }
   }
+
+  Future<Map<String, dynamic>> getStockStatistics({DateTime? date}) async {
+    try {
+      String endpoint = '/stock/statistics/cashier';
+
+      // Add date query parameter if provided
+      if (date != null) {
+        final dateString =
+            date.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+        endpoint = '/stock/statistics/cashier?date=$dateString';
+      }
+
+      final response = await _dio.instance.get(endpoint);
+
+      if (response.data == null) {
+        return {};
+      }
+
+      return response.data;
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.error);
+      } else {
+        throw Exception('An unexpected error occurred: ${e.toString()}');
+      }
+    }
+  }
 }

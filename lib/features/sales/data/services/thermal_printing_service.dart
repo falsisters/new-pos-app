@@ -1006,6 +1006,100 @@ class ThermalPrintingService {
     return char * length;
   }
 
+  Future<void> printStockReport({
+    required ThermalPrinter printer,
+    required Map<String, dynamic> stockData,
+    required BuildContext context,
+  }) async {
+    try {
+      debugPrint('Starting stock report print process for: ${printer.name}');
+
+      // Convert to flutter_thermal_printer's Printer model
+      final thermalPrinter = printer.toPrinter();
+
+      // Connect to printer
+      debugPrint('Connecting to printer...');
+      await _flutterThermalPrinter.connect(thermalPrinter);
+
+      // Wait for connection
+      if (printer.isUSBPrinter) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      } else {
+        await Future.delayed(const Duration(milliseconds: 2000));
+      }
+
+      debugPrint('Connected to printer');
+
+      // Print regular, asin, and plastic reports
+      if (stockData.containsKey('regular') && stockData['regular'] != null) {
+        final regularData = stockData['regular'];
+        await _printStockCategory(thermalPrinter, regularData, printer);
+      }
+
+      if (stockData.containsKey('asin') && stockData['asin'] != null) {
+        final asinData = stockData['asin'];
+        await _printStockCategory(thermalPrinter, asinData, printer);
+      }
+
+      if (stockData.containsKey('plastic') && stockData['plastic'] != null) {
+        final plasticData = stockData['plastic'];
+        await _printStockCategory(thermalPrinter, plasticData, printer);
+      }
+
+      debugPrint('Stock report printing completed');
+    } catch (e) {
+      debugPrint('Stock report print error: $e');
+      throw Exception('Failed to print stock report: $e');
+    }
+  }
+
+  Future<void> _printStockCategory(Printer printer,
+      Map<String, dynamic> categoryData, ThermalPrinter printerModel) async {
+    try {
+      final lines = categoryData['lines'] as List<dynamic>;
+
+      final List<Map<String, dynamic>> receiptLines = [];
+
+      // Add each line from the backend
+      for (final line in lines) {
+        final lineText = line.toString();
+
+        // Determine format based on content
+        String format = 'normal';
+        if (lineText.contains('REPORT')) {
+          format = 'big_header';
+        } else if (lineText.startsWith('=')) {
+          format = 'normal';
+        } else if (lineText.startsWith('TOTAL')) {
+          format = 'total';
+        } else if (lineText.startsWith('Date:')) {
+          format = 'info';
+        } else {
+          format = 'body';
+        }
+
+        receiptLines.add({'text': lineText, 'format': format});
+      }
+
+      // Add spacing at the end (5 lines as requested)
+      for (int i = 0; i < 5; i++) {
+        receiptLines.add({'text': '', 'format': 'spacing'});
+      }
+
+      // Send to printer based on connection type
+      if (printerModel.connectionType == ConnectionType.BLE) {
+        await _sendBluetoothChunked57mmReceipt(printer, receiptLines);
+      } else {
+        await _sendUSB57mmReceipt(printer, receiptLines);
+      }
+
+      debugPrint('Stock category printed successfully');
+    } catch (e) {
+      debugPrint('Stock category print error: $e');
+      throw Exception('Failed to print stock category: $e');
+    }
+  }
+
   Future<void> printReceipt({
     required ThermalPrinter printer,
     required dynamic sale,
