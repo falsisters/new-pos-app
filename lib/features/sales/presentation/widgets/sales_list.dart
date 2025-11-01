@@ -5,6 +5,7 @@ import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_
 import 'package:falsisters_pos_android/features/sales/data/model/sale_item.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
+import 'package:falsisters_pos_android/features/auth/data/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -138,9 +139,10 @@ class _SalesListWidgetState extends ConsumerState<SalesListWidget> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final salesStateAsync = ref.watch(salesProvider);
+    final cashier = ref.watch(cashierProvider);
+    final hasVoidPermission = cashier?.permissions.contains('VOID') ?? false;
 
     return Container(
       decoration: BoxDecoration(
@@ -538,53 +540,57 @@ class _SalesListWidgetState extends ConsumerState<SalesListWidget> {
                                       ),
                                     ),
                                   ),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.red,
-                                          Colors.red.withOpacity(0.8)
+                                  if (hasVoidPermission)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.red,
+                                            Colors.red.withOpacity(0.8)
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
                                         ],
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.red.withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(10),
-                                        onTap: () =>
-                                            _showVoidDialog(context, ref, sale),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 14, vertical: 10),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.delete_outline_rounded,
-                                                  color: Colors.white,
-                                                  size: 16),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'Void',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          onTap: () => _showVoidDialog(
+                                              context, ref, sale),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 14, vertical: 10),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                    Icons
+                                                        .delete_outline_rounded,
+                                                    color: Colors.white,
+                                                    size: 16),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'Void',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 12,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
