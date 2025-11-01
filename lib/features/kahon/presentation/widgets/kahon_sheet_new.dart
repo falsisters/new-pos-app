@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
+import 'package:falsisters_pos_android/features/kahon/data/models/row_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/models/cell_model.dart';
 import 'package:falsisters_pos_android/features/kahon/data/providers/sheet_provider.dart';
 import 'package:falsisters_pos_android/features/kahon/presentation/widgets/kahon_sheet_state.dart';
@@ -50,6 +51,15 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
     super.initState();
     _initializeComponents();
     _initializeSheet();
+  }
+
+  // Helper method to check if a row was created today
+  bool _isRowCreatedToday(RowModel row) {
+    final now = DateTime.now();
+    final rowDate = row.createdAt;
+    return rowDate.year == now.year &&
+        rowDate.month == now.month &&
+        rowDate.day == now.day;
   }
 
   void _initializeComponents() {
@@ -250,6 +260,21 @@ class _KahonSheetNewState extends ConsumerState<KahonSheetNew>
       {bool isCalculatedResult = false}) async {
     print(
         "_handleCellSubmit called with: rowIndex=$rowIndex, columnIndex=$columnIndex, value=$value, color=$colorHex, isCalculated=$isCalculatedResult");
+
+    // Check if the row was created today
+    final rowModel = _dataManager.currentSheet.rows
+        .firstWhereOrNull((r) => r.rowIndex == rowIndex);
+
+    if (rowModel != null && !_isRowCreatedToday(rowModel)) {
+      if (mounted) {
+        _uiBuilder.showModernSnackBar(
+          message: 'Cannot edit cells from previous dates',
+          icon: Icons.lock_outline,
+          color: Colors.orange,
+        );
+      }
+      return;
+    }
 
     // Skip submitting empty unchanged values
     if (_state.selectedRowIndex == rowIndex &&

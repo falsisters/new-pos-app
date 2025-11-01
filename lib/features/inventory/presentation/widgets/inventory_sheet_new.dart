@@ -4,6 +4,7 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:flutter/services.dart';
 
 import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_row_model.dart';
 import 'package:falsisters_pos_android/features/inventory/data/models/inventory_cell_model.dart';
 import 'package:falsisters_pos_android/features/inventory/data/providers/inventory_provider.dart';
 import 'package:falsisters_pos_android/features/inventory/presentation/state/inventory_sheet_state.dart';
@@ -48,6 +49,15 @@ class _InventorySheetNewState extends ConsumerState<InventorySheetNew>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recalculateAllFormulasOnLoad();
     });
+  }
+
+  // Helper method to check if a row was created today
+  bool _isRowCreatedToday(InventoryRowModel row) {
+    final now = DateTime.now();
+    final rowDate = row.createdAt;
+    return rowDate.year == now.year &&
+        rowDate.month == now.month &&
+        rowDate.day == now.day;
   }
 
   void _initializeComponents() {
@@ -195,6 +205,15 @@ class _InventorySheetNewState extends ConsumerState<InventorySheetNew>
         (r) => r.rowIndex == rowIndex,
         orElse: () => throw Exception('Row not found'),
       );
+
+      // Check if the row was created today
+      if (!_isRowCreatedToday(rowModel)) {
+        _showSnackBar(
+          'Cannot edit cells from previous dates',
+          isError: true,
+        );
+        return;
+      }
 
       final existingCell = rowModel.cells.firstWhereOrNull(
         (c) => c.columnIndex == columnIndex,

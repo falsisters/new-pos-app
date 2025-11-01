@@ -389,6 +389,17 @@ class KahonSheetDataSource extends DataGridSource {
     final rowIndex = rowCellData.rowIndex;
     final columnIndex = int.parse(column.columnName.replaceAll('column', ''));
 
+    // Check if row was created today
+    final rowModel = sheet.rows.firstWhere(
+      (r) => r.rowIndex == rowIndex,
+      orElse: () => throw Exception('Row not found'),
+    );
+
+    if (!_isRowCreatedToday(rowModel)) {
+      // Don't allow editing - return null to prevent edit mode
+      return null;
+    }
+
     final cell = row
         .getCells()
         .firstWhere(
@@ -404,6 +415,15 @@ class KahonSheetDataSource extends DataGridSource {
       columnIndex,
       submitCell,
     );
+  }
+
+  // Helper method to check if a row was created today
+  bool _isRowCreatedToday(RowModel row) {
+    final now = DateTime.now();
+    final rowDate = row.createdAt;
+    return rowDate.year == now.year &&
+        rowDate.month == now.month &&
+        rowDate.day == now.day;
   }
 
   Widget _buildModernEditWidget(
