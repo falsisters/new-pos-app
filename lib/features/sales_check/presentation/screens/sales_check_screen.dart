@@ -173,10 +173,13 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                     children: [
                                       // Sales items
                                       ...totalData.items
-                                          .map((item) => _FormattedSaleRow(
+                                          .asMap()
+                                          .entries
+                                          .map((entry) => _FormattedSaleRow(
                                                 formattedSale:
-                                                    item.formattedSale,
-                                                time: item.formattedTime,
+                                                    entry.value.formattedSale,
+                                                time: entry.value.formattedTime,
+                                                rowNumber: entry.key + 1,
                                               )),
                                       const SizedBox(height: 8),
                                       _StyledDivider(),
@@ -417,9 +420,12 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                                       children: [
                                         // Sales rows
                                         ...group.items
-                                            .map((item) => _FormattedSaleRow(
+                                            .asMap()
+                                            .entries
+                                            .map((entry) => _FormattedSaleRow(
                                                   formattedSale:
-                                                      item.formattedSale,
+                                                      entry.value.formattedSale,
+                                                  rowNumber: entry.key + 1,
                                                 )),
                                         const SizedBox(height: 8),
                                         _StyledDivider(),
@@ -648,9 +654,11 @@ class _EmptyStateCard extends StatelessWidget {
 class _FormattedSaleRow extends StatelessWidget {
   final String formattedSale;
   final String? time;
+  final int rowNumber;
 
   const _FormattedSaleRow({
     required this.formattedSale,
+    required this.rowNumber,
     this.time,
   });
 
@@ -734,11 +742,31 @@ class _FormattedSaleRow extends StatelessWidget {
       productInfo = formattedSale;
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey[200]!,
+            width: 1.0,
+          ),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row number
+          SizedBox(
+            width: 30,
+            child: Text(
+              '$rowNumber.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           // Display time if provided (for chronological view)
           if (time != null)
             SizedBox(

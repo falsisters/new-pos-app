@@ -97,9 +97,10 @@ class ProfitsScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  ...sacks.items.map((item) {
+                                  ...sacks.items.asMap().entries.map((entry) {
                                     return _ProfitItemRow(
-                                      summary: item.formattedSummary,
+                                      summary: entry.value.formattedSummary,
+                                      rowNumber: entry.key + 1,
                                     );
                                   }).toList(),
                                   const _Divider(),
@@ -131,9 +132,10 @@ class ProfitsScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  ...asin.items.map((item) {
+                                  ...asin.items.asMap().entries.map((entry) {
                                     return _ProfitItemRow(
-                                      summary: item.formattedSummary,
+                                      summary: entry.value.formattedSummary,
+                                      rowNumber: entry.key + 1,
                                     );
                                   }).toList(),
                                   const _Divider(),
@@ -246,16 +248,42 @@ class _SectionHeader extends StatelessWidget {
 
 class _ProfitItemRow extends StatelessWidget {
   final String summary;
+  final int rowNumber;
 
   const _ProfitItemRow({
     required this.summary,
+    required this.rowNumber,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Text(summary),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey[200]!,
+            width: 1.0,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(
+              '$rowNumber.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(child: Text(summary)),
+        ],
+      ),
     );
   }
 }
