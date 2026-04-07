@@ -23,6 +23,7 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
   final TextEditingController _productNameController = TextEditingController();
   String _priceType = '';
   String _sackType = '';
+  String _discountFilter = ''; // '' = all, 'true' = discounted only, 'false' = non-discounted only
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -61,6 +62,12 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
 
     if (_priceType != 'SACK') {
       _sackType = '';
+    }
+
+    // Initialize discount filter
+    final isDiscounted = tFilters?.isDiscounted ?? gFilters?.isDiscounted;
+    if (isDiscounted != null) {
+      _discountFilter = isDiscounted.toString();
     }
   }
 
@@ -396,6 +403,24 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
                     isEnabled: _priceType == 'SACK',
                   ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Discounted',
+                    value: _discountFilter.isEmpty ? null : _discountFilter,
+                    hint: 'All',
+                    items: const [
+                      DropdownMenuItem(value: 'true', child: Text('Discounted')),
+                      DropdownMenuItem(
+                          value: 'false', child: Text('Not Discounted')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _discountFilter = value ?? '';
+                      });
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -581,6 +606,10 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
     if (_selectedDate != null) {
       final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
 
+      final bool? isDiscounted = _discountFilter.isEmpty
+          ? null
+          : _discountFilter == 'true';
+
       final totalFilters = TotalSalesFilterDto(
         date: formattedDate,
         productName: _productNameController.text.isEmpty
@@ -588,6 +617,7 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
             : _productNameController.text,
         priceType: _priceType.isEmpty ? null : _priceType,
         sackType: _priceType != 'SACK' || _sackType.isEmpty ? null : _sackType,
+        isDiscounted: isDiscounted,
       );
 
       final groupedFilters = SalesCheckFilterDto(
@@ -597,6 +627,7 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
             : _productNameController.text,
         priceType: _priceType.isEmpty ? null : _priceType,
         sackType: _priceType != 'SACK' || _sackType.isEmpty ? null : _sackType,
+        isDiscounted: isDiscounted,
       );
 
       ref.read(salesCheckProvider.notifier).updateFiltersAndRefetch(
@@ -612,6 +643,7 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
       _productNameController.clear();
       _priceType = '';
       _sackType = '';
+      _discountFilter = '';
     });
     _applyFilters();
   }
