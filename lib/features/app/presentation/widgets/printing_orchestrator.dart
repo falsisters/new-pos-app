@@ -60,9 +60,9 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content:
-                  Text('No printer selected. Please select one in Settings.'),
+              content: Text('No printer selected. Please select one in Settings.'),
               backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -82,30 +82,13 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
 
       int copies = 2; // Default fallback only
 
-      // Start with settings-based copies
-      switch (printCopiesSetting) {
-        case PrintCopiesSetting.ONE_COPY:
-          copies = 1;
-          break;
-        case PrintCopiesSetting.TWO_COPIES:
-          copies = 2;
-          break;
-        case PrintCopiesSetting.PROMPT_EVERY_SALE:
-          copies = 2; // Default for prompt mode
-          break;
-      }
-      debugPrint('Initial copies from settings: $copies');
-
-      // Override with metadata ONLY if it exists and is valid
-      if (saleToPrint is SaleModel) {
-        debugPrint('Sale metadata: ${saleToPrint.metadata}');
-
-        if (saleToPrint.metadata != null &&
-            saleToPrint.metadata!.containsKey('printCopies')) {
-          final metadataCopies = saleToPrint.metadata!['printCopies'];
-          debugPrint(
-              'Found printCopies in metadata: $metadataCopies (${metadataCopies.runtimeType})');
-
+      if (printCopiesSetting == PrintCopiesSetting.PROMPT_EVERY_SALE) {
+        // For prompt mode, the user's dialog choice is stored in metadata.
+        // Fall back to 2 only if metadata is missing or invalid.
+        copies = 2;
+        if (saleToPrint is SaleModel) {
+          debugPrint('Sale metadata: ${saleToPrint.metadata}');
+          final metadataCopies = saleToPrint.metadata?['printCopies'];
           if (metadataCopies is int && metadataCopies > 0) {
             copies = metadataCopies;
             debugPrint('Using copies from sale metadata: $copies');
@@ -114,21 +97,12 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
             if (parsedCopies != null && parsedCopies > 0) {
               copies = parsedCopies;
               debugPrint('Parsed copies from metadata string: $copies');
-            } else {
-              debugPrint(
-                  'Invalid metadata string, keeping settings-based copies: $copies');
             }
-          } else {
-            debugPrint(
-                'Invalid printCopies type in metadata, keeping settings-based copies: $copies');
           }
-        } else {
-          debugPrint(
-              'No printCopies in metadata, using settings-based copies: $copies');
         }
       } else {
-        debugPrint(
-            'Sale is not SaleModel, using settings-based copies: $copies');
+        // For ONE_COPY / TWO_COPIES, settings are authoritative — never use metadata.
+        copies = printCopiesSetting == PrintCopiesSetting.ONE_COPY ? 1 : 2;
       }
 
       debugPrint('FINAL COPIES COUNT: $copies');
@@ -156,9 +130,12 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
                 ),
               ],
             ),
-            duration: Duration(seconds: selectedPrinter.isUSBPrinter ? 4 : 8),
+            // Use a very long duration so hideCurrentSnackBar() always cuts it
+            // short rather than the timer auto-dismissing before printing completes
+            duration: const Duration(minutes: 5),
             backgroundColor:
                 selectedPrinter.isUSBPrinter ? Colors.orange : Colors.blue,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -202,7 +179,8 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
               ],
             ),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 8),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
             action: _lastPrintedReceiptId != null
                 ? SnackBarAction(
                     label: 'Reprint',
@@ -244,6 +222,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 10),
+            behavior: SnackBarBehavior.floating,
             action: SnackBarAction(
               label: 'Retry',
               textColor: Colors.white,
@@ -285,8 +264,9 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
                 Text('Reprinting receipt...'),
               ],
             ),
-            duration: Duration(seconds: 3),
+            duration: const Duration(minutes: 5),
             backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -300,8 +280,9 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Receipt no longer available for reprint'),
+              content: const Text('Receipt no longer available for reprint'),
               backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -317,6 +298,7 @@ class _PrintingOrchestratorState extends ConsumerState<PrintingOrchestrator> {
           SnackBar(
             content: Text('Reprint failed: ${e.toString()}'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
             action: SnackBarAction(
               label: 'Retry',
               textColor: Colors.white,
