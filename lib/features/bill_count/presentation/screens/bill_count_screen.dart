@@ -4,11 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/models/bill_type.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/providers/bill_count_provider.dart';
+import 'package:falsisters_pos_android/features/bill_count/data/repository/bill_count_repository.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/bill_entry_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/dialogs/beginning_balance_dialog.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/total_cash_widget.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/widgets/initial_count.dart';
 import 'package:falsisters_pos_android/features/bill_count/presentation/utils/bill_count_formatter.dart';
+import 'package:falsisters_pos_android/features/sales/data/services/thermal_printing_service.dart' as thermal;
+import 'package:falsisters_pos_android/features/app/data/services/settings_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BillCountScreen extends ConsumerStatefulWidget {
@@ -21,6 +24,7 @@ class BillCountScreen extends ConsumerStatefulWidget {
 class _BillCountScreenState extends ConsumerState<BillCountScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isCalendarVisible = false;
+  bool _isPrinting = false;
 
   @override
   void initState() {
@@ -148,6 +152,102 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _printBillCount() async {
+    if (_isPrinting) return;
+
+    final billCountState = ref.read(billCountProvider).value;
+    final billCount = billCountState?.billCount;
+    if (billCount == null) return;
+
+    setState(() => _isPrinting = true);
+
+    try {
+      final printingService = ref.read(thermal.thermalPrintingServiceProvider);
+      final settingsService = ref.read(settingsServiceProvider);
+      final selectedPrinter = await settingsService.getSelectedPrinter();
+
+      if (selectedPrinter == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No printer selected. Please select one in Settings.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final repository = ref.read(billCountRepositoryProvider);
+      final paymentTotals = await repository.getPaymentTotals(date: formattedDate);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('Printing bill count to ${selectedPrinter.name}...'),
+              ],
+            ),
+            duration: const Duration(minutes: 5),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+
+      await printingService.printBillCountReceipt(
+        printer: selectedPrinter,
+        billCountData: billCount.toJson(),
+        paymentTotals: paymentTotals,
+        context: context,
+        copies: 1,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('Bill count printed to ${selectedPrinter.name}'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Bill count print error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Print failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPrinting = false);
+      }
+    }
   }
 
   // Helper method to get bill amount from billsByType
@@ -330,6 +430,23 @@ class _BillCountScreenState extends ConsumerState<BillCountScreen> {
             ),
           ],
         ),
+        actions: [
+          if (billCountAsync.value?.billCount != null)
+            IconButton(
+              icon: _isPrinting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.print),
+              onPressed: _isPrinting ? null : _printBillCount,
+              tooltip: 'Print bill count receipt',
+            ),
+        ],
       ),
       body: billCountAsync.when(
         data: (billCountState) {

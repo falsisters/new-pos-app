@@ -13,8 +13,8 @@ class ProfitFilterWidget extends ConsumerStatefulWidget {
 
 class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
   DateTime? _selectedDate;
-  String? _selectedPriceType;
   String? _selectedSackType;
+  String? _selectedAsinType;
   late TextEditingController _productSearchController;
   bool _isExpanded = true;
 
@@ -37,8 +37,8 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
       _selectedDate = DateTime.now();
     }
 
-    _selectedPriceType = initialFilters?.priceType;
     _selectedSackType = initialFilters?.sackType;
+    _selectedAsinType = initialFilters?.asinType;
     _productSearchController.text = initialFilters?.productSearch ?? '';
   }
 
@@ -70,8 +70,8 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
 
       final filters = ProfitFilterDto(
         date: formattedDate,
-        priceType: _selectedPriceType,
         sackType: _selectedSackType,
+        asinType: _selectedAsinType,
         productSearch: productSearchText.isEmpty ? null : productSearchText,
       );
 
@@ -102,10 +102,6 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
     if (_productSearchController.text.trim().isNotEmpty) {
       activeFilters.add("Search: ${_productSearchController.text.trim()}");
     }
-    if (_selectedPriceType != null) {
-      activeFilters
-          .add("Type: ${_selectedPriceType == 'SACK' ? 'Sacks' : 'Asin'}");
-    }
     if (_selectedSackType != null) {
       final sackTypeMap = {
         'FIFTY_KG': '50KG',
@@ -114,6 +110,14 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
       };
       activeFilters
           .add("Sack: ${sackTypeMap[_selectedSackType] ?? _selectedSackType}");
+    }
+    if (_selectedAsinType != null) {
+      final asinTypeMap = {
+        'ASIN': 'Asin',
+        'ASIN_50KG': 'Asin 50kg',
+        'ASIN_25KG': 'Asin 25kg',
+      };
+      activeFilters.add("Asin: ${asinTypeMap[_selectedAsinType] ?? _selectedAsinType}");
     }
 
     final activeFilterText = activeFilters.isNotEmpty
@@ -193,35 +197,9 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
                   onSubmitted: (_) => _applyFilters(),
                 ),
                 const SizedBox(height: 8),
-                // Price Type and Sack Type Dropdowns
+                // Sack Type and Asin Type Dropdowns
                 Row(
                   children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Price Type',
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        value: _selectedPriceType,
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('All')),
-                          DropdownMenuItem(value: 'SACK', child: Text('Sacks')),
-                          DropdownMenuItem(value: 'ASIN', child: Text('Asin')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedPriceType = value;
-                            // Clear sack type if not viewing sacks
-                            if (value != 'SACK') {
-                              _selectedSackType = null;
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
@@ -240,13 +218,36 @@ class _ProfitFilterWidgetState extends ConsumerState<ProfitFilterWidget> {
                           DropdownMenuItem(
                               value: 'FIVE_KG', child: Text('5KG')),
                         ],
-                        onChanged: _selectedPriceType == 'SACK'
-                            ? (value) {
-                                setState(() {
-                                  _selectedSackType = value;
-                                });
-                              }
-                            : null,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSackType = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Asin Type',
+                          border: OutlineInputBorder(),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        value: _selectedAsinType,
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('All')),
+                          DropdownMenuItem(value: 'ASIN', child: Text('Asin')),
+                          DropdownMenuItem(
+                              value: 'ASIN_50KG', child: Text('Asin 50kg')),
+                          DropdownMenuItem(
+                              value: 'ASIN_25KG', child: Text('Asin 25kg')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedAsinType = value;
+                          });
+                        },
                       ),
                     ),
                   ],

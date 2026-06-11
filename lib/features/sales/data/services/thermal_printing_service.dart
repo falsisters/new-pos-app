@@ -1053,6 +1053,106 @@ class ThermalPrintingService {
     }
   }
 
+  Future<void> printBillCountReceipt({
+    required ThermalPrinter printer,
+    required Map<String, dynamic> billCountData,
+    required Map<String, dynamic> paymentTotals,
+    required BuildContext context,
+    int copies = 1,
+  }) async {
+    try {
+      debugPrint('Starting bill count receipt print for: ${printer.name}');
+
+      final thermalPrinter = printer.toPrinter();
+
+      debugPrint('Connecting to printer...');
+      await _flutterThermalPrinter.connect(thermalPrinter);
+
+      if (printer.isUSBPrinter) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      } else {
+        await Future.delayed(const Duration(milliseconds: 2000));
+      }
+
+      debugPrint('Connected to printer');
+
+      for (int copy = 0; copy < copies; copy++) {
+        final List<Map<String, dynamic>> receiptLines = [];
+
+        final date = billCountData['date'] as String? ?? '';
+        final billsByType = billCountData['billsByType'] as Map<String, dynamic>? ?? {};
+        final billsTotal = (billCountData['billsTotal'] as num?)?.toDouble() ?? 0;
+
+        const denominationOrder = ['THOUSAND', 'FIVE_HUNDRED', 'HUNDRED', 'FIFTY', 'TWENTY'];
+        final denominationLabels = {
+          'THOUSAND': '\u20B1 1,000',
+          'FIVE_HUNDRED': '\u20B1   500',
+          'HUNDRED': '\u20B1   100',
+          'FIFTY': '\u20B1    50',
+          'TWENTY': '\u20B1    20',
+        };
+
+        receiptLines.add({'text': 'Falsisters Rice Trading', 'format': 'big_header'});
+        receiptLines.add({'text': 'BILL COUNT RECEIPT', 'format': 'small_header'});
+        receiptLines.add({'text': date, 'format': 'small_header'});
+        receiptLines.add({'text': '-' * 24, 'format': 'body'});
+
+        for (final type in denominationOrder) {
+          final amount = (billsByType[type] as num?)?.toInt() ?? 0;
+          final value = _getBillMonetaryValue(type);
+          final subtotal = (amount * value).toDouble();
+          receiptLines.add({
+            'text': '${denominationLabels[type]!}  x  ${amount.toString().padLeft(3)}  =  ${_formatAmount(subtotal)}',
+            'format': 'body',
+          });
+        }
+
+        final coinsAmount = (billsByType['COINS'] as num?)?.toInt() ?? 0;
+        receiptLines.add({'text': 'Coins:  $coinsAmount', 'format': 'body'});
+        receiptLines.add({'text': '-' * 24, 'format': 'body'});
+
+        receiptLines.add({
+          'text': 'Bills Total:  ${_formatAmount(billsTotal)}',
+          'format': 'total',
+        });
+        receiptLines.add({'text': '-' * 24, 'format': 'body'});
+
+        receiptLines.add({'text': 'PAYMENT METHODS', 'format': 'small_header'});
+        receiptLines.add({
+          'text': 'Cash:           ${_formatAmount((paymentTotals['cash'] as num?)?.toDouble() ?? 0)}',
+          'format': 'body',
+        });
+        receiptLines.add({
+          'text': 'Bank Transfer:  ${_formatAmount((paymentTotals['bankTransfer'] as num?)?.toDouble() ?? 0)}',
+          'format': 'body',
+        });
+        receiptLines.add({
+          'text': 'Check:          ${_formatAmount((paymentTotals['check'] as num?)?.toDouble() ?? 0)}',
+          'format': 'body',
+        });
+
+        for (int i = 0; i < 3; i++) {
+          receiptLines.add({'text': '', 'format': 'spacing'});
+        }
+
+        if (printer.connectionType == ConnectionType.BLE) {
+          await _sendBluetoothChunked57mmReceipt(thermalPrinter, receiptLines);
+        } else {
+          await _sendUSB57mmReceipt(thermalPrinter, receiptLines);
+        }
+
+        if (copy < copies - 1) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+
+      debugPrint('Bill count receipt printing completed');
+    } catch (e) {
+      debugPrint('Bill count receipt print error: $e');
+      throw Exception('Failed to print bill count receipt: $e');
+    }
+  }
+
   Future<void> _printStockCategory(Printer printer,
       Map<String, dynamic> categoryData, ThermalPrinter printerModel) async {
     try {
@@ -1128,6 +1228,22 @@ class ThermalPrintingService {
       debugPrint('Thermal print error: $e');
       throw Exception('Failed to print receipt: $e');
     }
+  }
+
+  int _getBillMonetaryValue(String type) {
+    switch (type) {
+      case 'THOUSAND': return 1000;
+      case 'FIVE_HUNDRED': return 500;
+      case 'HUNDRED': return 100;
+      case 'FIFTY': return 50;
+      case 'TWENTY': return 20;
+      case 'COINS': return 1;
+      default: return 0;
+    }
+  }
+
+  String _formatAmount(double amount) {
+    return '\u20B1 ${amount.toStringAsFixed(2)}';
   }
 
   Future<void> testPrint({

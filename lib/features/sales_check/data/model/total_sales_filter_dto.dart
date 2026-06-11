@@ -6,6 +6,7 @@ class TotalSalesFilterDto {
   final String? productName;
   final String? priceType; // 'SACK' | 'KILO'
   final String? sackType; // SackType enum as String
+  final String? asinType; // 'ASIN' | 'ASIN_50KG' | 'ASIN_25KG'
   final bool? isDiscounted; // Added field
 
   TotalSalesFilterDto({
@@ -13,6 +14,7 @@ class TotalSalesFilterDto {
     this.productName,
     this.priceType,
     this.sackType,
+    this.asinType,
     this.isDiscounted, // Added to constructor
   });
 
@@ -22,6 +24,7 @@ class TotalSalesFilterDto {
     if (productName != null) json['productName'] = productName;
     if (priceType != null) json['priceType'] = priceType;
     if (sackType != null) json['sackType'] = sackType;
+    if (asinType != null) json['asinType'] = asinType;
     if (isDiscounted != null)
       json['isDiscounted'] = isDiscounted; // Added to toJson
     return json;

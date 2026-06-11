@@ -4,6 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/dio_client.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/models/bill_count_model.dart';
 import 'package:falsisters_pos_android/features/bill_count/data/models/create_bill_count_request_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final billCountRepositoryProvider = Provider<BillCountRepository>((ref) {
+  return BillCountRepository();
+});
 
 class BillCountRepository {
   final DioClient _dio = DioClient();
@@ -175,6 +180,28 @@ class BillCountRepository {
       } else {
         throw Exception('An unexpected error occurred: ${e.toString()}');
       }
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaymentTotals({String? date}) async {
+    try {
+      final queryParams = date != null ? {'date': date} : null;
+      final response = await _dio.instance.get(
+        '/bills/payment-summary',
+        queryParameters: queryParams,
+      );
+      final parsedData = _parseResponseData(response.data);
+      if (parsedData == null) {
+        return {'cash': 0, 'bankTransfer': 0, 'check': 0};
+      }
+      return {
+        'cash': (parsedData['cash'] as num?)?.toDouble() ?? 0,
+        'bankTransfer': (parsedData['bankTransfer'] as num?)?.toDouble() ?? 0,
+        'check': (parsedData['check'] as num?)?.toDouble() ?? 0,
+      };
+    } catch (e) {
+      print("Error in getPaymentTotals: $e");
+      return {'cash': 0, 'bankTransfer': 0, 'check': 0};
     }
   }
 }
