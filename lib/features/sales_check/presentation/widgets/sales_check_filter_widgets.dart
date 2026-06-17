@@ -205,7 +205,22 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
+                    // Refresh button - resets all filters including date
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        onPressed: _fullReset,
+                        icon: Icon(Icons.refresh, color: AppColors.primary, size: 18),
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        tooltip: 'Reset all filters and go back to today',
+                      ),
+                    ),
+                    const SizedBox(width: 4),
                     // Animated expand/collapse icon
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0,
@@ -676,6 +691,17 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
   }
 
   void _resetFilters() {
+    setState(() {
+      _productNameController.clear();
+      _priceType = '';
+      _sackType = '';
+      _asinType = '';
+      _discountFilter = '';
+    });
+    _applyFilters();
+  }
+
+  void _fullReset() {
     setState(() {
       _selectedDate = DateTime.now();
       _productNameController.clear();

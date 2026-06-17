@@ -17,6 +17,7 @@ sealed class BillCountModel with _$BillCountModel {
     @Default({}) Map<String, dynamic> billsByType,
     DateTime? date,
     @Default(0) double billsTotal,
+    @Default(0) double coinsTotal,
     @Default(0) double totalWithExpenses,
     @Default(0) double finalTotal,
     @Default(0) double summaryStep1,

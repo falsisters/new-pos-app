@@ -246,9 +246,14 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
 
     // Recalculate totals using the billsByType map values
     double billsTotal = 0;
+    double coinsTotal = 0;
     for (var billType in BillType.values) {
       final typeAmount = _getIntValue(updatedBillsByType[billType.name]);
-      billsTotal += typeAmount * billType.value;
+      if (billType == BillType.COINS) {
+        coinsTotal += typeAmount * billType.value;
+      } else {
+        billsTotal += typeAmount * billType.value;
+      }
     }
 
     // Use totalExpenses from backend instead of local expenses
@@ -269,6 +274,7 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
       bills: bills,
       billsByType: updatedBillsByType,
       billsTotal: billsTotal,
+      coinsTotal: coinsTotal,
       totalWithExpenses: totalWithExpenses,
       finalTotal: finalTotal,
     );

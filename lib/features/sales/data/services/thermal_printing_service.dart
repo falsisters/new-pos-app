@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:typed_data';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
@@ -1080,8 +1081,10 @@ class ThermalPrintingService {
         final List<Map<String, dynamic>> receiptLines = [];
 
         final date = billCountData['date'] as String? ?? '';
+        final formattedDate = _formatDateOnly(date);
         final billsByType = billCountData['billsByType'] as Map<String, dynamic>? ?? {};
         final billsTotal = (billCountData['billsTotal'] as num?)?.toDouble() ?? 0;
+        final coinsTotal = (billCountData['coinsTotal'] as num?)?.toDouble() ?? 0.0;
 
         const denominationOrder = ['THOUSAND', 'FIVE_HUNDRED', 'HUNDRED', 'FIFTY', 'TWENTY'];
         final denominationLabels = {
@@ -1094,7 +1097,7 @@ class ThermalPrintingService {
 
         receiptLines.add({'text': 'Falsisters Rice Trading', 'format': 'big_header'});
         receiptLines.add({'text': 'BILL COUNT RECEIPT', 'format': 'small_header'});
-        receiptLines.add({'text': date, 'format': 'small_header'});
+        receiptLines.add({'text': formattedDate, 'format': 'small_header'});
         receiptLines.add({'text': '-' * 24, 'format': 'body'});
 
         for (final type in denominationOrder) {
@@ -1109,6 +1112,10 @@ class ThermalPrintingService {
 
         final coinsAmount = (billsByType['COINS'] as num?)?.toInt() ?? 0;
         receiptLines.add({'text': 'Coins:  $coinsAmount', 'format': 'body'});
+        receiptLines.add({
+          'text': 'Coins Total:  ${_formatAmount(coinsTotal)}',
+          'format': 'body',
+        });
         receiptLines.add({'text': '-' * 24, 'format': 'body'});
 
         receiptLines.add({
@@ -1239,6 +1246,17 @@ class ThermalPrintingService {
       case 'TWENTY': return 20;
       case 'COINS': return 1;
       default: return 0;
+    }
+  }
+
+  String _formatDateOnly(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final formatter = DateFormat('MM/dd/yyyy');
+      return formatter.format(date);
+    } catch (e) {
+      debugPrint('Date parsing error: $e');
+      return dateString;
     }
   }
 
