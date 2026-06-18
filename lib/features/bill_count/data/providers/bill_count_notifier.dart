@@ -249,10 +249,9 @@ class BillCountNotifier extends AsyncNotifier<BillCountState> {
     double coinsTotal = 0;
     for (var billType in BillType.values) {
       final typeAmount = _getIntValue(updatedBillsByType[billType.name]);
+      billsTotal += typeAmount * billType.value;
       if (billType == BillType.COINS) {
         coinsTotal += typeAmount * billType.value;
-      } else {
-        billsTotal += typeAmount * billType.value;
       }
     }
 

@@ -1119,7 +1119,7 @@ class ThermalPrintingService {
         receiptLines.add({'text': '-' * 24, 'format': 'body'});
 
         receiptLines.add({
-          'text': 'Bills Total:  ${_formatAmount(billsTotal)}',
+          'text': 'Bills Total:  ${_formatAmount(billsTotal - coinsTotal)}',
           'format': 'total',
         });
         receiptLines.add({'text': '-' * 24, 'format': 'body'});
