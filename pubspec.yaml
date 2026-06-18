@@ -57,6 +57,13 @@ dependencies:
   decimal: ^3.2.4
   flutter_launcher_icons: ^0.14.4
 
+  # Offline-first architecture
+  drift: ^2.22.0
+  sqlite3_flutter_libs: ^0.5.28
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  connectivity_plus: ^6.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,6 +78,7 @@ dev_dependencies:
   json_serializable: ^6.9.4
   build_runner: ^2.4.15
   riverpod_generator: ^2.6.5
+  drift_dev: ^2.22.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
