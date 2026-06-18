@@ -1,5 +1,6 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
+import 'package:falsisters_pos_android/features/sales_check/data/model/grouped_sales_check_item.dart';
 import 'package:falsisters_pos_android/features/sales_check/presentation/widgets/sales_check_filter_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,6 +87,13 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
 
                 final groupedData = state.groupedSales!;
                 final totalData = state.totalSales!;
+
+                final asinGroups = groupedData
+                    .where((g) => g.productName.toLowerCase().contains('asin'))
+                    .toList();
+                final otherSackGroups = groupedData
+                    .where((g) => !g.productName.toLowerCase().contains('asin'))
+                    .toList();
 
                 return RefreshIndicator(
                   onRefresh: () =>
@@ -250,233 +258,67 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                         const SizedBox(height: 12),
                         if (groupedData.isEmpty)
                           _EmptyStateCard(message: 'No grouped sales data.')
-                        else
-                          ...groupedData.map((group) {
-                            return Card(
-                              elevation: 3,
-                              shadowColor: Colors.black12,
-                              margin: const EdgeInsets.only(bottom: 16.0),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Product header
-                                  Container(
-                                    padding: const EdgeInsets.all(16.0),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          AppColors.primary.withOpacity(0.1),
-                                          AppColors.primary.withOpacity(0.05),
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.inventory_2_outlined,
-                                          color: AppColors.primary,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Builder(
-                                            builder: (context) {
-                                              // Look for product types: 5KG, 25KG, 50KG, KG using word boundaries
-                                              final weightRegExp = RegExp(
-                                                  r'\b(5KG|25KG|50KG|KG)\b',
-                                                  caseSensitive: false);
-                                              final match =
-                                                  weightRegExp.firstMatch(
-                                                      group.productName);
-
-                                              if (match != null) {
-                                                final weight = match.group(0)!;
-                                                final beforeWeight = group
-                                                    .productName
-                                                    .substring(0, match.start)
-                                                    .trim();
-                                                final afterWeight = group
-                                                    .productName
-                                                    .substring(match.end)
-                                                    .trim();
-
-                                                // Combine before and after weight parts
-                                                final nameParts = [
-                                                  beforeWeight,
-                                                  afterWeight
-                                                ]
-                                                    .where((part) =>
-                                                        part.isNotEmpty)
-                                                    .join(' ');
-
-                                                return RichText(
-                                                  text: TextSpan(
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                      color: AppColors.primary,
-                                                    ),
-                                                    children: [
-                                                      if (nameParts.isNotEmpty)
-                                                        TextSpan(
-                                                            text: nameParts),
-                                                      if (nameParts.isNotEmpty)
-                                                        const TextSpan(
-                                                            text: ' '),
-                                                      TextSpan(
-                                                        text: weight,
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              } else {
-                                                // No product type found, display as is
-                                                return Text(
-                                                  group.productName,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                        else ...[
+                          // Asin Sack Items subsection
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.grain, color: AppColors.primary, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Asin Sack Items',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.primary,
                                   ),
-                                  // Column headers
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 12.0),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[50],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        // Qty column header
-                                        SizedBox(
-                                          width: 80,
-                                          child: Text(
-                                            'Qty',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              color: Colors.grey[700],
-                                              letterSpacing: 0.5,
-                                            ),
-                                            textAlign: TextAlign.right,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // Product & Type column header
-                                        Expanded(
-                                          flex: 4,
-                                          child: Text(
-                                            'Product & Type',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              color: Colors.grey[700],
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                        // Amount column header
-                                        SizedBox(
-                                          width: 100,
-                                          child: Text(
-                                            'Amount',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              color: Colors.grey[700],
-                                              letterSpacing: 0.5,
-                                            ),
-                                            textAlign: TextAlign.right,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (asinGroups.isEmpty)
+                            _EmptyStateCard(message: 'No asin sack items.')
+                          else
+                            ...asinGroups.map((group) => _buildGroupedCard(group, numberFormat)),
+
+                          // Rice & Other Sack Items subsection
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.inventory, color: AppColors.primary, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Rice & Other Sack Items',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.primary,
                                   ),
-                                  // Content
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      children: [
-                                        // Sales rows
-                                        ...group.items
-                                            .asMap()
-                                            .entries
-                                            .map((entry) => _FormattedSaleRow(
-                                                  formattedSale:
-                                                      entry.value.formattedSale,
-                                                  rowNumber: entry.key + 1,
-                                                )),
-                                        const SizedBox(height: 8),
-                                        _StyledDivider(),
-                                        const SizedBox(height: 8),
-                                        _TotalsRow(
-                                          label: group.totalQuantity
-                                              .toStringAsFixed(0),
-                                          amount: group.totalAmount,
-                                          numberFormat: numberFormat,
-                                          isBold: true,
-                                          isGrandTotal: true,
-                                        ),
-                                        if (group.paymentTotals.check >
-                                            Decimal.zero)
-                                          _TotalsRow(
-                                            label: 'CHECK',
-                                            amount: group.paymentTotals.check,
-                                            numberFormat: numberFormat,
-                                          ),
-                                        if (group.paymentTotals.bankTransfer >
-                                            Decimal.zero)
-                                          _TotalsRow(
-                                            label: 'TRANSFER',
-                                            amount: group
-                                                .paymentTotals.bankTransfer,
-                                            numberFormat: numberFormat,
-                                          ),
-                                        if ((group.paymentTotals.check >
-                                                    Decimal.zero ||
-                                                group.paymentTotals
-                                                        .bankTransfer >
-                                                    Decimal.zero) &&
-                                            group.paymentTotals.cash >
-                                                Decimal.zero) ...[
-                                          const SizedBox(height: 4),
-                                          _StyledDivider(isSubdivider: true),
-                                          const SizedBox(height: 4),
-                                          _TotalsRow(
-                                            label: 'CASH',
-                                            amount: group.paymentTotals.cash,
-                                            numberFormat: numberFormat,
-                                            isBold: true,
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (otherSackGroups.isEmpty)
+                            _EmptyStateCard(message: 'No rice & other sack items.')
+                          else
+                            ...otherSackGroups.map((group) => _buildGroupedCard(group, numberFormat)),
+                        ],
 
                         const SizedBox(height: 20),
 
@@ -562,6 +404,222 @@ class _SalesCheckScreenState extends ConsumerState<SalesCheckScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupedCard(
+    GroupedSalesCheckItem group,
+    NumberFormat numberFormat,
+  ) {
+    return Card(
+      elevation: 3,
+      shadowColor: Colors.black12,
+      margin: const EdgeInsets.only(bottom: 16.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          // Product header
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.1),
+                  AppColors.primary.withOpacity(0.05),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      // Look for product types: 5KG, 25KG, 50KG, KG using word boundaries
+                      final weightRegExp = RegExp(
+                          r'\b(5KG|25KG|50KG|KG)\b',
+                          caseSensitive: false);
+                      final match =
+                          weightRegExp.firstMatch(group.productName);
+
+                      if (match != null) {
+                        final weight = match.group(0)!;
+                        final beforeWeight = group
+                            .productName
+                            .substring(0, match.start)
+                            .trim();
+                        final afterWeight = group
+                            .productName
+                            .substring(match.end)
+                            .trim();
+
+                        // Combine before and after weight parts
+                        final nameParts = [
+                          beforeWeight,
+                          afterWeight
+                        ]
+                            .where((part) => part.isNotEmpty)
+                            .join(' ');
+
+                        return RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.primary,
+                            ),
+                            children: [
+                              if (nameParts.isNotEmpty)
+                                TextSpan(text: nameParts),
+                              if (nameParts.isNotEmpty)
+                                const TextSpan(text: ' '),
+                              TextSpan(
+                                text: weight,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        // No product type found, display as is
+                        return Text(
+                          group.productName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Column headers
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16.0, vertical: 12.0),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+            ),
+            child: Row(
+              children: [
+                // Qty column header
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    'Qty',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Product & Type column header
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    'Product & Type',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                // Amount column header
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    'Amount',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Sales rows
+                ...group.items
+                    .asMap()
+                    .entries
+                    .map((entry) => _FormattedSaleRow(
+                          formattedSale:
+                              entry.value.formattedSale,
+                          rowNumber: entry.key + 1,
+                        )),
+                const SizedBox(height: 8),
+                _StyledDivider(),
+                const SizedBox(height: 8),
+                _TotalsRow(
+                  label: group.totalQuantity.toStringAsFixed(0),
+                  amount: group.totalAmount,
+                  numberFormat: numberFormat,
+                  isBold: true,
+                  isGrandTotal: true,
+                ),
+                if (group.paymentTotals.check > Decimal.zero)
+                  _TotalsRow(
+                    label: 'CHECK',
+                    amount: group.paymentTotals.check,
+                    numberFormat: numberFormat,
+                  ),
+                if (group.paymentTotals.bankTransfer > Decimal.zero)
+                  _TotalsRow(
+                    label: 'TRANSFER',
+                    amount: group.paymentTotals.bankTransfer,
+                    numberFormat: numberFormat,
+                  ),
+                if ((group.paymentTotals.check > Decimal.zero ||
+                        group.paymentTotals.bankTransfer > Decimal.zero) &&
+                    group.paymentTotals.cash > Decimal.zero) ...[
+                  const SizedBox(height: 4),
+                  _StyledDivider(isSubdivider: true),
+                  const SizedBox(height: 4),
+                  _TotalsRow(
+                    label: 'CASH',
+                    amount: group.paymentTotals.cash,
+                    numberFormat: numberFormat,
+                    isBold: true,
+                  ),
+                ],
+              ],
             ),
           ),
         ],

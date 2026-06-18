@@ -1112,10 +1112,6 @@ class ThermalPrintingService {
 
         final coinsAmount = (billsByType['COINS'] as num?)?.toInt() ?? 0;
         receiptLines.add({'text': 'Coins:  $coinsAmount', 'format': 'body'});
-        receiptLines.add({
-          'text': 'Coins Total:  ${_formatAmount(coinsTotal)}',
-          'format': 'body',
-        });
         receiptLines.add({'text': '-' * 24, 'format': 'body'});
 
         receiptLines.add({
@@ -1251,7 +1247,7 @@ class ThermalPrintingService {
 
   String _formatDateOnly(String dateString) {
     try {
-      final date = DateTime.parse(dateString);
+      final date = DateTime.parse(dateString).toLocal();
       final formatter = DateFormat('MM/dd/yyyy');
       return formatter.format(date);
     } catch (e) {
@@ -1261,7 +1257,8 @@ class ThermalPrintingService {
   }
 
   String _formatAmount(double amount) {
-    return '\u20B1 ${amount.toStringAsFixed(2)}';
+    final formatter = NumberFormat('#,##0', 'en_US');
+    return '\u20B1 ${formatter.format(amount)}';
   }
 
   Future<void> testPrint({
