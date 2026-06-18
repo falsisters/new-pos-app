@@ -23,7 +23,6 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
   final TextEditingController _productNameController = TextEditingController();
   String _priceType = '';
   String _sackType = '';
-  String _asinType = '';
   String _discountFilter = ''; // '' = all, 'true' = discounted only, 'false' = non-discounted only
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -60,7 +59,6 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
         tFilters?.productName ?? gFilters?.productSearch ?? '';
     _priceType = tFilters?.priceType ?? gFilters?.priceType ?? '';
     _sackType = tFilters?.sackType ?? gFilters?.sackType ?? '';
-    _asinType = tFilters?.asinType ?? gFilters?.asinType ?? '';
 
     if (_priceType != 'SACK') {
       _sackType = '';
@@ -205,22 +203,7 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Refresh button - resets all filters including date
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: IconButton(
-                        onPressed: _fullReset,
-                        icon: Icon(Icons.refresh, color: AppColors.primary, size: 18),
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        tooltip: 'Reset all filters and go back to today',
-                      ),
-                    ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 12),
                     // Animated expand/collapse icon
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0,
@@ -236,13 +219,13 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
                           color: AppColors.primary,
                           size: 20,
                         ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
 
           // Expanded filter section with animation
           AnimatedSize(
@@ -377,100 +360,66 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
           _buildFilterSection(
             title: 'Filter Options',
             icon: Icons.tune,
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Price Type',
-                        value: _priceType.isEmpty ? null : _priceType,
-                        hint: 'Select type',
-                        items: const [
-                          DropdownMenuItem(value: 'SACK', child: Text('Sack')),
-                          DropdownMenuItem(value: 'KILO', child: Text('Kilo')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _priceType = value ?? '';
-                            if (_priceType != 'SACK') {
-                              _sackType = '';
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Sack Type',
-                        value: _sackType.isEmpty ? null : _sackType,
-                        hint: 'Select sack',
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'FIFTY_KG', child: Text('50 KG')),
-                          DropdownMenuItem(
-                              value: 'TWENTY_FIVE_KG', child: Text('25 KG')),
-                          DropdownMenuItem(
-                              value: 'FIVE_KG', child: Text('5 KG')),
-                        ],
-                        onChanged: _priceType == 'SACK'
-                            ? (value) {
-                                setState(() {
-                                  _sackType = value ?? '';
-                                });
-                              }
-                            : null,
-                        isEnabled: _priceType == 'SACK',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Discounted',
-                        value: _discountFilter.isEmpty ? null : _discountFilter,
-                        hint: 'All',
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'true', child: Text('Discounted')),
-                          DropdownMenuItem(
-                              value: 'false', child: Text('Not Discounted')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _discountFilter = value ?? '';
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Price Type',
+                    value: _priceType.isEmpty ? null : _priceType,
+                    hint: 'Select type',
+                    items: const [
+                      DropdownMenuItem(value: 'SACK', child: Text('Sack')),
+                      DropdownMenuItem(value: 'KILO', child: Text('Kilo')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _priceType = value ?? '';
+                        if (_priceType != 'SACK') {
+                          _sackType = '';
+                        }
+                      });
+                    },
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Asin Type',
-                        value: _asinType.isEmpty ? null : _asinType,
-                        hint: 'All',
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'ASIN', child: Text('Asin')),
-                          DropdownMenuItem(
-                              value: 'ASIN_50KG', child: Text('Asin 50kg')),
-                          DropdownMenuItem(
-                              value: 'ASIN_25KG', child: Text('Asin 25kg')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _asinType = value ?? '';
-                          });
-                        },
-                      ),
-                    ),
-                    const Spacer(),
-                    const Spacer(),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Sack Type',
+                    value: _sackType.isEmpty ? null : _sackType,
+                    hint: 'Select sack',
+                    items: const [
+                      DropdownMenuItem(value: 'FIFTY_KG', child: Text('50 KG')),
+                      DropdownMenuItem(
+                          value: 'TWENTY_FIVE_KG', child: Text('25 KG')),
+                      DropdownMenuItem(value: 'FIVE_KG', child: Text('5 KG')),
+                    ],
+                    onChanged: _priceType == 'SACK'
+                        ? (value) {
+                            setState(() {
+                              _sackType = value ?? '';
+                            });
+                          }
+                        : null,
+                    isEnabled: _priceType == 'SACK',
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Discounted',
+                    value: _discountFilter.isEmpty ? null : _discountFilter,
+                    hint: 'All',
+                    items: const [
+                      DropdownMenuItem(value: 'true', child: Text('Discounted')),
+                      DropdownMenuItem(
+                          value: 'false', child: Text('Not Discounted')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _discountFilter = value ?? '';
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
@@ -668,7 +617,6 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
             : _productNameController.text,
         priceType: _priceType.isEmpty ? null : _priceType,
         sackType: _priceType != 'SACK' || _sackType.isEmpty ? null : _sackType,
-        asinType: _asinType.isEmpty ? null : _asinType,
         isDiscounted: isDiscounted,
       );
 
@@ -679,7 +627,6 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
             : _productNameController.text,
         priceType: _priceType.isEmpty ? null : _priceType,
         sackType: _priceType != 'SACK' || _sackType.isEmpty ? null : _sackType,
-        asinType: _asinType.isEmpty ? null : _asinType,
         isDiscounted: isDiscounted,
       );
 
@@ -692,22 +639,10 @@ class _SalesCheckDateFilterState extends ConsumerState<SalesCheckDateFilter>
 
   void _resetFilters() {
     setState(() {
-      _productNameController.clear();
-      _priceType = '';
-      _sackType = '';
-      _asinType = '';
-      _discountFilter = '';
-    });
-    _applyFilters();
-  }
-
-  void _fullReset() {
-    setState(() {
       _selectedDate = DateTime.now();
       _productNameController.clear();
       _priceType = '';
       _sackType = '';
-      _asinType = '';
       _discountFilter = '';
     });
     _applyFilters();

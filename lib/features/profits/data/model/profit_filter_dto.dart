@@ -7,7 +7,6 @@ class ProfitFilterDto {
   final String? productSearch;
   final String? priceType; // 'SACK' | 'ASIN'
   final String? sackType; // SackType enum as String
-  final String? asinType; // 'ASIN' | 'ASIN_50KG' | 'ASIN_25KG'
 
   ProfitFilterDto({
     this.date,
@@ -15,7 +14,6 @@ class ProfitFilterDto {
     this.productSearch,
     this.priceType,
     this.sackType,
-    this.asinType,
   });
 
   Map<String, dynamic> toJson() {
@@ -25,7 +23,6 @@ class ProfitFilterDto {
     if (productSearch != null) json['productSearch'] = productSearch;
     if (priceType != null) json['priceType'] = priceType;
     if (sackType != null) json['sackType'] = sackType;
-    if (asinType != null) json['asinType'] = asinType;
     return json;
   }
 }
