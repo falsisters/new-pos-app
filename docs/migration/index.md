@@ -91,20 +91,35 @@ UI → AsyncNotifier → LocalRepository.read() → Drift DB (immediate, works o
 - [x] Update sales check / sales history screens to work offline
 
 ### Phase 3: Products
-- [ ] Create `lib/features/products/data/local/products_local_repository.dart`
-- [ ] Cache products on first fetch; refresh when online
-- [ ] Products are reference data — upserted from server periodically
+- [x] Create `lib/features/products/data/local/products_local_repository.dart`
+  - `upsertProducts(List<Product>)` → upsert into LocalProducts + LocalSackPrices + LocalPerKiloPrices (SpecialPrice flattened)
+  - `getProducts()` → read from local DB; rebuilds Product models with nested SackPrice/PerKiloPrice
+  - `getProductById(id)` → single product from local DB
+  - `clearAndUpsert(List<Product>)` → transaction: clear old, upsert new
+- [x] Refactor `ProductNotifier` to read from local DB first, background pull from server
+- [x] Add `case 'products'` to `SyncEngine.pullAndMerge()` → parses server response, upserts via local repo
+- [x] Products are read-only reference data — no outbox entries needed
 
 ### Phase 4: Kahon (Chronologically Critical)
-- [ ] Create `lib/features/kahon/data/local/kahon_local_repository.dart`
-- [ ] Cell updates → individual outbox entries with chronological ordering
-- [ ] Batch updates (`updateCells`, `createCells`) → single outbox entry with array payload
-- [ ] Formula calculation still local (existing `math_expressions`); only value persistence through outbox
-- [ ] Row reorder operations → outbox with comprehensive payload
+- [x] Create `lib/features/kahon/data/local/kahon_local_repository.dart`
+  - `getSheetByDate(start, end)` → reads LocalSheets → LocalRows → LocalCells, rebuilds SheetModel
+  - Individual cell CRUD (`createCell`, `updateCell`, `deleteCell`) → one outbox entry each
+  - Batch cell operations (`createCells`, `updateCells`) → single outbox entry with array payload
+  - Row operations (`createCalculationRow`, `deleteRow`) → one outbox entry each
+  - Reorder: `updateRowPositions(mappings)` → outbox with priority=10
+  - Reorder: `comprehensiveRowReorder(sheetId, rowMappings, formulaUpdates)` → outbox with priority=10
+  - `upsertSheetFromServer(SheetModel)` → upsert sheet/rows/cells, skip unsynced, cleanup removed
+- [x] Refactor `SheetNotifier` → all writes to local repo + trigger `syncFeature('kahon')`, reads from local DB
+- [x] Add `_upsertKahonFromResponse` to SyncEngine → handles create/update/delete/reorder responses
+- [x] Add `case 'kahon'` to `pullAndMerge` → parses server SheetModel, upserts
+- [x] Formula calculation remains client-side (unchanged `math_expressions`)
+- [x] Remove dead code: `kahon_sheet.dart` (old widget), `formula_handler.dart` (old parser)
 
 ### Phase 5: Inventory
-- [ ] Same pattern as Kahon (structurally identical)
-- [ ] Create `lib/features/inventory/data/local/inventory_local_repository.dart`
+- [x] Create `lib/features/inventory/data/local/inventory_local_repository.dart` (mirrors Kahon)
+- [x] Refactor `InventoryNotifier` → same offline-first pattern as SheetNotifier
+- [x] Add `_upsertInventoryFromResponse` + `case 'inventory'` to `pullAndMerge` in SyncEngine
+- [x] Remove dead code: `inventory_sheet.dart`, `ExpensesNotifier`, `expensesProvider`, `expenses_state.dart`
 
 ### Phase 6: Remaining Features (Orders → Auth)
 - [ ] Orders + Customers (local_entities JSON cache + outbox)
@@ -165,20 +180,17 @@ PRIMARY KEY (`id`, `entity_type`)
 
 ---
 
-## Server Contract (Backend Changes Needed)
+## Server Contract (Backend Changes)
 
-The server must support:
+The server now supports:
 
-1. **Idempotency-Key header**: If a request with the same key arrives, return `409 Conflict` with the original response body (not an error). Server stores idempotency keys with a reasonable TTL.
+1. **Idempotency-Key header**: Implemented via `IdempotencyInterceptor` (NestJS global interceptor). If a request with the same key arrives, returns `409 Conflict` with the original response body. Stored in `IdempotencyRecord` Prisma table with TTL.
 
-2. **X-Client-Cuid header**: For `POST`/create operations, the server should:
-   - Use the client CUID as the entity's primary key if provided
-   - Generate its own CUID if not provided
-   - Return the final ID in the response (so client can update local record)
+2. **X-Client-Cuid header**: Client sends this header on `POST`/create operations. Currently the SyncEngine handles ID remapping on the client side (deletes local by client CUID, inserts from server response with server ID). Server can optionally use it.
 
 3. **Timestamp-based conflict resolution**: All entities have an `updatedAt` field. When merging during fetch, client compares local vs server timestamps.
 
-4. **All endpoints must return the created/updated entity** in the response body, not just a success message.
+4. **All endpoints return the created/updated entity** in the response body. Fixed: `InventoryService.addCells()` (was `createMany` returning `{count}`, now individual creates returning full entities), `SheetService.addCalculationRow()` and `InventoryService.addCalculationRow()` (now return cells alongside row).
 
 ---
 
@@ -290,21 +302,34 @@ Future<List<SalesRecord>> getSales({DateTime? date}) async {
 
 ## Current Status
 
-### Completed (Phase 0)
+### Completed (Phases 0–5)
 - [x] Dependencies installed
 - [x] All Drift table definitions
-- [x] Database class skeleton
-- [x] Sync infrastructure skeletons
-- [x] Documentation
+- [x] Database class + providers
+- [x] Sync infrastructure (SyncEngine, ConnectivityService, IdempotencyService, DioInterceptor)
+- [x] Phase 1: Sync Core fully implemented
+- [x] Phase 2: Sales offline-first migration
+- [x] Phase 3: Products local cache with background refresh
+- [x] Phase 4: Kahon offline-first with outbox (cells, rows, reorder)
+- [x] Phase 5: Inventory offline-first (mirrors Kahon)
 
-### Next Steps (Phase 1)
-- [ ] Generate `database.g.dart` via `build_runner`
-- [ ] Initialize database in `main.dart`
-- [ ] Fully implement `SyncEngine`
-- [ ] Wire connectivity listener
+### Server Changes Completed
+- [x] IdempotencyRecord table in Prisma schema
+- [x] IdempotencyInterceptor (NestJS global) — returns 409 on duplicate keys
+- [x] InventoryService.addCells() fixed to return full entities
+- [x] Sheet/Inventory addCalculationRow() fixed to return cells
+- [x] InventoryModule self-import bug fixed
 
-### Pending
-- [ ] All Phase 2–6 feature migrations
-- [ ] Backend changes (idempotency keys, client CUID support)
+### Pending (Phase 6)
+- [ ] Orders + Customers
+- [ ] Shift
+- [ ] Deliveries
+- [ ] Expenses
+- [ ] Stocks/Transfers
+- [ ] Bill Count
+- [ ] Attachments
+- [ ] Cashier/Auth
+- [ ] Sales Check (computed)
+- [ ] Profits (computed)
 - [ ] Unit tests for sync engine
 - [ ] Integration tests for offline scenarios
