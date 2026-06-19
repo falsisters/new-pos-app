@@ -8,6 +8,12 @@ import 'package:falsisters_pos_android/core/database/providers/database_provider
 import 'package:falsisters_pos_android/core/handlers/dio_client.dart';
 import 'package:falsisters_pos_android/core/sync/connectivity_service.dart';
 import 'package:falsisters_pos_android/core/sync/sync_state.dart';
+import 'package:falsisters_pos_android/features/inventory/data/local/inventory_local_repository.dart';
+import 'package:falsisters_pos_android/features/inventory/data/models/inventory_sheet_model.dart';
+import 'package:falsisters_pos_android/features/kahon/data/local/kahon_local_repository.dart';
+import 'package:falsisters_pos_android/features/kahon/data/models/sheet_model.dart';
+import 'package:falsisters_pos_android/features/products/data/local/products_local_repository.dart';
+import 'package:falsisters_pos_android/features/products/data/models/product_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SyncEngine {
@@ -85,12 +91,34 @@ class SyncEngine {
 
       if (data == null) return;
 
-      final List<Map<String, dynamic>> serverRows =
-          (data is List) ? data.cast<Map<String, dynamic>>() : [];
-
       switch (entityType) {
         case 'sales':
+          final List<Map<String, dynamic>> serverRows =
+              (data is List) ? data.cast<Map<String, dynamic>>() : [];
           await _mergeSalesFromServer(serverRows);
+          break;
+        case 'products':
+          if (data is List) {
+            final products = data
+                .map((j) => Product.fromJson(j as Map<String, dynamic>))
+                .toList();
+            final localRepo = ProductsLocalRepository(_db);
+            await localRepo.clearAndUpsert(products);
+          }
+          break;
+        case 'kahon':
+          if (data is Map<String, dynamic>) {
+            final sheet = SheetModel.fromJson(data);
+            final localRepo = KahonLocalRepository(_db);
+            await localRepo.upsertSheetFromServer(sheet);
+          }
+          break;
+        case 'inventory':
+          if (data is Map<String, dynamic>) {
+            final sheet = InventorySheetModel.fromJson(data);
+            final localRepo = InventoryLocalRepository(_db);
+            await localRepo.upsertSheetFromServer(sheet);
+          }
           break;
         default:
           break;
@@ -175,6 +203,12 @@ class SyncEngine {
       switch (entry.feature) {
         case 'sales':
           await _upsertSaleFromResponse(entry, responseData);
+          break;
+        case 'kahon':
+          await _upsertKahonFromResponse(entry, responseData);
+          break;
+        case 'inventory':
+          await _upsertInventoryFromResponse(entry, responseData);
           break;
         default:
           break;
@@ -335,6 +369,366 @@ class SyncEngine {
     }
   }
 
+  Future<void> _upsertKahonFromResponse(
+      OutboxEntry entry, dynamic responseData) async {
+    final dynamic data = responseData is Map || responseData is List
+        ? responseData
+        : jsonDecode(responseData.toString());
+
+    if (entry.operation == 'delete') {
+      if (entry.endpoint.contains('/cell/')) {
+        final cellId = entry.clientCuid;
+        await (_db.delete(_db.localCells)
+              ..where((tbl) => tbl.id.equals(cellId)))
+            .go();
+        return;
+      }
+      if (entry.endpoint.contains('/row/')) {
+        final rowId = entry.clientCuid;
+        await (_db.delete(_db.localCells)
+              ..where((tbl) => tbl.rowId.equals(rowId)))
+            .go();
+        await (_db.delete(_db.localRows)
+              ..where((tbl) => tbl.id.equals(rowId)))
+            .go();
+        return;
+      }
+      return;
+    }
+
+    if (entry.operation == 'create') {
+      if (entry.endpoint == '/sheet/cell') {
+        final serverCellId = data['id'] as String?;
+        if (serverCellId != null) {
+          await (_db.update(_db.localCells)
+                ..where((tbl) => tbl.id.equals(entry.clientCuid)))
+              .write(LocalCellsCompanion(
+            id: Value(serverCellId),
+            synced: const Value(true),
+            localUpdatedAt: Value(DateTime.now()),
+          ));
+        }
+        return;
+      }
+
+      if (entry.endpoint == '/sheet/cells') {
+        if (data is List) {
+          final payload = jsonDecode(entry.payload) as List<dynamic>;
+          for (var i = 0; i < data.length && i < payload.length; i++) {
+            final serverCell = data[i] as Map<String, dynamic>;
+            final serverCellId = serverCell['id'] as String?;
+            if (serverCellId == null) continue;
+
+            final payloadItem = payload[i] as Map<String, dynamic>;
+            final rowId = payloadItem['rowId'] as String?;
+            final columnIndex = payloadItem['columnIndex'] as int?;
+
+            if (rowId != null && columnIndex != null) {
+              final localCells = await (_db.select(_db.localCells)
+                    ..where((tbl) =>
+                        tbl.rowId.equals(rowId) &
+                        tbl.columnIndex.equals(columnIndex) &
+                        tbl.synced.equals(false)))
+                  .get();
+
+              for (final lc in localCells) {
+                await (_db.update(_db.localCells)
+                      ..where((tbl) => tbl.id.equals(lc.id)))
+                  .write(LocalCellsCompanion(
+                    id: Value(serverCellId),
+                    synced: const Value(true),
+                    localUpdatedAt: Value(DateTime.now()),
+                  ));
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      if (entry.endpoint == '/sheet/calculation-row') {
+        final serverRowId = data['id'] as String?;
+        if (serverRowId != null) {
+          await (_db.update(_db.localRows)
+                ..where((tbl) => tbl.id.equals(entry.clientCuid)))
+              .write(LocalRowsCompanion(
+            id: Value(serverRowId),
+            synced: const Value(true),
+            updatedAt: Value(DateTime.now()),
+          ));
+
+          final serverCells = data['Cells'] as List<dynamic>? ?? [];
+          final localCells = await (_db.select(_db.localCells)
+                ..where((tbl) => tbl.rowId.equals(entry.clientCuid) & tbl.synced.equals(false)))
+              .get();
+
+          for (var i = 0; i < serverCells.length && i < localCells.length; i++) {
+            final serverCell = serverCells[i] as Map<String, dynamic>;
+            final serverCellId = serverCell['id'] as String?;
+            if (serverCellId != null) {
+              await (_db.update(_db.localCells)
+                    ..where((tbl) => tbl.id.equals(localCells[i].id)))
+                .write(LocalCellsCompanion(
+                  id: Value(serverCellId),
+                  synced: const Value(true),
+                  localUpdatedAt: Value(DateTime.now()),
+                ));
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    if (entry.operation == 'update') {
+      if (entry.endpoint == '/sheet/cells' || entry.endpoint.contains('/cell')) {
+        if (data is List) {
+          for (final serverCell in data) {
+            final cellId = serverCell['id'] as String?;
+            if (cellId != null) {
+              await (_db.update(_db.localCells)
+                    ..where((tbl) => tbl.id.equals(cellId)))
+                  .write(LocalCellsCompanion(
+                synced: const Value(true),
+                localUpdatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+        } else {
+          final cellId = data['id'] as String?;
+          if (cellId != null) {
+            await (_db.update(_db.localCells)
+                  ..where((tbl) => tbl.id.equals(cellId)))
+                .write(LocalCellsCompanion(
+              synced: const Value(true),
+              localUpdatedAt: Value(DateTime.now()),
+            ));
+          }
+        }
+        return;
+      }
+
+      if (entry.endpoint.contains('/rows/positions') ||
+          entry.endpoint.contains('/reorder')) {
+        final localRepo = KahonLocalRepository(_db);
+        await _db.transaction(() async {
+          final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
+          final mappings = (payload['mappings'] ?? payload['rowMappings']) as List<dynamic>? ?? [];
+
+          for (final mapping in mappings) {
+            final m = mapping as Map<String, dynamic>;
+            final rowId = m['rowId'] as String?;
+            if (rowId != null) {
+              await (_db.update(_db.localRows)
+                    ..where((tbl) => tbl.id.equals(rowId)))
+                  .write(LocalRowsCompanion(
+                synced: const Value(true),
+                updatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+
+          final formulaUpdates = payload['formulaUpdates'] as List<dynamic>? ?? [];
+          for (final update in formulaUpdates) {
+            final u = update as Map<String, dynamic>;
+            final cellId = u['cellId'] as String?;
+            if (cellId != null) {
+              await (_db.update(_db.localCells)
+                    ..where((tbl) => tbl.id.equals(cellId)))
+                  .write(LocalCellsCompanion(
+                synced: const Value(true),
+                localUpdatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _upsertInventoryFromResponse(
+      OutboxEntry entry, dynamic responseData) async {
+    final dynamic data = responseData is Map || responseData is List
+        ? responseData
+        : jsonDecode(responseData.toString());
+
+    if (entry.operation == 'delete') {
+      if (entry.endpoint.contains('/cell/')) {
+        await (_db.delete(_db.localInventoryCells)
+              ..where((tbl) => tbl.id.equals(entry.clientCuid)))
+            .go();
+        return;
+      }
+      if (entry.endpoint.contains('/row/')) {
+        final rowId = entry.clientCuid;
+        await (_db.delete(_db.localInventoryCells)
+              ..where((tbl) => tbl.inventoryRowId.equals(rowId)))
+            .go();
+        await (_db.delete(_db.localInventoryRows)
+              ..where((tbl) => tbl.id.equals(rowId)))
+            .go();
+        return;
+      }
+      return;
+    }
+
+    if (entry.operation == 'create') {
+      if (entry.endpoint == '/inventory/cell') {
+        final serverCellId = data['id'] as String?;
+        if (serverCellId != null) {
+          await (_db.update(_db.localInventoryCells)
+                ..where((tbl) => tbl.id.equals(entry.clientCuid)))
+              .write(LocalInventoryCellsCompanion(
+            id: Value(serverCellId),
+            synced: const Value(true),
+            localUpdatedAt: Value(DateTime.now()),
+          ));
+        }
+        return;
+      }
+
+      if (entry.endpoint == '/inventory/cells') {
+        if (data is List) {
+          final payload = jsonDecode(entry.payload) as List<dynamic>;
+          for (var i = 0; i < data.length && i < payload.length; i++) {
+            final serverCell = data[i] as Map<String, dynamic>;
+            final serverCellId = serverCell['id'] as String?;
+            if (serverCellId == null) continue;
+
+            final payloadItem = payload[i] as Map<String, dynamic>;
+            final rowId = payloadItem['rowId'] as String?;
+            final columnIndex = payloadItem['columnIndex'] as int?;
+
+            if (rowId != null && columnIndex != null) {
+              final localCells = await (_db.select(_db.localInventoryCells)
+                    ..where((tbl) =>
+                        tbl.inventoryRowId.equals(rowId) &
+                        tbl.columnIndex.equals(columnIndex) &
+                        tbl.synced.equals(false)))
+                  .get();
+
+              for (final lc in localCells) {
+                await (_db.update(_db.localInventoryCells)
+                      ..where((tbl) => tbl.id.equals(lc.id)))
+                  .write(LocalInventoryCellsCompanion(
+                    id: Value(serverCellId),
+                    synced: const Value(true),
+                    localUpdatedAt: Value(DateTime.now()),
+                  ));
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      if (entry.endpoint == '/inventory/calculation-row') {
+        final serverRowId = data['id'] as String?;
+        if (serverRowId != null) {
+          await (_db.update(_db.localInventoryRows)
+                ..where((tbl) => tbl.id.equals(entry.clientCuid)))
+              .write(LocalInventoryRowsCompanion(
+            id: Value(serverRowId),
+            synced: const Value(true),
+            updatedAt: Value(DateTime.now()),
+          ));
+
+          final serverCells = data['Cells'] as List<dynamic>? ?? [];
+          final localCells = await (_db.select(_db.localInventoryCells)
+                ..where((tbl) =>
+                    tbl.inventoryRowId.equals(entry.clientCuid) &
+                    tbl.synced.equals(false)))
+              .get();
+
+          for (var i = 0;
+              i < serverCells.length && i < localCells.length;
+              i++) {
+            final serverCell = serverCells[i] as Map<String, dynamic>;
+            final serverCellId = serverCell['id'] as String?;
+            if (serverCellId != null) {
+              await (_db.update(_db.localInventoryCells)
+                    ..where((tbl) => tbl.id.equals(localCells[i].id)))
+                .write(LocalInventoryCellsCompanion(
+                  id: Value(serverCellId),
+                  synced: const Value(true),
+                  localUpdatedAt: Value(DateTime.now()),
+                ));
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    if (entry.operation == 'update') {
+      if (entry.endpoint == '/inventory/cells' ||
+          entry.endpoint.contains('/cell')) {
+        if (data is List) {
+          for (final serverCell in data) {
+            final cellId = serverCell['id'] as String?;
+            if (cellId != null) {
+              await (_db.update(_db.localInventoryCells)
+                    ..where((tbl) => tbl.id.equals(cellId)))
+                  .write(LocalInventoryCellsCompanion(
+                synced: const Value(true),
+                localUpdatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+        } else {
+          final cellId = data['id'] as String?;
+          if (cellId != null) {
+            await (_db.update(_db.localInventoryCells)
+                  ..where((tbl) => tbl.id.equals(cellId)))
+                .write(LocalInventoryCellsCompanion(
+              synced: const Value(true),
+              localUpdatedAt: Value(DateTime.now()),
+            ));
+          }
+        }
+        return;
+      }
+
+      if (entry.endpoint.contains('/rows/positions') ||
+          entry.endpoint.contains('/reorder')) {
+        await _db.transaction(() async {
+          final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
+          final mappings = (payload['mappings'] ?? payload['rowMappings'])
+              as List<dynamic>? ??
+              [];
+
+          for (final mapping in mappings) {
+            final m = mapping as Map<String, dynamic>;
+            final rowId = m['rowId'] as String?;
+            if (rowId != null) {
+              await (_db.update(_db.localInventoryRows)
+                    ..where((tbl) => tbl.id.equals(rowId)))
+                  .write(LocalInventoryRowsCompanion(
+                synced: const Value(true),
+                updatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+
+          final formulaUpdates =
+              payload['formulaUpdates'] as List<dynamic>? ?? [];
+          for (final update in formulaUpdates) {
+            final u = update as Map<String, dynamic>;
+            final cellId = u['cellId'] as String?;
+            if (cellId != null) {
+              await (_db.update(_db.localInventoryCells)
+                    ..where((tbl) => tbl.id.equals(cellId)))
+                  .write(LocalInventoryCellsCompanion(
+                synced: const Value(true),
+                localUpdatedAt: Value(DateTime.now()),
+              ));
+            }
+          }
+        });
+      }
+    }
+  }
+
   Future<void> retryEntry(String id) async {
     await (_db.update(_db.outboxEntries)
           ..where((tbl) => tbl.id.equals(id)))
@@ -388,3 +782,6 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   final dio = DioClient();
   return SyncEngine(db, dio, ref)..start();
 });
+
+
+
