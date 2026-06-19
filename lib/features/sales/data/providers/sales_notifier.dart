@@ -1,110 +1,70 @@
 import 'dart:async';
 
 import 'package:decimal/decimal.dart';
+import 'package:falsisters_pos_android/core/database/providers/database_provider.dart';
+import 'package:falsisters_pos_android/core/sync/connectivity_service.dart';
+import 'package:falsisters_pos_android/core/sync/sync_engine.dart';
 import 'package:falsisters_pos_android/features/products/data/providers/product_provider.dart';
+import 'package:falsisters_pos_android/features/sales/data/local/sales_local_repository.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/cart_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
-import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
-import 'package:falsisters_pos_android/features/sales/data/repository/sales_repository.dart';
 import 'package:falsisters_pos_android/features/sales_check/data/providers/sales_check_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:falsisters_pos_android/features/sales/data/services/sales_queue_service.dart';
 
 class SalesNotifier extends AsyncNotifier<SalesState> {
-  final SalesRepository _salesRepository = SalesRepository();
-  late SalesQueueService _queueService;
-  StreamSubscription? _queueSubscription;
-  StreamSubscription? _processedSaleSubscription;
-  bool _isSubmitting = false; // Add submission lock
+  late SalesLocalRepository _localRepository;
 
   @override
   Future<SalesState> build() async {
-    _queueService = ref.read(salesQueueServiceProvider);
-    _setupQueueListener();
-    _setupProcessedSaleListener();
+    final db = await ref.read(databaseProvider.future);
+    _localRepository = SalesLocalRepository(db);
 
     try {
       final today = DateTime.now();
-      final sales = await _salesRepository.getSales(date: today);
+      final sales = await _localRepository.getSales(date: today);
+
       return SalesState(
         cart: CartModel(),
         sales: sales,
-        pendingSales: _queueService.currentQueue,
         orderId: null,
         selectedDate: today,
       );
     } catch (e) {
-      print('Error in SalesNotifier.build: $e');
+      debugPrint('Error in SalesNotifier.build: $e');
       return SalesState(
         cart: CartModel(),
         sales: [],
-        pendingSales: _queueService.currentQueue,
         orderId: null,
         selectedDate: DateTime.now(),
       );
     }
   }
 
-  void _setupQueueListener() {
-    _queueSubscription = _queueService.queueStream.listen((pendingSales) {
-      final currentState = state.value;
-      if (currentState != null) {
-        state =
-            AsyncValue.data(currentState.copyWith(pendingSales: pendingSales));
-      }
-    });
-  }
-
-  void _setupProcessedSaleListener() {
-    _processedSaleSubscription =
-        _queueService.processedSaleStream.listen((processedSale) {
-      final currentState = state.value;
-      if (currentState != null) {
-        // Add the new sale to the list and set it as the one to be printed
-        final updatedSales = [processedSale, ...currentState.sales];
-        state = AsyncValue.data(currentState.copyWith(
-          sales: updatedSales,
-          saleToPrint: processedSale,
-        ));
-      }
-    });
-  }
-
-  // @override
-  // void dispose() {
-  //   _queueSubscription?.cancel();
-  //   _processedSaleSubscription?.cancel();
-  //   super.dispose();
-  // }
-
   Future<void> deleteSale(String id) async {
-    // Don't set loading state to preserve current data
-    final currentCart = state.value?.cart ?? CartModel();
-    final currentOrderId = state.value?.orderId;
-    final currentSelectedDate = state.value?.selectedDate ?? DateTime.now();
-    final currentPendingSales = state.value?.pendingSales ?? [];
+    final currentState = state.value;
+    if (currentState == null) return;
+    final currentCart = currentState.cart;
+    final currentOrderId = currentState.orderId;
+    final currentSelectedDate = currentState.selectedDate ?? DateTime.now();
 
     state = await AsyncValue.guard(() async {
       try {
-        await _salesRepository.deleteSale(id);
-        final sales =
-            await _salesRepository.getSales(date: currentSelectedDate);
+        await _localRepository.deleteSale(id);
+        final sales = await _localRepository.getSales(date: currentSelectedDate);
         return SalesState(
           cart: currentCart,
           sales: sales,
-          pendingSales: currentPendingSales,
           orderId: currentOrderId,
           selectedDate: currentSelectedDate,
         );
       } catch (e) {
-        print('Error in SalesNotifier.deleteSale: $e');
+        debugPrint('Error in SalesNotifier.deleteSale: $e');
         return SalesState(
           cart: currentCart,
-          sales: state.value?.sales ?? [], // Preserve current sales on error
-          pendingSales: currentPendingSales,
+          sales: state.value?.sales ?? [],
           orderId: currentOrderId,
           selectedDate: currentSelectedDate,
           error: e.toString(),
@@ -114,34 +74,48 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   }
 
   Future<void> getSales({DateTime? date}) async {
-    // Don't set loading state to preserve current data
-    final currentCart = state.value?.cart ?? CartModel();
-    final currentOrderId = state.value?.orderId;
-    final currentPendingSales = state.value?.pendingSales ?? [];
-    final targetDate = date ?? state.value?.selectedDate ?? DateTime.now();
+    final currentState = state.value;
+    if (currentState == null) return;
+    final currentCart = currentState.cart;
+    final currentOrderId = currentState.orderId;
+    final targetDate = date ?? currentState.selectedDate ?? DateTime.now();
 
     state = await AsyncValue.guard(() async {
       try {
-        final sales = await _salesRepository.getSales(date: targetDate);
+        final sales = await _localRepository.getSales(date: targetDate);
         return SalesState(
           cart: currentCart,
           sales: sales,
-          pendingSales: currentPendingSales,
           orderId: currentOrderId,
           selectedDate: targetDate,
         );
       } catch (e) {
-        print('Error in SalesNotifier.getSales: $e');
+        debugPrint('Error in SalesNotifier.getSales: $e');
         return SalesState(
           cart: currentCart,
-          sales: state.value?.sales ?? [], // Preserve current sales on error
-          pendingSales: currentPendingSales,
+          sales: state.value?.sales ?? [],
           orderId: currentOrderId,
           selectedDate: targetDate,
           error: e.toString(),
         );
       }
     });
+
+    final connectivityService = ConnectivityService();
+    if (await connectivityService.isConnected()) {
+      unawaited(_refreshFromServer(targetDate));
+    }
+  }
+
+  Future<void> _refreshFromServer(DateTime date) async {
+    try {
+      final syncEngine = ref.read(syncEngineProvider);
+      final dateStr = date.toIso8601String().split('T')[0];
+      await syncEngine.pullAndMerge('sales', '/sale/recent/cashier?date=$dateStr');
+      await getSales(date: date);
+    } catch (e) {
+      debugPrint('Background refresh failed: $e');
+    }
   }
 
   Future<void> changeSelectedDate(DateTime newDate) async {
@@ -149,16 +123,14 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
   }
 
   Future<void> setCartItems(List<ProductDto> items, String? orderId) async {
-    final currentState = state.value!;
+    final currentState = state.value;
+    if (currentState == null) return;
     state = await AsyncValue.guard(() async {
       final updatedCart = CartModel(products: items);
-      return SalesState(
+      return currentState.copyWith(
         cart: updatedCart,
         error: null,
         orderId: orderId,
-        sales: currentState.sales,
-        selectedDate: currentState.selectedDate,
-        pendingSales: currentState.pendingSales,
       );
     });
   }
@@ -172,14 +144,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
         products: [...currentCart.products, product],
       );
 
-      return SalesState(
-        cart: updatedCart,
-        sales: currentState.sales,
-        orderId: currentState.orderId,
-        error: currentState.error,
-        selectedDate: currentState.selectedDate,
-        pendingSales: currentState.pendingSales,
-      );
+      return currentState.copyWith(cart: updatedCart);
     });
   }
 
@@ -194,14 +159,7 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
             .toList(),
       );
 
-      return SalesState(
-        cart: updatedCart,
-        sales: currentState.sales,
-        orderId: currentState.orderId,
-        error: currentState.error,
-        selectedDate: currentState.selectedDate,
-        pendingSales: currentState.pendingSales,
-      );
+      return currentState.copyWith(cart: updatedCart);
     });
   }
 
@@ -218,98 +176,73 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     String? cashierName,
     int? printCopies,
   }) async {
-    // Prevent duplicate submissions
-    if (_isSubmitting) {
-      debugPrint('Sale submission already in progress, skipping duplicate');
-      return;
+    final preAsyncState = state.value;
+    if (preAsyncState == null) return;
+
+    debugPrint('=== SUBMIT SALE WITH DETAILS ===');
+    debugPrint('Total Amount: P${totalAmount.toStringAsFixed(2)}');
+    debugPrint('Payment Method: $paymentMethod');
+
+    final currentCart = preAsyncState.cart;
+    final orderIdForRequest = preAsyncState.orderId;
+
+    final metadata = <String, dynamic>{};
+    if (changeAmount != null && changeAmount >= Decimal.zero) {
+      metadata['change'] = changeAmount.toStringAsFixed(2);
+      metadata['tenderedAmount'] =
+          (totalAmount + changeAmount).toStringAsFixed(2);
+    }
+    if (cashierId != null) {
+      metadata['cashierId'] = cashierId;
+    }
+    if (cashierName != null) {
+      metadata['cashierName'] = cashierName;
+    }
+    if (printCopies != null) {
+      metadata['printCopies'] = printCopies;
     }
 
-    _isSubmitting = true;
+    final saleRequest = CreateSaleRequestModel(
+      orderId: orderIdForRequest,
+      saleItems: currentCart.products,
+      paymentMethod: paymentMethod,
+      totalAmount: totalAmount,
+      changeAmount: changeAmount,
+      cashierId: cashierId,
+      cashierName: cashierName,
+      metadata: metadata.isNotEmpty ? metadata : null,
+    );
 
     try {
-      final preAsyncState = state.value;
-      if (preAsyncState == null) return;
+      final createdSale = await _localRepository.createSale(saleRequest);
 
-      debugPrint('=== SUBMIT SALE WITH DETAILS ===');
-      debugPrint('Total Amount: ₱${totalAmount.toStringAsFixed(2)}');
-      debugPrint('Payment Method: $paymentMethod');
-      debugPrint(
-          'Change Amount: ${changeAmount != null ? "₱${changeAmount.toStringAsFixed(2)}" : "null"}');
-      debugPrint('Cashier ID: $cashierId');
-      debugPrint('Cashier Name: $cashierName');
-      debugPrint('Print Copies: ${printCopies ?? "default"}');
+      final updatedSales = [createdSale, ...preAsyncState.sales];
 
-      // Immediately clear cart and update state
-      final currentCart = preAsyncState.cart;
-      final orderIdForRequest = preAsyncState.orderId;
-
-      // Create metadata for additional receipt information
-      final metadata = <String, dynamic>{};
-      if (changeAmount != null && changeAmount >= Decimal.zero) {
-        metadata['change'] = changeAmount.toStringAsFixed(2);
-        metadata['tenderedAmount'] =
-            (totalAmount + changeAmount).toStringAsFixed(2);
-        debugPrint(
-            'Added to metadata - Change: ${metadata['change']}, Tendered: ${metadata['tenderedAmount']}');
-      }
-      if (cashierId != null) {
-        metadata['cashierId'] = cashierId;
-      }
-      if (cashierName != null) {
-        metadata['cashierName'] = cashierName;
-        debugPrint('Added to metadata - Cashier Name: $cashierName');
-      }
-      if (printCopies != null) {
-        metadata['printCopies'] = printCopies;
-        debugPrint('Added to metadata - Print Copies: $printCopies');
-      }
-
-      debugPrint('Final metadata: $metadata');
-
-      final saleRequest = CreateSaleRequestModel(
-        orderId: orderIdForRequest,
-        saleItems: currentCart.products,
-        paymentMethod: paymentMethod,
-        totalAmount: totalAmount,
-        changeAmount: changeAmount,
-        cashierId: cashierId,
-        cashierName: cashierName,
-        metadata: metadata.isNotEmpty ? metadata : null,
-      );
-
-      debugPrint('Sale request created with metadata: ${saleRequest.metadata}');
-
-      // Add to queue and immediately clear cart - this ensures UI updates immediately
-      final queueId = _queueService.addToQueue(saleRequest);
-      debugPrint('Sale added to queue with ID: $queueId');
-
-      // Update state immediately to clear cart
       state = AsyncValue.data(SalesState(
-        cart: CartModel(), // Clear cart immediately
-        sales: preAsyncState.sales,
-        pendingSales: _queueService.currentQueue,
+        cart: CartModel(),
+        sales: updatedSales,
         orderId: null,
-        error: null,
         selectedDate: preAsyncState.selectedDate,
+        saleToPrint: createdSale,
       ));
 
-      debugPrint('Cart cleared and state updated');
+      debugPrint('Sale written locally, cart cleared, printing triggered');
+    } catch (e) {
+      debugPrint('Error creating sale locally: $e');
 
-      // Refresh other providers in background without blocking
-      Future.microtask(() async {
-        try {
-          await ref.read(productProvider.notifier).refresh();
-          await ref.read(salesCheckProvider.notifier).refresh();
-          debugPrint('Background providers refreshed');
-        } catch (e) {
-          debugPrint('Error refreshing background providers: $e');
-          // Don't throw, just log
-        }
-      });
-    } finally {
-      _isSubmitting = false;
-      debugPrint('Sale submission lock released');
+      state = AsyncValue.data(preAsyncState.copyWith(
+        error: e.toString(),
+      ));
     }
+
+    Future.microtask(() async {
+      try {
+        await ref.read(productProvider.notifier).refresh();
+        await ref.read(salesCheckProvider.notifier).refresh();
+      } catch (e) {
+        debugPrint('Error refreshing background providers: $e');
+      }
+    });
   }
 
   void clearSaleToPrint() {
@@ -317,34 +250,5 @@ class SalesNotifier extends AsyncNotifier<SalesState> {
     if (currentState != null) {
       state = AsyncValue.data(currentState.copyWith(saleToPrint: null));
     }
-  }
-
-  // Helper method to calculate cart total with proper rounding (prevents double rounding)
-  Decimal _calculateCartItemTotal(ProductDto product) {
-    if (product.sackPrice != null) {
-      // For sack prices, calculate total directly without rounding
-      final unitPrice = product.sackPrice!.price;
-      final quantity = product.sackPrice!.quantity;
-      return unitPrice *
-          quantity; // No additional rounding - use the price as-is
-    } else if (product.perKiloPrice != null) {
-      // For per kilo prices, use the exact unit price and kg quantity
-      final unitPrice =
-          product.perKiloPrice!.price; // This is always per-kg price
-      final kgQuantity =
-          product.perKiloPrice!.quantity; // This is always kg quantity
-
-      if (product.isGantang == true) {
-        // For gantang mode, the price has already been calculated with proper rounding
-        // Don't apply additional rounding here
-        return unitPrice * kgQuantity;
-      } else {
-        // For kg mode, apply ceiling rounding as before
-        final total = unitPrice * kgQuantity;
-        return ((total * Decimal.fromInt(100)).ceil() / Decimal.fromInt(100))
-            .toDecimal(scaleOnInfinitePrecision: 4);
-      }
-    }
-    return Decimal.zero;
   }
 }

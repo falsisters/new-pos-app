@@ -1,5 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/sync/sync_engine.dart';
+import 'package:falsisters_pos_android/core/sync/sync_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_payment_method.dart';
 import 'package:falsisters_pos_android/features/sales/data/constants/parse_sack_type.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_item.dart';
@@ -114,6 +116,160 @@ class _SalesListWidgetState extends ConsumerState<SalesListWidget> {
     if (picked != null && picked != currentDate) {
       await ref.read(salesProvider.notifier).changeSelectedDate(picked);
     }
+  }
+
+  Widget _buildSyncStatusRow() {
+    final pendingCount = ref.watch(pendingSyncCountProvider);
+    final isSyncing = ref.watch(isSyncingProvider);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: pendingCount > 0 ? Colors.orange.withOpacity(0.3) : Colors.green.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isSyncing)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(
+              pendingCount > 0
+                  ? Icons.cloud_upload_outlined
+                  : Icons.cloud_done_outlined,
+              color: pendingCount > 0 ? Colors.orange : Colors.green,
+              size: 16,
+            ),
+          const SizedBox(width: 8),
+          Text(
+            pendingCount > 0
+                ? '$pendingCount sale(s) pending sync'
+                : 'All sales synced',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: pendingCount > 0 ? Colors.orange : Colors.green,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => _showFailedEntriesDialog(),
+            child: Text(
+              'View failed',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showFailedEntriesDialog() async {
+    final syncEngine = ref.read(syncEngineProvider);
+    final failedEntries = await syncEngine.failedEntries();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 20),
+            const SizedBox(width: 8),
+            const Text('Failed Sync Entries'),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: failedEntries.isEmpty
+              ? const Text('No failed entries.')
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: failedEntries.map((entry) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${entry.feature} / ${entry.operation}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    entry.endpoint,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  if (entry.error != null)
+                                    Text(
+                                      entry.error!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.red[400],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              iconSize: 18,
+                              icon: const Icon(Icons.refresh),
+                              tooltip: 'Retry',
+                              onPressed: () async {
+                                await syncEngine.retryEntry(entry.id);
+                                if (ctx.mounted) {
+                                  Navigator.of(ctx).pop();
+                                  _showFailedEntriesDialog();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getPaymentMethodColor(PaymentMethod method) {
@@ -310,6 +466,8 @@ class _SalesListWidgetState extends ConsumerState<SalesListWidget> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                _buildSyncStatusRow(),
                 const SizedBox(height: 16),
                 // Search Bar
                 Container(

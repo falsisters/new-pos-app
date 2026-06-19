@@ -61,3 +61,14 @@ The one case where offline-first hits a wall:
 ## Files to Create
 
 - `lib/features/shift/data/local/shift_local_repository.dart`
+
+## Backend Route Gap
+
+`DELETE /shift/:id` and `POST /shift/end/:id` return bare entities without relation `include`. These need to return the full Shift entity with `employee` relation so the SyncEngine can accurately update the local cache.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/shift/create` | POST | Shift + employee | OK |
+| `/shift/:id` | PATCH | Shift + employee | OK |
+| `/shift/end/:id` | POST | Shift (no relations) | **Add `include: { employee }`** |
+| `/shift/:id` | DELETE | Shift (no relations) | **Add `include: { employee }`** |

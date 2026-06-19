@@ -120,3 +120,14 @@ When online and sales screen loads →
 ### Remove
 - `lib/features/sales/data/services/sales_queue_service.dart`
 - `lib/features/sales/data/model/pending_sale.dart` (no longer needed)
+
+## Backend Route Status
+
+All sales mutation endpoints already return full entities with relations.
+
+| Endpoint | Method | Returns | Status |
+|----------|--------|---------|--------|
+| `/sale/create` | POST | Full SaleModel + SaleItem[] | OK |
+| `/sale/:id` | PUT | Full updated SaleModel | OK |
+| `/sale/:id` | DELETE | Full voided SaleModel | OK |
+| `/sale/recent/cashier` | GET | Full SaleModel[] with relations | OK |

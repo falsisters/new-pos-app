@@ -66,29 +66,29 @@ UI → AsyncNotifier → LocalRepository.read() → Drift DB (immediate, works o
 - [x] Database schema defined (all tables)
 - [x] Converters (Decimal, DateTime)
 - [x] Core sync infrastructure skeletons (IdempotencyService, ConnectivityService, SyncEngine, SyncState, DioInterceptor)
-- [ ] Run `build_runner` to generate `database.g.dart`
-- [ ] Initialize database in `main.dart` (applyDriftNativeOptions, getInstance)
-- [ ] Create Riverpod provider for `AppDatabase`
+- [x] Run `build_runner` to generate `database.g.dart`
+- [x] Initialize database in `main.dart` (applyDriftNativeOptions, getInstance)
+- [x] Create Riverpod provider for `AppDatabase`
 
 ### Phase 1: Sync Core (Next)
-- [ ] Implement `SyncEngine.syncAll()` fully
-- [ ] Implement `SyncEngine.syncFeature(feature)` — per-feature sync
-- [ ] Implement `SyncEngine.pullAndMerge(entityType, apiEndpoint)` — server fetch → upsert logic
-- [ ] Add `DioIdempotencyInterceptor` to `DioClient`
-- [ ] Create `AppDatabase` Riverpod provider
-- [ ] Wire connectivity listener to trigger sync
-- [ ] Create pending count badge in UI (sync status indicator)
+- [x] Implement `SyncEngine.syncAll()` fully
+- [x] Implement `SyncEngine.syncFeature(feature)` — per-feature sync
+- [x] Implement `SyncEngine.pullAndMerge(entityType, apiEndpoint)` — server fetch → upsert logic
+- [x] Add `DioIdempotencyInterceptor` to `DioClient`
+- [x] Create `AppDatabase` Riverpod provider
+- [x] Wire connectivity listener to trigger sync
+- [x] Create pending count badge in UI (sync status indicator)
 
 ### Phase 2: Sales (First Feature Migration)
-- [ ] Create `lib/features/sales/data/local/sales_local_repository.dart`
+- [x] Create `lib/features/sales/data/local/sales_local_repository.dart`
   - `createSale()` → write to local_sales + local_sale_items + outbox
   - `getSales({DateTime? date})` → read from local DB; optionally refresh from server
   - `deleteSale(id)` → soft delete + outbox
-- [ ] Refactor `SalesQueueService` → remove in-memory queue; use outbox
-- [ ] Refactor `SalesRepository` → `SalesLocalRepository` + `SalesRemoteRepository`
-- [ ] Update sales Riverpod providers to read from local DB first
-- [ ] Update `SaleModel.fromJson` → write through to local tables
-- [ ] Update sales check / sales history screens to work offline
+- [x] Refactor `SalesQueueService` → removed; using outbox
+- [x] Refactor `SalesRepository` → `SalesLocalRepository` + `SalesRemoteRepository`
+- [x] Update sales Riverpod providers to read from local DB first
+- [x] Update `SaleModel.fromJson` → write through to local tables
+- [x] Update sales check / sales history screens to work offline
 
 ### Phase 3: Products
 - [ ] Create `lib/features/products/data/local/products_local_repository.dart`

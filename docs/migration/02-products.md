@@ -94,3 +94,13 @@ Edit SackPrice →
 
 ### Modify
 - `lib/features/products/data/providers/products_provider.dart` → read from local repository
+
+## Backend Route Gap
+
+`DELETE /product/user/:id` returns a bare entity without `perKiloPrice`/`SackPrice` relations. Products are reference data, so this is low priority, but the SyncEngine needs the full entity for accurate local table reconciliation.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/product/cashier/create` | POST | Product + pricing relations | OK |
+| `/product/user/:id` | PATCH | Product + pricing relations | OK |
+| `/product/user/:id` | DELETE | Product (no relations) | **Add `include` for pricing** |

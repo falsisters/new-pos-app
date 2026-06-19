@@ -1,4 +1,5 @@
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/database/database.dart';
 import 'package:falsisters_pos_android/features/app/presentation/screens/home_screen.dart';
 import 'package:falsisters_pos_android/features/auth/data/model/auth_state.dart';
 import 'package:falsisters_pos_android/features/auth/presentation/screens/login_screen.dart';
@@ -14,6 +15,9 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+
+  // Initialize the offline database
+  await AppDatabase.getInstance();
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

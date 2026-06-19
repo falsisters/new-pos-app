@@ -36,3 +36,13 @@ Create Expense List →
 ## Files to Create
 
 - `lib/features/expenses/data/local/expenses_local_repository.dart`
+
+## Backend Route Gap
+
+`DELETE /expenses/:id` returns a bare entity without `ExpenseItems` relation. The SyncEngine needs the full entity to reconcile the local cache correctly.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/expense-list/create` | POST | ExpenseList + ExpenseItems[] | OK |
+| `/expense-list/:id` | PUT | ExpenseList + ExpenseItems[] | OK |
+| `/expense-list/:id` | DELETE | ExpenseList (no relations) | **Add `include: { ExpenseItems }`** |

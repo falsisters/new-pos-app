@@ -103,3 +103,17 @@ Since Kahon and Inventory share identical structure:
 
 ### Consider
 - Extract shared spreadsheet offline logic into `lib/core/database/spreadsheet_local_repository.dart`
+
+## Backend Route Gap
+
+**Critical**: `POST /inventory/cells` (addCells) uses `createMany` which returns `{ count: N }` — not the actual created records. This must be changed to use individual creates that return entities so the SyncEngine can upsert into local tables with the correct server-side IDs.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/inventory/cell` | POST | InventoryCell entity | OK |
+| `/inventory/cell/:id` | PATCH | InventoryCell entity | OK |
+| `/inventory/cell/:id` | DELETE | InventoryCell entity | OK |
+| `/inventory/cells` | POST | `{ count: N }` | **Must return Cell[]** |
+| `/inventory/cells` | PATCH | InventoryCell[] | OK |
+| `/inventory/row` | POST | InventoryRow entity | OK |
+| `/inventory/row/:id` | DELETE | InventoryRow entity | OK |

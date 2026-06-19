@@ -43,3 +43,14 @@ Price edits (sack price, per kilo price, special price) are handled through the 
 ## Files to Create
 
 - `lib/features/stocks/data/local/stocks_local_repository.dart`
+
+## Backend Route Gap
+
+All transfer mutation endpoints return bare entities without relations. The `transferProduct` method can return either a `KahonItem` or a `Transfer` entity depending on type, making it unpredictable for offline sync. Consider splitting into separate, well-typed endpoints.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/transfer/:id` | PATCH | Transfer (no relations) | **Add relations** |
+| `/transfer/:id` | DELETE | Transfer (no relations) | **Add relations** |
+| `/transfer/delivery` | POST | KahonItem (not Transfer) | Consider separate endpoint |
+| `/transfer/product` | POST | Transfer or KahonItem | **Stabilize return type** |

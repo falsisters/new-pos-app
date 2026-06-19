@@ -2,6 +2,7 @@
 
 import 'package:decimal/decimal.dart';
 import 'package:falsisters_pos_android/core/constants/colors.dart';
+import 'package:falsisters_pos_android/core/sync/sync_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sales_state.dart';
 import 'package:falsisters_pos_android/features/sales/data/providers/sales_provider.dart';
 import 'package:falsisters_pos_android/features/sales/presentation/screens/checkout_screen.dart';
@@ -9,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/product_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:falsisters_pos_android/features/sales/presentation/widgets/pending_sales_indicator.dart';
 import 'package:intl/intl.dart';
 
 class CartList extends ConsumerStatefulWidget {
@@ -25,10 +25,53 @@ class _CartListState extends ConsumerState<CartList> {
   final FocusNode _focusNode = FocusNode();
   bool _isNavigating = false; // Track navigation state
 
+  Future<bool> isConnected = Future.value(false);
+
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Widget _buildSyncStatusBadge() {
+    final pendingCount = ref.watch(pendingSyncCountProvider);
+    final isSyncing = ref.watch(isSyncingProvider);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isSyncing)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(
+              pendingCount > 0
+                  ? Icons.cloud_upload_outlined
+                  : Icons.cloud_done_outlined,
+              color: pendingCount > 0 ? Colors.orange : Colors.green,
+              size: 14,
+            ),
+          const SizedBox(width: 4),
+          Text(
+            pendingCount > 0 ? '$pendingCount pending' : 'Synced',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: pendingCount > 0 ? Colors.orange : Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _proceedToCheckout() {
@@ -194,14 +237,7 @@ class _CartListState extends ConsumerState<CartList> {
                     ],
                   ),
                   const Spacer(),
-                  // Add pending sales indicator
-                  salesState.when(
-                    data: (state) => PendingSalesIndicator(
-                      pendingSales: state.pendingSales,
-                    ),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
+                  _buildSyncStatusBadge(),
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(

@@ -36,3 +36,13 @@ Create Delivery →
 ## Files to Create
 
 - `lib/features/deliveries/data/local/deliveries_local_repository.dart`
+
+## Backend Route Gap
+
+`DELETE /delivery/:id` returns a bare entity without `DeliveryItem` relations. The SyncEngine needs the full entity to properly remove it from the local cache.
+
+| Endpoint | Method | Current Return | Required |
+|----------|--------|---------------|----------|
+| `/delivery/create` | POST | Delivery + DeliveryItem[] | OK |
+| `/delivery/:id` | PUT | Delivery + DeliveryItem[] | OK |
+| `/delivery/:id` | DELETE | Delivery (no relations) | **Add `include: { DeliveryItem }`** |

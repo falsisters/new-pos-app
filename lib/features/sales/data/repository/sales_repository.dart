@@ -6,7 +6,7 @@ import 'package:falsisters_pos_android/core/utils/api_response_handler.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/create_sale_request_model.dart';
 import 'package:falsisters_pos_android/features/sales/data/model/sale_model.dart';
 
-class SalesRepository {
+class SalesRemoteRepository {
   final DioClient _dio = DioClient();
 
   Future<SaleModel> createSale(CreateSaleRequestModel sale) async {

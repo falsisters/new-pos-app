@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:falsisters_pos_android/core/handlers/secure_storage.dart';
+import 'package:falsisters_pos_android/core/sync/dio_idempotency_interceptor.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DioClient {
@@ -32,10 +33,12 @@ class DioClient {
       error: true,
     ));
 
+    // Add idempotency interceptor (injects Idempotency-Key + X-Client-Cuid from options.extra)
+    _dio.interceptors.add(DioIdempotencyInterceptor());
+
     // Add Bearer token to the header
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // The key issue: getToken() is async but you're not awaiting it
         final token = await _secureStorage.getToken();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';

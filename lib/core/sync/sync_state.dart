@@ -56,3 +56,11 @@ final syncStateProvider =
     StateNotifierProvider<SyncStateNotifier, SyncState>(
   (ref) => SyncStateNotifier(),
 );
+
+final pendingSyncCountProvider = Provider<int>((ref) {
+  return ref.watch(syncStateProvider).pendingCount;
+});
+
+final isSyncingProvider = Provider<bool>((ref) {
+  return ref.watch(syncStateProvider).isSyncing;
+});
